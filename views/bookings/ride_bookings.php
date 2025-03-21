@@ -96,9 +96,10 @@
                                                 </a>
                                             </div>
                                         <?php elseif($row['status'] === 'accepted'): ?>
-                                            <a href="index.php?page=mark-as-completed&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-info" title="Marquer comme terminé">
-                                                <i class="fas fa-flag-checkered"></i> Terminer
-                                            </a>
+                                            <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=completed&return=ride-bookings" class="btn btn-sm btn-info" title="Marquer comme terminé">
+    <i class="fas fa-flag-checkered"></i> Terminer
+</a>
+
                                         <?php else: ?>
                                             <button class="btn btn-sm btn-secondary" disabled>Aucune action</button>
                                         <?php endif; ?>

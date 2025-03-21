@@ -21,59 +21,12 @@ class Booking {
 
     // Créer une nouvelle réservation
     public function create() {
-        // Vérifier les places disponibles
-        $check_query = "SELECT available_seats FROM rides WHERE id = ? LIMIT 1";
-        $check_stmt = $this->conn->prepare($check_query);
-        $check_stmt->bindParam(1, $this->ride_id);
-        $check_stmt->execute();
-        $ride = $check_stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if(!$ride || $ride['available_seats'] < $this->seats) {
-            return false;
-        }
-        
-        // Transaction pour créer la réservation et mettre à jour les places
-        $this->conn->beginTransaction();
-        
-        try {
-            // Insérer la réservation
-            $query = "INSERT INTO " . $this->table . "
-                    SET
-                        ride_id = :ride_id,
-                        passenger_id = :passenger_id,
-                        seats = :seats,
-                        status = :status";
-
-            $stmt = $this->conn->prepare($query);
-
-            // Nettoyage des données
-            $this->ride_id = htmlspecialchars(strip_tags($this->ride_id));
-            $this->passenger_id = htmlspecialchars(strip_tags($this->passenger_id));
-            $this->seats = htmlspecialchars(strip_tags($this->seats));
-            $this->status = htmlspecialchars(strip_tags($this->status));
-
-            // Binding des paramètres
-            $stmt->bindParam(":ride_id", $this->ride_id);
-            $stmt->bindParam(":passenger_id", $this->passenger_id);
-            $stmt->bindParam(":seats", $this->seats);
-            $stmt->bindParam(":status", $this->status);
-
-            $stmt->execute();
-            
-            // Mettre à jour les places disponibles
-            $update_query = "UPDATE rides SET available_seats = available_seats - :seats WHERE id = :ride_id";
-            $update_stmt = $this->conn->prepare($update_query);
-            $update_stmt->bindParam(":seats", $this->seats);
-            $update_stmt->bindParam(":ride_id", $this->ride_id);
-            $update_stmt->execute();
-            
-            $this->conn->commit();
-            return true;
-            
-        } catch(Exception $e) {
-            $this->conn->rollBack();
-            return false;
-        }
+        $sql = "INSERT INTO bookings (ride_id, passenger_id, status) VALUES (:ride_id, :passenger_id, :status)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':ride_id', $this->ride_id, PDO::PARAM_INT);
+        $stmt->bindParam(':passenger_id', $this->passenger_id, PDO::PARAM_INT);
+        $stmt->bindParam(':status', $this->status, PDO::PARAM_STR);
+        return $stmt->execute();
     }
     
     // Lire toutes les réservations d'un passager
@@ -144,61 +97,11 @@ class Booking {
     
     // Mettre à jour le statut d'une réservation
     public function updateStatus() {
-        // Si on annule la réservation, remettre les places disponibles
-        if($this->status == 'cancelled' || $this->status == 'rejected') {
-            // Transaction
-            $this->conn->beginTransaction();
-            
-            try {
-                $query = "UPDATE " . $this->table . " SET status = :status WHERE id = :id";
-                $stmt = $this->conn->prepare($query);
-                
-                $this->status = htmlspecialchars(strip_tags($this->status));
-                $this->id = htmlspecialchars(strip_tags($this->id));
-                
-                $stmt->bindParam(':status', $this->status);
-                $stmt->bindParam(':id', $this->id);
-                
-                $stmt->execute();
-                
-                // Récupérer les informations de la réservation
-                $get_booking = "SELECT ride_id, seats FROM " . $this->table . " WHERE id = :id";
-                $get_stmt = $this->conn->prepare($get_booking);
-                $get_stmt->bindParam(':id', $this->id);
-                $get_stmt->execute();
-                
-                $booking = $get_stmt->fetch(PDO::FETCH_ASSOC);
-                
-                // Mettre à jour les places disponibles
-                $update_query = "UPDATE rides SET available_seats = available_seats + :seats WHERE id = :ride_id";
-                $update_stmt = $this->conn->prepare($update_query);
-                $update_stmt->bindParam(":seats", $booking['seats']);
-                $update_stmt->bindParam(":ride_id", $booking['ride_id']);
-                $update_stmt->execute();
-                
-                $this->conn->commit();
-                return true;
-                
-            } catch(Exception $e) {
-                $this->conn->rollBack();
-                return false;
-            }
-        } else {
-            $query = "UPDATE " . $this->table . " SET status = :status WHERE id = :id";
-            $stmt = $this->conn->prepare($query);
-            
-            $this->status = htmlspecialchars(strip_tags($this->status));
-            $this->id = htmlspecialchars(strip_tags($this->id));
-            
-            $stmt->bindParam(':status', $this->status);
-            $stmt->bindParam(':id', $this->id);
-            
-            if($stmt->execute()) {
-                return true;
-            }
-            
-            return false;
-        }
+        $sql = "UPDATE bookings SET status = :status WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':status', $this->status, PDO::PARAM_STR);
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
     
     // Vérifier si un utilisateur a déjà réservé un trajet
@@ -216,4 +119,23 @@ class Booking {
         
         return false;
     }
+
+    // Obtenir les détails d'une réservation
+    public function getBookingDetails($booking_id) {
+        $sql = "SELECT * FROM bookings WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $booking_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Supprimer une réservation
+   // Supprimer une réservation
+public function delete() {
+    $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+    $stmt = $this->conn->prepare($query);
+    $this->id = htmlspecialchars(strip_tags($this->id));
+    $stmt->bindParam(":id", $this->id);
+    return $stmt->execute();
+}
 }
