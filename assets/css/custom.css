@@ -1,0 +1,179 @@
+/* Styles généraux */
+body {
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+
+/* Gradient de couleur principal */
+.bg-carpu-gradient {
+    background: linear-gradient(45deg, #4e54c8, #8f94fb);
+}
+
+.text-gradient {
+    background-image: linear-gradient(45deg, #4e54c8, #8f94fb);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline;
+}
+
+/* Cards avec effet de verre */
+.glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 10px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Espacement du contenu sous la navbar fixe */
+main {
+    padding-top: 80px;
+}
+
+/* Dans public/css/styles.css */
+.rating-stars {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating-stars input {
+    display: none;
+}
+
+.rating-stars label {
+    cursor: pointer;
+    color: #ddd;
+    font-size: 2rem;
+    padding: 0 3px;
+}
+
+.rating-stars input:checked ~ label,
+.rating-stars label:hover,
+.rating-stars label:hover ~ label {
+    color: #ffc107;
+}
+
+.rating-stars input:checked + label {
+    color: #ffc107;
+}
+
+/* Custom button styles */
+.btn-primary {
+    background: linear-gradient(45deg, #4e54c8, #8f94fb);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(45deg, #3e43a0, #7a7ed4);
+}
+
+/* Animations */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+/* Hero section */
+.hero {
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('../images/hero-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 100px 0;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+footer a {
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* Navbar */
+.navbar {
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    background-color: white !important;
+}
+
+.navbar-nav.mx-auto {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.navbar-nav.mx-auto .nav-item {
+    margin-right: 15px; /* Ajustez la valeur selon vos besoins */
+}
+
+.navbar-nav.mx-auto .nav-item:last-child {
+    margin-right: 0;
+}
+
+/* Ride cards */
+.ride-card {
+    transition: transform 0.3s ease;
+}
+
+.ride-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Star ratings */
+.star-rating {
+    color: #ffc107;
+}
+
+/* Profile avatar */
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(45deg, #4e54c8, #8f94fb);
+    color: white;
+    font-size: 2.5rem;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .hero {
+        padding: 60px 0;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 2rem;
+    }
+}

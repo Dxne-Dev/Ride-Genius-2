@@ -1,0 +1,105 @@
+<?php
+class Review {
+    private $conn;
+    private $table = "reviews";
+
+    // propriétés
+    public $id;
+    public $booking_id;
+    public $author_id;
+    public $recipient_id;
+    public $rating;
+    public $comment;
+    public $created_at;
+    
+    // propriétés jointes
+    public $author_name;
+    public $recipient_name;
+    public $ride_id;
+
+    public function __construct($db) {
+        $this->conn = $db;
+    }
+
+    // Créer un nouvel avis
+    public function create() {
+        // Vérifier si un avis existe déjà pour cette réservation par cet auteur
+        $check_query = "SELECT * FROM " . $this->table . " WHERE booking_id = ? AND author_id = ?";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->bindParam(1, $this->booking_id);
+        $check_stmt->bindParam(2, $this->author_id);
+        $check_stmt->execute();
+        
+        if($check_stmt->rowCount() > 0) {
+            return false; // Un avis existe déjà
+        }
+
+        $query = "INSERT INTO " . $this->table . "
+                SET
+                    booking_id = :booking_id,
+                    author_id = :author_id,
+                    recipient_id = :recipient_id,
+                    rating = :rating,
+                    comment = :comment";
+
+        $stmt = $this->conn->prepare($query);
+
+        // Nettoyage des données
+        $this->booking_id = htmlspecialchars(strip_tags($this->booking_id));
+        $this->author_id = htmlspecialchars(strip_tags($this->author_id));
+        $this->recipient_id = htmlspecialchars(strip_tags($this->recipient_id));
+        $this->rating = htmlspecialchars(strip_tags($this->rating));
+        $this->comment = htmlspecialchars(strip_tags($this->comment));
+
+        // Binding des paramètres
+        $stmt->bindParam(":booking_id", $this->booking_id);
+        $stmt->bindParam(":author_id", $this->author_id);
+        $stmt->bindParam(":recipient_id", $this->recipient_id);
+        $stmt->bindParam(":rating", $this->rating);
+        $stmt->bindParam(":comment", $this->comment);
+
+        if($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+    
+    // Lire tous les avis reçus par un utilisateur
+    public function readUserReviews() {
+        $query = "SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as author_name
+                  FROM " . $this->table . " r
+                  LEFT JOIN users u ON r.author_id = u.id
+                  WHERE r.recipient_id = ?
+                  ORDER BY r.created_at DESC";
+                  
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $this->recipient_id);
+        $stmt->execute();
+        
+        return $stmt;
+    }
+    
+    // Vérifier si un utilisateur peut laisser un avis
+    public function canReview() {
+        $query = "SELECT * FROM bookings WHERE ride_id = :ride_id AND passenger_id = :author_id AND status = 'completed'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":ride_id", $this->ride_id);
+        $stmt->bindParam(":author_id", $this->author_id);
+        $stmt->execute();
+        
+        return $stmt->rowCount() > 0;
+    }
+    
+    // Obtenir la note moyenne d'un utilisateur
+    public function getUserRating() {
+        $query = "SELECT AVG(rating) as average_rating, COUNT(*) as total_reviews 
+                  FROM " . $this->table . " 
+                  WHERE recipient_id = ?";
+                  
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(1, $this->recipient_id);
+        $stmt->execute();
+        
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+}

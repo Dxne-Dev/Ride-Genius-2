@@ -1,0 +1,2 @@
+ALTER TABLE bookings
+ADD COLUMN driver_id INT UNSIGNED;
