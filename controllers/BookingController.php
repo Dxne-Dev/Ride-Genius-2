@@ -132,7 +132,6 @@ class BookingController {
         }
         $ride_id = $_GET['ride_id'];
         $this->ride->id = $ride_id;
-
         // Vérifier que le trajet existe et appartient au conducteur
         $this->ride->driver_id = $_SESSION['user_id'];
         if(!$this->ride->readOne() && $_SESSION['user_role'] != 'admin') {
@@ -140,11 +139,15 @@ class BookingController {
             header("Location: index.php?page=my-rides");
             exit();
         }
-
+        
+        // Convertir l'objet Ride en tableau pour la vue
+        $ride_details = (array)$this->ride;
+        
         $this->booking->ride_id = $ride_id;
         $stmt = $this->booking->readRideBookings();
         include "views/bookings/ride_bookings.php";
     }
+    
 
     // Mise à jour du statut d'une réservation (fusion de updateStatus() et markAsCompleted())
     public function updateStatus() {
