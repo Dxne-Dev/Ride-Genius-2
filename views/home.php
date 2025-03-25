@@ -129,64 +129,71 @@
     </div>
 
     <!-- Subscription Plans Section -->
-    <div class="container">
-        <h2 class="text-center mb-5">Nos abonnements</h2>
-        <div class="row g-4">
-            <div class="col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column position-relative">
-                        <h4 class="card-title">Abonnement Basic</h4>
-                        <p class="card-text">Idéal pour les entrepreneurs individuels.</p>
-                        <h5 class="card-price">19 € / mois</h5>
-                        <ul class="list-unstyled subscription-details">
-                            <li>10 localisations d'inventaire</li>
-                            <li>Support par chat 24/7</li>
-                            <li>Vente globale localisée (3 marchés)</li>
-                            <li>Fonctionnalités POS Lite</li>
-                        </ul>
-                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
-                    </div>
+<div class="container">
+    <h2 class="text-center mb-5">Nos formules d'abonnement</h2>
+    <div class="row g-4">
+        <!-- Formule Eco -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body d-flex flex-column position-relative">
+                    <h4 class="card-title">🚗 EcoTrajet</h4>
+                    <p class="card-text">Pour les voyageurs occasionnels</p>
+                    <h5 class="card-price">Gratuit</h5>
+                    <ul class="list-unstyled subscription-details">
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>2 trajets/mois</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche basique</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie standard</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Évaluation des conducteurs</li>
+                        <li><i class="fas fa-times-circle me-2 text-secondary"></i>Pas de trajets prioritaires</li>
+                    </ul>
+                    <a href="#" class="btn btn-outline-primary mt-auto">Choisir cette formule</a>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column position-relative">
-                        <h4 class="card-title">Abonnement Avancé</h4>
-                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">Populaire</span>
-                        <p class="card-text">Pour les entreprises en croissance.</p>
-                        <h5 class="card-price">299 € / mois</h5>
-                        <ul class="list-unstyled subscription-details">
-                            <li>Fonctionnalités de l'abonnement Basic, plus :</li>
-                            <li>Rapports et analyses personnalisés</li>
-                            <li>100 localisations d'inventaire</li>
-                            <li>Support par chat amélioré 24/7</li>
-                             <li>15 comptes staff additionnels</li>
-                            <li>Capacité de caisse x10</li>
-                        </ul>
-                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
-                    </div>
+        </div>
+
+        <!-- Formule Pro -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-primary">
+                <div class="card-body d-flex flex-column position-relative">
+                    <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">LE PLUS CHOISI</span>
+                    <h4 class="card-title">🚙 ProTrajet</h4>
+                    <p class="card-text">Pour les navetteurs réguliers</p>
+                    <h5 class="card-price">7,90 € <small class="text-muted">/mois</small></h5>
+                    <ul class="list-unstyled subscription-details">
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets illimités</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche avancée</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie instantanée</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets prioritaires</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Badge "Conducteur vérifié"</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Support en 24h</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary mt-auto">S'abonner</a>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body d-flex flex-column position-relative">
-                        <h4 class="card-title">Abonnement Plus</h4>
-                        <p class="card-text">Pour les entreprises complexes.</p>
-                        <h5 class="card-price">2300 € / mois</h5>
-                        <ul class="list-unstyled subscription-details">
-                            <li>Fonctionnalités de l'abonnement Avancé, plus :</li>
-                            <li>200 localisations d'inventaire</li>
-                            <li>Support téléphonique prioritaire 24/7</li>
-                            <li>Vente globale localisée (50 marchés)</li>
-                            <li>Comptes staff illimités</li>
-                            <li>Caisse entièrement personnalisable avec capacité x40</li>
-                        </ul>
-                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
-                    </div>
+        </div>
+
+        <!-- Formule Business -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-warning">
+                <div class="card-body d-flex flex-column position-relative">
+                    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">ÉCONOMISEZ 20%</span>
+                    <h4 class="card-title">🚘 BusinessTrajet</h4>
+                    <p class="card-text">Pour les professionnels de la route</p>
+                    <h5 class="card-price">14,90 € <small class="text-muted">/mois</small></h5>
+                    <ul class="list-unstyled subscription-details">
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Tous les avantages ProTrajet</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Choix des passagers</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Itinéraires premium</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Statistiques détaillées</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>Support prioritaire 24/7</li>
+                        <li><i class="fas fa-check-circle me-2 text-success"></i>0% de commission</li>
+                    </ul>
+                    <a href="#" class="btn btn-warning mt-auto">Essai gratuit 7 jours</a>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Recent Rides Section -->
     <div class="container mb-5">
@@ -214,7 +221,7 @@
                     $count++;
             ?>
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card h-100 shadow-sm glass-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
@@ -252,7 +259,7 @@
         <h2 class="text-center mb-5">Ce que disent nos utilisateurs</h2>
         <div class="row">
             <div class="col-md-4 mb-4 mb-md-0">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">
@@ -275,7 +282,7 @@
                 </div>
             </div>
             <div class="col-md-4 mb-4 mb-md-0">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">
@@ -298,7 +305,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">
@@ -323,7 +330,7 @@
                 
             </div>
             <div class="col-md-4 mb-4 mb-md-0">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">
@@ -346,7 +353,7 @@
                 </div>
             </div>
             <div class="col-md-4 mb-4 mb-md-0">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">
@@ -369,7 +376,7 @@
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card h-100 shadow-sm">
+                <div class="card h-100 shadow-sm glass-card">
                     <div class="card-body p-4">
                         <div class="d-flex mb-3">
                             <div class="me-3">

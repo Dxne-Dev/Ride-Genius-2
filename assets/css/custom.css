@@ -19,7 +19,7 @@ body {
 }
 
 /* Cards avec effet de verre */
-.glass-card {
+.card.h-100.shadow-sm.glass-card {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -29,7 +29,7 @@ body {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.glass-card:hover {
+.card.h-100.shadow-sm.glass-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
@@ -178,7 +178,7 @@ footer a:hover {
     }
 }
 
-/* Styles spécifiques à la section des abonnements */
+/* Styles spécifiques à la section des abonnements
 .subscription-plans-section {
     padding-top: 6rem;
     padding-bottom: 6rem;
@@ -209,7 +209,7 @@ footer a:hover {
 }
 
 /* Nouveaux styles pour les détails des abonnements */
-.subscription-details {
+/* .subscription-details {
     list-style: none;
     padding: 0;
     margin-bottom: 1.5rem;
@@ -239,4 +239,5 @@ footer a:hover {
     font-size: 0.8rem;
     margin-bottom: 1rem;
     display: inline-block;
-}
+} */
+
