@@ -177,3 +177,66 @@ footer a:hover {
         font-size: 2rem;
     }
 }
+
+/* Styles spécifiques à la section des abonnements */
+.subscription-plans-section {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+}
+
+.subscription-plans-section h2 {
+    text-align: center;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--heading-color);
+}
+
+
+.subscription-plans-section .card-title {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.subscription-plans-section .card-text {
+    font-size: 1.1rem;
+    margin-bottom: 1.25rem;
+}
+
+.subscription-plans-section .card-price {
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Nouveaux styles pour les détails des abonnements */
+.subscription-details {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 1.5rem;
+    text-align: left;
+    font-size: 1rem;
+    color: var(--gray-color);
+}
+
+.subscription-details li {
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.subscription-details li::before {
+    content: '✓';
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+
+.popular-badge {
+    background-color: #f1c40f;
+    color: var(--white-color);
+    padding: 0.25rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+}

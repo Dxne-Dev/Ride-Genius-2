@@ -128,6 +128,66 @@
         </div>
     </div>
 
+    <!-- Subscription Plans Section -->
+    <div class="container">
+        <h2 class="text-center mb-5">Nos abonnements</h2>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <h4 class="card-title">Abonnement Basic</h4>
+                        <p class="card-text">Idéal pour les entrepreneurs individuels.</p>
+                        <h5 class="card-price">19 € / mois</h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li>10 localisations d'inventaire</li>
+                            <li>Support par chat 24/7</li>
+                            <li>Vente globale localisée (3 marchés)</li>
+                            <li>Fonctionnalités POS Lite</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <h4 class="card-title">Abonnement Avancé</h4>
+                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">Populaire</span>
+                        <p class="card-text">Pour les entreprises en croissance.</p>
+                        <h5 class="card-price">299 € / mois</h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li>Fonctionnalités de l'abonnement Basic, plus :</li>
+                            <li>Rapports et analyses personnalisés</li>
+                            <li>100 localisations d'inventaire</li>
+                            <li>Support par chat amélioré 24/7</li>
+                             <li>15 comptes staff additionnels</li>
+                            <li>Capacité de caisse x10</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <h4 class="card-title">Abonnement Plus</h4>
+                        <p class="card-text">Pour les entreprises complexes.</p>
+                        <h5 class="card-price">2300 € / mois</h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li>Fonctionnalités de l'abonnement Avancé, plus :</li>
+                            <li>200 localisations d'inventaire</li>
+                            <li>Support téléphonique prioritaire 24/7</li>
+                            <li>Vente globale localisée (50 marchés)</li>
+                            <li>Comptes staff illimités</li>
+                            <li>Caisse entièrement personnalisable avec capacité x40</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary mt-auto">Souscrire</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Rides Section -->
     <div class="container mb-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
