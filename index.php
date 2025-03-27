@@ -37,7 +37,11 @@ switch($page) {
     case 'logout':
         $auth = new AuthController();
         $auth->logout();
-        break;
+    //     break;
+    // case 'verify-email': // Add this case for email verification
+    //     $auth = new AuthController();
+    //     $auth->verifyEmail();
+    //     break;
     
     // Pages de profil
     case 'profile':

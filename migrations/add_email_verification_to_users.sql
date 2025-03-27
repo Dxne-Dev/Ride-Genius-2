@@ -1,0 +1,3 @@
+ALTER TABLE users 
+  ADD COLUMN email_verification_code VARCHAR(10) DEFAULT NULL,
+  ADD COLUMN verified TINYINT(1) DEFAULT 0;
