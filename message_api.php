@@ -11,10 +11,19 @@ if ($_GET['action'] === 'getMessages') {
     $file = null;
     $file_type = 'text';
 
+    // Gestion des fichiers uploadés
     if (!empty($_FILES['file']['name'])) {
-        $file = 'uploads/' . uniqid() . '_' . basename($_FILES['file']['name']);
-        move_uploaded_file($_FILES['file']['tmp_name'], $file);
-        $file_type = explode('/', $_FILES['file']['type'])[0];
+        $uploadDir = __DIR__ . '/uploads/';
+        $fileName = uniqid() . '_' . basename($_FILES['file']['name']);
+        $filePath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
+            $file = 'uploads/' . $fileName;
+            $file_type = explode('/', $_FILES['file']['type'])[0]; // Détermine le type de fichier (image, video, audio)
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Erreur lors du téléchargement du fichier.']);
+            exit();
+        }
     }
 
     $success = $messageController->sendMessage($receiver_id, $message, $file, $file_type);

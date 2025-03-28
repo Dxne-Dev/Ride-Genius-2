@@ -18,13 +18,12 @@ class MessageController {
     }
 
     public function sendMessage($receiver_id, $message, $file = null, $file_type = 'text') {
-        $encryptedMessage = $this->encryptMessage($message);
         $query = "INSERT INTO messages (sender_id, receiver_id, message, file_path, file_type) 
                   VALUES (:sender_id, :receiver_id, :message, :file_path, :file_type)";
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':sender_id', $_SESSION['user_id']);
         $stmt->bindParam(':receiver_id', $receiver_id);
-        $stmt->bindParam(':message', $encryptedMessage);
+        $stmt->bindParam(':message', $message);
         $stmt->bindParam(':file_path', $file);
         $stmt->bindParam(':file_type', $file_type);
         return $stmt->execute();
