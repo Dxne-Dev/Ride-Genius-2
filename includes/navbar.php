@@ -58,6 +58,11 @@
             
             <ul class="navbar-nav">
                 <?php if(isset($_SESSION['user_id'])): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?page=messages">
+                            <i class="fas fa-envelope me-1"></i>Messages
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i><?php echo $_SESSION['user_name']; ?>

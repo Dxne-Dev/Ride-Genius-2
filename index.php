@@ -133,6 +133,12 @@ switch($page) {
         $ride->adminRides();
         break;
     
+    // Page de messagerie
+    case 'messages':
+        require_once "controllers/MessageController.php";
+        $message = new MessageController();
+        $message->index();
+        break;
     // Page d'accueil par défaut
     default:
         include "views/home.php";
