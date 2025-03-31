@@ -28,4 +28,18 @@ if ($_GET['action'] === 'getMessages') {
 
     $success = $messageController->sendMessage($receiver_id, $message, $file, $file_type);
     echo json_encode(['success' => $success]);
+} elseif ($_GET['action'] === 'getConversations') {
+    session_start(); // Assure-toi que la session est démarrée
+    $user_id = $_SESSION['user_id'];
+    $user_role = $_SESSION['user_role'];
+    $conversations = [];
+
+    if ($user_role === 'passager') {
+        $conversations = $messageController->getPassengerConversations($user_id);
+    } elseif ($user_role === 'conducteur') {
+        $conversations = $messageController->getDriverConversations($user_id);
+    }
+
+    echo json_encode($conversations);
 }
+?>
