@@ -1,29 +1,56 @@
-<?php include 'includes/header.php'; ?>
-<?php include 'includes/navbar.php'; ?>
+<?php
+include_once 'includes/header.php';
+include_once 'includes/navbar.php';
+include_once __DIR__ . '/../../config/database.php';
+// Créer une instance de la classe Database
+$database = new Database();
+$db = $database->getConnection();
+
+// Code pour l'autocomplétion
+if (isset($_GET['query'])) {
+    $query = $_GET['query'];
+    $sql = "SELECT nom FROM villes WHERE nom LIKE :query LIMIT 10";
+    $stmt = $db->prepare($sql);
+    $stmt->bindValue(':query', '%' . $query . '%');
+    $stmt->execute();
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode($results);
+    exit; // Important pour arrêter l'exécution du reste du code PHP
+}
+?>
 
 <div class="container py-5">
     <h1 class="mb-4">Rechercher un trajet</h1>
-    
+
     <div class="card shadow mb-5">
         <div class="card-body p-4">
             <form action="index.php" method="GET" class="row g-3">
                 <input type="hidden" name="page" value="search-rides">
-                
+
                 <div class="col-md-4">
                     <label for="departure" class="form-label">Départ</label>
-                    <input type="text" class="form-control" id="departure" name="departure" placeholder="Ville de départ" value="<?php echo isset($_GET['departure']) ? htmlspecialchars($_GET['departure']) : ''; ?>" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" class="form-control" id="departure" name="departure" placeholder="Ville de départ" value="<?php echo isset($_GET['departure']) ? htmlspecialchars($_GET['departure']) : ''; ?>" required>
+                    </div>
                 </div>
-                
+
                 <div class="col-md-4">
                     <label for="destination" class="form-label">Destination</label>
-                    <input type="text" class="form-control" id="destination" name="destination" placeholder="Ville de destination" value="<?php echo isset($_GET['destination']) ? htmlspecialchars($_GET['destination']) : ''; ?>" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                        <input type="text" class="form-control" id="destination" name="destination" placeholder="Ville de destination" value="<?php echo isset($_GET['destination']) ? htmlspecialchars($_GET['destination']) : ''; ?>" required>
+                    </div>
                 </div>
-                
+
                 <div class="col-md-3">
                     <label for="date" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="date" name="date" min="<?php echo date('Y-m-d'); ?>" value="<?php echo isset($_GET['date']) ? htmlspecialchars($_GET['date']) : date('Y-m-d'); ?>" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-calendar-alt"></i></span>
+                        <input type="date" class="form-control" id="date" name="date" min="<?php echo date('Y-m-d'); ?>" value="<?php echo isset($_GET['date']) ? htmlspecialchars($_GET['date']) : date('Y-m-d'); ?>" required>
+                    </div>
                 </div>
-                
+
                 <div class="col-md-1 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-search"></i>
@@ -32,13 +59,13 @@
             </form>
         </div>
     </div>
-    
-    <?php if($searched): ?>
+
+    <?php if ($searched): ?>
         <h2 class="mb-4">Résultats de recherche</h2>
-        
-        <?php if($results->rowCount() > 0): ?>
+
+        <?php if ($results->rowCount() > 0): ?>
             <div class="row">
-                <?php while($row = $results->fetch(PDO::FETCH_ASSOC)): ?>
+                <?php while ($row = $results->fetch(PDO::FETCH_ASSOC)): ?>
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
@@ -46,9 +73,9 @@
                                     <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
                                     <span class="badge bg-primary"><?php echo htmlspecialchars($row['price']); ?> €</span>
                                 </div>
-                                
+
                                 <?php $departure_time = new DateTime($row['departure_time']); ?>
-                                
+
                                 <p class="card-text text-muted mb-1">
                                     <i class="fas fa-calendar-alt me-2"></i><?php echo $departure_time->format('d/m/Y'); ?>
                                 </p>
@@ -72,7 +99,7 @@
                 <i class="fas fa-info-circle me-2"></i>
                 Aucun trajet ne correspond à votre recherche. Essayez avec d'autres critères.
             </div>
-            
+
             <h3 class="mt-5 mb-4">Suggestions</h3>
             <div class="row">
                 <div class="col-md-6">
@@ -109,7 +136,7 @@
             <i class="fas fa-info-circle me-2"></i>
             Utilisez le formulaire ci-dessus pour rechercher un trajet.
         </div>
-        
+
         <h3 class="mt-5 mb-4">Destinations populaires</h3>
         <div class="row">
             <div class="col-md-3 mb-4">
@@ -151,5 +178,48 @@
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+    const departureInput = document.getElementById('departure');
+    const destinationInput = document.getElementById('destination');
+
+    departureInput.addEventListener('input', function() {
+        autocomplete(this);
+    });
+
+    destinationInput.addEventListener('input', function() {
+        autocomplete(this);
+    });
+
+    function autocomplete(input) {
+        const query = input.value;
+        if (query.length < 3) return;
+
+        fetch(`index.php?page=search-rides&query=${query}`)
+            .then(response => response.json())
+            .then(data => {
+                const suggestions = document.createElement('ul');
+                suggestions.classList.add('autocomplete-suggestions');
+
+                data.forEach(item => {
+                    const suggestion = document.createElement('li');
+                    suggestion.textContent = item.nom;
+                    suggestion.addEventListener('click', function() {
+                        input.value = item.nom;
+                        suggestions.remove();
+                    });
+                    suggestions.appendChild(suggestion);
+                });
+
+                // Supprimer les suggestions précédentes
+                const previousSuggestions = input.parentNode.querySelector('.autocomplete-suggestions');
+                if (previousSuggestions) {
+                    previousSuggestions.remove();
+                }
+
+                input.parentNode.appendChild(suggestions);
+            });
+    }
+</script>
 
 <?php include 'includes/footer.php'; ?>

@@ -111,26 +111,30 @@ footer a:hover {
 
 /* Navbar */
 .navbar {
-    transition: all 0.3s ease;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #0d6efd !important; /* Couleur primaire Bootstrap */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
 }
 
-.navbar.scrolled {
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-    background-color: white !important;
+.navbar-nav .nav-link {
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+}
+
+.navbar-brand i,
+.navbar-nav .nav-link i {
+    margin-right: 5px;
 }
 
 .navbar-nav.mx-auto {
     display: flex;
     justify-content: center;
-    width: 100%;
-}
-
-.navbar-nav.mx-auto .nav-item {
-    margin-right: 15px; /* Ajustez la valeur selon vos besoins */
-}
-
-.navbar-nav.mx-auto .nav-item:last-child {
-    margin-right: 0;
 }
 
 /* Ride cards */
@@ -284,7 +288,7 @@ footer a:hover {
 #file-input {
     display: none;
 }
-
+/* 
 label {
     background: #d1e8ff;
     border: none;
@@ -297,83 +301,40 @@ label {
 
 label:hover {
     background: #b4d4ff;
-}
+} */
 
 button {
-    background: #d1e8ff;
     border: none;
     border-radius: 10px;
     padding: 8px 12px;
     margin-left: 5px;
     cursor: pointer;
-    box-shadow: 4px 4px 8px #babecc, -4px -4px 8px #ffffff;
+    
 }
 
-button:hover {
-    background: #b4d4ff;
+/* Styles pour les icônes dans les champs de formulaire */
+.input-group-text {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
 }
 
-/* Styles spécifiques à la section des abonnements
-.subscription-plans-section {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
-}
-
-.subscription-plans-section h2 {
-    text-align: center;
-    margin-bottom: 3rem;
-    font-size: 2.5rem;
-    font-weight: 700;
-    color: var(--heading-color);
-}
-
-
-.subscription-plans-section .card-title {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.subscription-plans-section .card-text {
-    font-size: 1.1rem;
-    margin-bottom: 1.25rem;
-}
-
-.subscription-plans-section .card-price {
-    font-size: 1.75rem;
-    margin-bottom: 1.5rem;
-}
-
-/* Nouveaux styles pour les détails des abonnements */
-/* .subscription-details {
+.autocomplete-suggestions {
     list-style: none;
     padding: 0;
-    margin-bottom: 1.5rem;
-    text-align: left;
-    font-size: 1rem;
-    color: var(--gray-color);
+    margin: 0;
+    border: 1px solid #ccc;
+    position: absolute;
+    background-color: white;
+    width: 95%;
+    z-index: 1000;
 }
 
-.subscription-details li {
-    margin-bottom: 0.5rem;
-    display: flex;
-    align-items: center;
+.autocomplete-suggestions li {
+    padding: 8px 12px;
+    cursor: pointer;
 }
 
-.subscription-details li::before {
-    content: '✓';
-    color: var(--primary-color);
-    margin-right: 0.5rem;
-    font-weight: bold;
+.autocomplete-suggestions li:hover {
+    background-color: #f0f0f0;
 }
-
-.popular-badge {
-    background-color: #f1c40f;
-    color: var(--white-color);
-    padding: 0.25rem 0.5rem;
-    border-radius: 10px;
-    font-size: 0.8rem;
-    margin-bottom: 1rem;
-    display: inline-block;
-} */
-
 

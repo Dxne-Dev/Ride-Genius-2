@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
     <div class="container">
         <a class="navbar-brand" href="index.php">
             <i class="fas fa-car-side me-2"></i>RideGenius
@@ -9,20 +9,20 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav mx-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php">Accueil</a>
+                    <a class="nav-link" href="index.php"><i class="fas fa-home me-1"></i>Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=rides">Trajets disponibles</a>
+                    <a class="nav-link" href="index.php?page=rides"><i class="fas fa-route me-1"></i>Trajets disponibles</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="index.php?page=search-rides">Rechercher</a>
+                    <a class="nav-link" href="index.php?page=search-rides"><i class="fas fa-search me-1"></i>Rechercher</a>
                 </li>
-                
+
                 <?php if(isset($_SESSION['user_id'])): ?>
                     <?php if($_SESSION['user_role'] === 'conducteur'): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                Conducteur
+                                <i class="fas fa-steering-wheel me-1"></i>Conducteur
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="index.php?page=create-ride">Proposer un trajet</a></li>
@@ -30,21 +30,21 @@
                             </ul>
                         </li>
                     <?php endif; ?>
-                    
+
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            Mes réservations
+                            <i class="fas fa-calendar-alt me-1"></i>Mes réservations
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="index.php?page=my-bookings">Voir mes réservations</a></li>
                             <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
                         </ul>
                     </li>
-                    
+
                     <?php if($_SESSION['user_role'] === 'admin'): ?>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                Administration
+                                <i class="fas fa-user-shield me-1"></i>Administration
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="index.php?page=admin-dashboard">Tableau de bord</a></li>
@@ -55,7 +55,7 @@
                     <?php endif; ?>
                 <?php endif; ?>
             </ul>
-            
+
             <ul class="navbar-nav">
                 <?php if(isset($_SESSION['user_id'])): ?>
                     <li class="nav-item">
@@ -91,7 +91,7 @@
 <?php if(isset($_SESSION['error'])): ?>
     <div class="container mt-3">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <?php 
+            <?php
                 echo $_SESSION['error'];
                 unset($_SESSION['error']);
             ?>
@@ -103,7 +103,7 @@
 <?php if(isset($_SESSION['success'])): ?>
     <div class="container mt-3">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <?php 
+            <?php
                 echo $_SESSION['success'];
                 unset($_SESSION['success']);
             ?>

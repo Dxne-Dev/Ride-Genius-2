@@ -252,19 +252,33 @@ class RideController {
     public function search() {
         $results = [];
         $searched = false;
-        
-        if($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['departure']) && isset($_GET['destination']) && isset($_GET['date'])) {
+
+        // Gestion de l'autocomplétion
+        if (isset($_GET['query'])) {
+            $query = $_GET['query'];
+            $sql = "SELECT nom FROM villes WHERE nom LIKE :query LIMIT 10";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindValue(':query', '%' . $query . '%');
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            echo json_encode($results);
+            exit; // Important pour arrêter l'exécution du reste du code PHP
+        }
+
+        // Gestion de la recherche normale
+        if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['departure']) && isset($_GET['destination']) && isset($_GET['date'])) {
             $departure = $_GET['departure'];
             $destination = $_GET['destination'];
             $date = $_GET['date'];
-            
-            if(!empty($departure) && !empty($destination) && !empty($date)) {
+
+            if (!empty($departure) && !empty($destination) && !empty($date)) {
                 $searched = true;
                 $stmt = $this->ride->search($departure, $destination, $date);
                 $results = $stmt;
             }
         }
-        
+
         // Afficher la vue
         include "views/rides/search.php";
     }
