@@ -42,6 +42,10 @@ class ComposerStaticInit2185d2f99bcd56787481d9357a5972d3
         array (
             'GuzzleHttp\\Psr7\\' => 16,
         ),
+        'F' => 
+        array (
+            'Firebase\\JWT\\' => 13,
+        ),
         'E' => 
         array (
             'Evenement\\' => 10,
@@ -109,6 +113,10 @@ class ComposerStaticInit2185d2f99bcd56787481d9357a5972d3
         'GuzzleHttp\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
+        ),
+        'Firebase\\JWT\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
         'Evenement\\' => 
         array (

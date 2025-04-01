@@ -50,7 +50,8 @@ io.on('connection', (socket) => {
     });
 });
 
-// Démarrer le serveur
+app.use(express.static('views/messages')); // Serve static files from the messages directory
+app.use(express.static('views/auth')); // Serve static files from the auth directory
 const PORT = 3000;
 server.listen(PORT, () => {
     console.log(`Serveur Socket.IO en cours d'exécution sur le port ${PORT}`);
