@@ -17,6 +17,24 @@
                             </ul>
                         </div>
                     <?php endif; ?>
+
+                    <?php if(isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success">
+                            <?php 
+                            echo $_SESSION['success'];
+                            unset($_SESSION['success']);
+                            ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if(isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger">
+                            <?php 
+                            echo $_SESSION['error'];
+                            unset($_SESSION['error']);
+                            ?>
+                        </div>
+                    <?php endif; ?>
                     
                     <form method="POST" action="">
                         <div class="mb-3">
@@ -35,6 +53,7 @@
                         
                         <div class="text-center">
                             <p class="mb-0">Pas encore inscrit ? <a href="index.php?page=register">Créer un compte</a></p>
+                            <p class="mt-2 mb-0">Email non vérifié ? <a href="index.php?page=resend-verification">Renvoyer le lien de vérification</a></p>
                         </div>
                     </form>
                 </div>

@@ -12,14 +12,58 @@ class User {
     public $phone;
     public $role;
     public $created_at;
-    public $email_verification_code; // Pour le code de vérification
+    public $verified;
+    public $email_verification_code;
+    public $verification_code_expires;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->createVerificationColumns();
+    }
+
+    // Créer les colonnes de vérification si elles n'existent pas
+    private function createVerificationColumns() {
+        try {
+            // Vérifier si la colonne verified existe
+            $check_verified = "SHOW COLUMNS FROM " . $this->table . " LIKE 'verified'";
+            $stmt = $this->conn->prepare($check_verified);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() == 0) {
+                $this->conn->exec("ALTER TABLE " . $this->table . " ADD COLUMN verified TINYINT(1) DEFAULT 0");
+            }
+
+            // Vérifier si la colonne email_verification_code existe
+            $check_code = "SHOW COLUMNS FROM " . $this->table . " LIKE 'email_verification_code'";
+            $stmt = $this->conn->prepare($check_code);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() == 0) {
+                $this->conn->exec("ALTER TABLE " . $this->table . " ADD COLUMN email_verification_code VARCHAR(255) DEFAULT NULL");
+            }
+
+            // Vérifier si la colonne verification_code_expires existe
+            $check_expires = "SHOW COLUMNS FROM " . $this->table . " LIKE 'verification_code_expires'";
+            $stmt = $this->conn->prepare($check_expires);
+            $stmt->execute();
+            
+            if ($stmt->rowCount() == 0) {
+                $this->conn->exec("ALTER TABLE " . $this->table . " ADD COLUMN verification_code_expires DATETIME DEFAULT NULL");
+            }
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la création des colonnes de vérification : " . $e->getMessage());
+        }
     }
 
     // Créer un nouvel utilisateur
     public function create() {
+        // Générer un code de vérification de 10 caractères
+        $this->email_verification_code = substr(bin2hex(random_bytes(5)), 0, 10);
+        $this->verification_code_expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+        $this->verified = 0;
+
+        error_log("Création d'un nouvel utilisateur avec le code de vérification: " . $this->email_verification_code);
+
         $query = "INSERT INTO " . $this->table . " 
                   SET first_name = :first_name,
                       last_name = :last_name,
@@ -27,7 +71,9 @@ class User {
                       password = :password,
                       phone = :phone,
                       role = :role,
-                      email_verification_code = :code"; // Ajout de la colonne
+                      verified = :verified,
+                      email_verification_code = :verification_code,
+                      verification_code_expires = :verification_expires";
         $stmt = $this->conn->prepare($query);
 
         // Nettoyer les données
@@ -37,7 +83,6 @@ class User {
         $this->password = password_hash($this->password, PASSWORD_DEFAULT);
         $this->phone = htmlspecialchars(strip_tags($this->phone));
         $this->role = htmlspecialchars(strip_tags($this->role));
-        $this->email_verification_code = $this->email_verification_code ?? ''; // Conserve la valeur existante
 
         // Liaison des paramètres
         $stmt->bindParam(":first_name", $this->first_name);
@@ -46,8 +91,101 @@ class User {
         $stmt->bindParam(":password", $this->password);
         $stmt->bindParam(":phone", $this->phone);
         $stmt->bindParam(":role", $this->role);
-        $stmt->bindParam(":code", $this->email_verification_code);
+        $stmt->bindParam(":verified", $this->verified);
+        $stmt->bindParam(":verification_code", $this->email_verification_code);
+        $stmt->bindParam(":verification_expires", $this->verification_code_expires);
 
+        try {
+            $result = $stmt->execute();
+            if (!$result) {
+                error_log("Erreur lors de la création de l'utilisateur: " . print_r($stmt->errorInfo(), true));
+            } else {
+                error_log("Utilisateur créé avec succès. ID: " . $this->conn->lastInsertId());
+                error_log("Code de vérification: " . $this->email_verification_code);
+                error_log("Date d'expiration: " . $this->verification_code_expires);
+            }
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Exception lors de la création de l'utilisateur: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Vérifier le code de vérification
+    public function verifyEmailCode($code) {
+        error_log("Tentative de vérification du code: " . $code);
+        
+        $query = "SELECT * FROM " . $this->table . " 
+                  WHERE email_verification_code = :code 
+                  AND verification_code_expires > NOW() 
+                  AND verified = 0 
+                  LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":code", $code);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Code de vérification valide trouvé pour l'utilisateur: " . $row['email']);
+            $this->id = $row['id'];
+            $this->email = $row['email'];
+            return $row;
+        } else {
+            error_log("Aucun utilisateur trouvé avec ce code de vérification");
+            return false;
+        }
+    }
+
+    // Marquer l'utilisateur comme vérifié
+    public function markAsVerified($user_id) {
+        try {
+            $query = "UPDATE " . $this->table . " 
+                      SET verified = 1, 
+                          email_verification_code = NULL, 
+                          verification_code_expires = NULL 
+                      WHERE id = :user_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":user_id", $user_id);
+            
+            $result = $stmt->execute();
+            if (!$result) {
+                error_log("Erreur SQL lors de la vérification de l'email: " . print_r($stmt->errorInfo(), true));
+            }
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Exception lors de la vérification de l'email: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Vérifier si l'email est vérifié
+    public function isEmailVerified($email) {
+        $query = "SELECT verified FROM " . $this->table . " WHERE email = :email";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":email", $email);
+        $stmt->execute();
+        
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            return $row['verified'] == 1;
+        }
+        return false;
+    }
+
+    // Renvoyer le code de vérification
+    public function resendVerificationCode() {
+        $this->email_verification_code = bin2hex(random_bytes(16));
+        $this->verification_code_expires = date('Y-m-d H:i:s', strtotime('+24 hours'));
+
+        $query = "UPDATE " . $this->table . " 
+                  SET email_verification_code = :code,
+                      verification_code_expires = :expires
+                  WHERE email = :email AND verified = 0";
+        $stmt = $this->conn->prepare($query);
+        
+        $stmt->bindParam(":code", $this->email_verification_code);
+        $stmt->bindParam(":expires", $this->verification_code_expires);
+        $stmt->bindParam(":email", $this->email);
+        
         return $stmt->execute();
     }
 
@@ -105,26 +243,6 @@ class User {
         $stmt->bindParam(':email', $this->email);
         $stmt->execute();
         return $stmt->rowCount() > 0;
-    }
-
-    // Marquer l'utilisateur comme vérifié
-    public function markAsVerified() {
-        $query = "UPDATE " . $this->table . " 
-                  SET verified = 1, email_verification_code = NULL 
-                  WHERE email = :email";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':email', $this->email);
-        return $stmt->execute();
-    }
-
-    // Vérifier si l'utilisateur est vérifié
-    public function isVerified($user_id) {
-        $query = "SELECT verified FROM " . $this->table . " WHERE id = :id";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':id', $user_id);
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row && $row['verified'] == 1;
     }
 
     // Lire tous les utilisateurs

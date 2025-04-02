@@ -2,23 +2,47 @@
 <?php include __DIR__ . '/../../includes/navbar.php'; ?>
 
 <div class="container py-5">
-    <h2 class="text-center mb-4">Vérification de l'email</h2>
-    <?php if (isset($errors) && !empty($errors)): ?>
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                <?php foreach ($errors as $error): ?>
-                    <li><?php echo $error; ?></li>
-                <?php endforeach; ?>
-            </ul>
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-5">
+            <div class="card shadow">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Vérification de l'email</h2>
+                    
+                    <?php if(isset($_SESSION['success'])): ?>
+                        <div class="alert alert-success">
+                            <?php 
+                            echo $_SESSION['success'];
+                            unset($_SESSION['success']);
+                            ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if(isset($_SESSION['error'])): ?>
+                        <div class="alert alert-danger">
+                            <?php 
+                            echo $_SESSION['error'];
+                            unset($_SESSION['error']);
+                            ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="text-center">
+                        <p class="mb-4">Veuillez patienter pendant la vérification de votre email...</p>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    <?php endif; ?>
-    <form method="POST" action="index.php?page=verify-email">
-        <div class="mb-3">
-            <label for="verification_code" class="form-label">Code de vérification</label>
-            <input type="text" class="form-control" id="verification_code" name="verification_code" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Vérifier</button>
-    </form>
+    </div>
 </div>
+
+<script>
+// Rediriger vers la page de connexion après 3 secondes
+setTimeout(function() {
+    window.location.href = 'index.php?page=login';
+}, 3000);
+</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
