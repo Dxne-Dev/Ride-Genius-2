@@ -38,6 +38,9 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                 <div class="search-box">
                     <input type="text" id="searchUsers" placeholder="Rechercher dans Messenger">
                     <i class="fas fa-search"></i>
+                    <div class="search-results">
+                        <!-- Les résultats de recherche seront affichés ici -->
+                    </div>
                 </div>
             </div>
             <div class="conversations-list">
@@ -366,51 +369,78 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         // Recherche d'utilisateurs avec debounce
         $('#searchUsers').on('input', function() {
             const query = $(this).val().trim();
+            const $results = $('.search-results');
+            
             if (query.length < 2) {
-                $('.search-results').removeClass('show').empty();
+                $results.removeClass('show').empty();
                 return;
             }
 
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                $.get('message_api.php', {
-                    action: 'searchUsers',
-                    query: query
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        displaySearchResults(response.users);
+                // Afficher un indicateur de chargement
+                $results.html('<div class="search-loading">Recherche en cours...</div>').addClass('show');
+
+                $.ajax({
+                    url: 'message_api.php',
+                    method: 'GET',
+                    data: {
+                        action: 'searchUsers',
+                        query: query
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            displaySearchResults(response.users || []);
+                        } else {
+                            $results.html(`
+                                <div class="search-error">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <p>${response.message || 'Une erreur est survenue'}</p>
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Erreur AJAX:', error);
+                        $results.html(`
+                            <div class="search-error">
+                                <i class="fas fa-exclamation-circle"></i>
+                                <p>Erreur de connexion au serveur</p>
+                            </div>
+                        `);
                     }
-                })
-                .fail(function() {
-                    showNotification('Erreur lors de la recherche', 'error');
                 });
             }, SEARCH_DELAY);
         });
 
         // Affichage des résultats de recherche
         function displaySearchResults(users) {
-            const $results = $('.search-results').empty();
+            const $results = $('.search-results');
+            $results.empty();
             
-            if (users.length === 0) {
-                $results.append('<div class="no-results">Aucun utilisateur trouvé</div>');
-            } else {
-                users.forEach(user => {
-                    $results.append(`
-                        <div class="search-result-item" data-user-id="${user.id}">
-                            <div class="user-info">
-                                <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar" class="avatar">
-                                <div class="user-details">
-                                    <h4>${user.first_name} ${user.last_name}</h4>
-                                    <p>${user.email}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                });
+            if (!users || users.length === 0) {
+                $results.html(`
+                    <div class="no-results">
+                        <i class="fas fa-user-slash"></i>
+                        <p>Aucun utilisateur trouvé</p>
+                        <span>Vérifiez l'orthographe ou essayez un autre terme</span>
+                    </div>
+                `);
+                return;
             }
             
-            $results.addClass('show');
+            const resultsList = users.map(user => `
+                <div class="search-result-item" data-user-id="${user.id}">
+                    <img src="assets/images/default-avatar.png" alt="Avatar" class="avatar">
+                    <div class="user-details">
+                        <h4>${escapeHtml(user.first_name + ' ' + user.last_name)}</h4>
+                        <p>${escapeHtml(user.email || '')}</p>
+                    </div>
+                </div>
+            `).join('');
+            
+            $results.html(resultsList);
         }
 
         // Gestion des clics sur les résultats de recherche
@@ -419,33 +449,48 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             const userName = $(this).find('h4').text();
             
             // Vérifier si une conversation existe déjà
-            if (!$(`.conversation-item[data-user-id="${userId}"]`).length) {
+            const existingConversation = $(`.conversation-item[data-user-id="${userId}"]`);
+            
+            if (existingConversation.length) {
+                // Sélectionner la conversation existante
+                existingConversation.click();
+                $('.search-results').removeClass('show');
+                $('#searchUsers').val('');
+            } else {
                 // Créer une nouvelle conversation
-                $.post('message_api.php', {
-                    action: 'createConversation',
-                    user_id: userId
-                })
-                .done(function(response) {
-                    if (response.success) {
-                        location.reload(); // Recharger pour afficher la nouvelle conversation
-                    } else {
-                        showNotification('Erreur lors de la création de la conversation', 'error');
+                $.ajax({
+                    url: 'message_api.php',
+                    method: 'POST',
+                    data: {
+                        action: 'createConversation',
+                        user_id: userId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            showNotification('Conversation créée avec succès', 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showNotification(response.message || 'Erreur lors de la création de la conversation', 'error');
+                        }
+                    },
+                    error: function() {
+                        showNotification('Erreur de connexion au serveur', 'error');
                     }
                 });
-            } else {
-                // Sélectionner la conversation existante
-                $(`.conversation-item[data-user-id="${userId}"]`).click();
             }
-            
-            $('.search-results').removeClass('show');
-            $('#searchUsers').val('');
         });
 
         // Fermeture des résultats de recherche lors d'un clic en dehors
         $(document).on('click', function(e) {
-            if (!$(e.target).closest('.search-box, .search-results').length) {
+            if (!$(e.target).closest('.search-box').length) {
                 $('.search-results').removeClass('show');
             }
+        });
+
+        // Empêcher la fermeture lors du clic dans la zone de recherche
+        $('.search-box').on('click', function(e) {
+            e.stopPropagation();
         });
 
         // Fonctions utilitaires

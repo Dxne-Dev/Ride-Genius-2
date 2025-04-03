@@ -25,27 +25,107 @@ class MessageController {
     // Recherche d'utilisateurs
     public function searchUsers($query) {
         try {
-            $sql = "SELECT id, first_name, last_name, email, role, is_verified 
+            // Validation de la requête
+            if (empty($query) || strlen(trim($query)) < 2) {
+                return [
+                    'success' => false,
+                    'message' => "La recherche doit contenir au moins 2 caractères"
+                ];
+            }
+
+            // Nettoyage de la requête
+            $query = trim($query);
+            $searchQuery = "%{$query}%";
+
+            // Vérification de la session
+            if (!isset($_SESSION['user_id'])) {
+                return [
+                    'success' => false,
+                    'message' => "Vous devez être connecté pour effectuer une recherche"
+                ];
+            }
+
+            $sql = "SELECT 
+                        id, 
+                        first_name, 
+                        last_name, 
+                        email, 
+                        CONCAT(first_name, ' ', last_name) as full_name
                     FROM users 
-                    WHERE (first_name LIKE :query 
-                    OR last_name LIKE :query 
-                    OR email LIKE :query)
-                    AND is_verified = 1
-                    AND id != :user_id
-                    LIMIT 10";
+                    WHERE (
+                        LOWER(first_name) LIKE LOWER(:query) 
+                        OR LOWER(last_name) LIKE LOWER(:query)
+                        OR LOWER(CONCAT(first_name, ' ', last_name)) LIKE LOWER(:query)
+                        OR LOWER(email) LIKE LOWER(:query)
+                    )
+                    AND verified = 1 
+                    AND id != :current_user_id
+                    ORDER BY 
+                        CASE 
+                            WHEN LOWER(first_name) = LOWER(:exact_query) THEN 1
+                            WHEN LOWER(last_name) = LOWER(:exact_query) THEN 2
+                            WHEN LOWER(CONCAT(first_name, ' ', last_name)) = LOWER(:exact_query) THEN 3
+                            ELSE 4
+                        END,
+                        first_name ASC,
+                        last_name ASC
+                    LIMIT 20";
             
             $stmt = $this->db->prepare($sql);
-            $searchQuery = "%{$query}%";
             $stmt->execute([
                 ':query' => $searchQuery,
-                ':user_id' => $_SESSION['user_id']
+                ':exact_query' => $query,
+                ':current_user_id' => $_SESSION['user_id']
             ]);
 
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Débogage
+            error_log("Recherche effectuée pour: " . $query);
+            error_log("Nombre de résultats: " . count($users));
+
+            return [
+                'success' => true,
+                'users' => $users,
+                'count' => count($users)
+            ];
         } catch (Exception $e) {
             error_log("Erreur lors de la recherche d'utilisateurs: " . $e->getMessage());
-            return [];
+            return [
+                'success' => false,
+                'message' => "Une erreur est survenue lors de la recherche",
+                'error' => $e->getMessage()
+            ];
         }
+    }
+
+    // Point d'entrée API pour la recherche d'utilisateurs
+    public function handleUserSearch() {
+        // Vérification de la méthode HTTP
+        if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+            return [
+                'success' => false,
+                'message' => "Méthode non autorisée"
+            ];
+        }
+
+        // Récupération et validation de la requête
+        $query = isset($_GET['query']) ? trim($_GET['query']) : '';
+        
+        if (empty($query) || strlen($query) < 2) {
+            return [
+                'success' => false,
+                'message' => "Veuillez entrer au moins 2 caractères"
+            ];
+        }
+
+        // Exécution de la recherche
+        $result = $this->searchUsers($query);
+
+        // Envoi de la réponse JSON
+        header('Content-Type: application/json');
+        echo json_encode($result);
+        exit;
     }
 
     // Envoi d'un message

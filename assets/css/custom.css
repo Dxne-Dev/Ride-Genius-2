@@ -777,15 +777,16 @@ footer a:hover {
 .search-results {
     position: absolute;
     top: calc(100% + 4px);
-    left: 4px;
-    right: 4px;
+    left: 0;
+    right: 0;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     max-height: 400px;
     overflow-y: auto;
     display: none;
-    z-index: 3;
+    z-index: 1000;
+    margin: 0 4px;
 }
 
 .search-results.show {
@@ -793,17 +794,12 @@ footer a:hover {
     animation: slideDown 0.2s ease;
 }
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
 .search-result-item {
-    padding: 8px 12px;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .search-result-item:hover {
@@ -811,20 +807,77 @@ footer a:hover {
 }
 
 .search-result-item .avatar {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+    margin-right: 12px;
+}
+
+.search-result-item .user-details {
+    flex: 1;
 }
 
 .search-result-item .user-details h4 {
     margin: 0;
     font-size: 15px;
     color: #050505;
+    font-weight: 500;
 }
 
 .search-result-item .user-details p {
     margin: 4px 0 0;
     font-size: 13px;
     color: #65676b;
+}
+
+.no-results {
+    padding: 24px 16px;
+    text-align: center;
+    color: #65676b;
+}
+
+.no-results i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: #BCC0C4;
+}
+
+.no-results p {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #050505;
+}
+
+.no-results span {
+    font-size: 13px;
+    color: #65676b;
+    display: block;
+    margin-top: 4px;
+}
+
+.search-loading {
+    padding: 12px 16px;
+    color: #65676b;
+    font-size: 14px;
+    text-align: center;
+}
+
+.search-error {
+    padding: 12px 16px;
+    color: #dc3545;
+    font-size: 14px;
+    text-align: center;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Notifications */
