@@ -13,8 +13,9 @@ if (!$currentUser) {
     exit;
 }
 
-// Récupération des conversations
-$conversations = $this->message->getConversations($_SESSION['user_id']);
+// Récupération des conversations via le contrôleur
+$conversationsResult = $this->getConversations($_SESSION['user_id']);
+$conversations = $conversationsResult['success'] ? $conversationsResult['conversations'] : [];
 ?>
 
 <!DOCTYPE html>
@@ -22,193 +23,697 @@ $conversations = $this->message->getConversations($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messagerie - Ride Genius</title>
+    <title>Messages - Ride Genius</title>
     <link rel="stylesheet" href="assets/css/custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-mart@latest/css/emoji-mart.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar des conversations -->
-            <div class="col-md-4 col-lg-3 chat-sidebar">
-                <div class="chat-header">
-                    <h2>Messages</h2>
-                    <div class="search-box">
-                        <input type="text" id="searchUsers" placeholder="Rechercher un utilisateur...">
-                        <i class="fas fa-search"></i>
-                    </div>
-                </div>
-                <div class="conversations-list">
-                    <?php foreach ($conversations as $conv): ?>
-                        <div class="conversation-item" data-user-id="<?php echo $conv['other_user_id']; ?>">
-                            <div class="user-info">
-                                <img src="assets/images/default-avatar.png" alt="Avatar" class="avatar">
-                                <div class="user-details">
-                                    <h4><?php echo htmlspecialchars($conv['first_name'] . ' ' . $conv['last_name']); ?></h4>
-                                    <p class="last-message"><?php echo htmlspecialchars($conv['last_message'] ?? 'Aucun message'); ?></p>
-                                </div>
-                            </div>
-                            <div class="conversation-meta">
-                                <span class="time"><?php echo date('H:i', strtotime($conv['last_message_at'])); ?></span>
-                                <?php if ($conv['unread_count'] > 0): ?>
-                                    <span class="unread-badge"><?php echo $conv['unread_count']; ?></span>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+    <div class="chat-container">
+        <!-- Sidebar des conversations -->
+        <div class="chat-sidebar">
+            <div class="chat-header">
+                <h2>Messages</h2>
+                <div class="search-box">
+                    <input type="text" id="searchUsers" placeholder="Rechercher dans Messenger">
+                    <i class="fas fa-search"></i>
                 </div>
             </div>
-
-            <!-- Zone de chat principale -->
-            <div class="col-md-8 col-lg-9 chat-main">
-                <div class="chat-header">
-                    <div class="selected-user-info">
-                        <img src="<?php echo $currentUser['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="Avatar" class="avatar">
-                        <h3>Sélectionnez une conversation</h3>
+            <div class="conversations-list">
+                <?php foreach ($conversations as $conv): ?>
+                    <div class="conversation-item" data-user-id="<?php echo $conv['other_user_id']; ?>">
+                        <div class="user-info">
+                            <img src="<?php echo $conv['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="Avatar" class="avatar">
+                            <div class="user-details">
+                                <h4><?php echo htmlspecialchars($conv['first_name'] . ' ' . $conv['last_name']); ?></h4>
+                                <p class="last-message">
+                                    <?php 
+                                    if ($conv['last_message']) {
+                                        echo htmlspecialchars(mb_strimwidth($conv['last_message'], 0, 30, "..."));
+                                    } else {
+                                        echo 'Démarrez une conversation';
+                                    }
+                                    ?>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="conversation-meta">
+                            <?php if ($conv['last_message_at']): ?>
+                                <span class="time"><?php echo date('H:i', strtotime($conv['last_message_at'])); ?></span>
+                            <?php endif; ?>
+                            <?php if ($conv['unread_count'] > 0): ?>
+                                <span class="unread-badge"><?php echo $conv['unread_count']; ?></span>
+                            <?php endif; ?>
+                        </div>
                     </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- Zone de chat principale -->
+        <div class="chat-main">
+            <div class="selected-user-info">
+                <div class="user-info">
+                    <img src="assets/images/default-avatar.png" alt="Avatar" class="avatar">
+                    <h3>Sélectionnez une conversation</h3>
                 </div>
-                <div class="chat-messages" id="chatMessages">
-                    <!-- Les messages seront chargés ici -->
+                <div class="chat-actions">
+                    <button class="chat-action-btn" id="audioCallBtn" title="Appel audio">
+                        <i class="fas fa-phone"></i>
+                    </button>
+                    <button class="chat-action-btn" id="videoCallBtn" title="Appel vidéo">
+                        <i class="fas fa-video"></i>
+                    </button>
+                    <button class="chat-action-btn" id="infoBtn" title="Informations">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
                 </div>
-                <div class="chat-input">
-                    <form id="messageForm">
-                        <input type="text" id="messageInput" placeholder="Écrivez votre message...">
-                        <button type="submit">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </form>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <!-- Les messages seront chargés ici -->
+            </div>
+            
+            <div class="chat-input">
+                <form id="messageForm">
+                    <button type="button" class="chat-action-btn" id="attachmentBtn">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <input type="text" id="messageInput" placeholder="Aa">
+                    <button type="button" class="chat-action-btn" id="emojiBtn">
+                        <i class="far fa-smile"></i>
+                    </button>
+                    <button type="submit">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+                <div id="emojiPicker" class="emoji-picker" style="display: none;"></div>
+                <input type="file" id="fileInput" multiple style="display: none" accept="image/*,video/*">
+            </div>
+
+            <!-- Menu contextuel pour les réactions -->
+            <div id="reactionMenu" class="reaction-menu" style="display: none;">
+                <div class="reaction-list">
+                    <span class="reaction-item" data-emoji="👍">👍</span>
+                    <span class="reaction-item" data-emoji="❤️">❤️</span>
+                    <span class="reaction-item" data-emoji="😂">😂</span>
+                    <span class="reaction-item" data-emoji="😮">😮</span>
+                    <span class="reaction-item" data-emoji="😢">😢</span>
+                    <span class="reaction-item" data-emoji="😡">😡</span>
                 </div>
+            </div>
+        </div>
+
+        <!-- Zone des médias -->
+        <div class="media-attachments">
+            <h4>Médias, fichiers et liens</h4>
+            <div class="media-grid" id="mediaGrid">
+                <!-- Les médias seront chargés ici -->
             </div>
         </div>
     </div>
 
+    <!-- Modal pour les appels -->
+    <div id="callModal" class="call-modal" style="display: none;">
+        <div class="call-content">
+            <div class="call-header">
+                <img src="" alt="Avatar" class="avatar" id="callAvatar">
+                <h3 id="callUserName"></h3>
+                <p id="callStatus"></p>
+            </div>
+            <div class="call-actions">
+                <button class="call-action-btn decline" id="declineCall">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+                <button class="call-action-btn accept" id="acceptCall">
+                    <i class="fas fa-phone"></i>
+                </button>
+            </div>
+            <video id="remoteVideo" autoplay style="display: none;"></video>
+            <video id="localVideo" autoplay muted style="display: none;"></video>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/emoji-mart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
-        // Initialisation de la connexion WebSocket
-        const ws = new WebSocket('ws://localhost:3000');
+        // Configuration
+        const WS_RECONNECT_DELAY = 5000;
+        const WS_MAX_RECONNECT_ATTEMPTS = 5;
+        const NOTIFICATION_DURATION = 3000;
+        const SEARCH_DELAY = 300;
+
+        // État de l'application
         let currentUserId = <?php echo $_SESSION['user_id']; ?>;
         let selectedUserId = null;
+        let ws = null;
+        let wsReconnectAttempts = 0;
+        let searchTimeout = null;
 
-        // Gestion des événements WebSocket
-        ws.onopen = function() {
-            console.log('Connecté au serveur WebSocket');
-            ws.send(JSON.stringify({
-                type: 'auth',
-                userId: currentUserId
-            }));
+        // Configuration WebRTC
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ]
         };
+        let peerConnection = null;
+        let localStream = null;
+        let remoteStream = null;
 
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            if (data.type === 'message' && data.senderId === selectedUserId) {
-                appendMessage(data);
+        // Initialisation de la connexion WebSocket
+        function initWebSocket() {
+            ws = new WebSocket('ws://localhost:3000');
+
+            ws.onopen = function() {
+                console.log('Connecté au serveur WebSocket');
+                wsReconnectAttempts = 0;
+                ws.send(JSON.stringify({
+                    type: 'auth',
+                    userId: currentUserId
+                }));
+                showNotification('Connecté au chat', 'success');
+            };
+
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('Erreur lors du traitement du message:', error);
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('Erreur WebSocket:', error);
+                showNotification('Erreur de connexion au chat', 'error');
+            };
+
+            ws.onclose = function() {
+                console.log('Déconnecté du serveur WebSocket');
+                handleWebSocketClose();
+            };
+        }
+
+        // Gestion des messages WebSocket
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'message':
+                    if (data.senderId === selectedUserId) {
+                        appendMessage(data);
+                    } else {
+                        updateConversationBadge(data.senderId);
+                    }
+                    break;
+                case 'typing':
+                    if (data.userId === selectedUserId) {
+                        updateTypingIndicator(data.isTyping);
+                    }
+                    break;
+                case 'read':
+                    if (data.userId === selectedUserId) {
+                        updateMessageStatus(data.messageIds, 'read');
+                    }
+                    break;
             }
-        };
+        }
 
-        ws.onerror = function(error) {
-            console.error('Erreur WebSocket:', error);
-            showNotification('Erreur de connexion au chat', 'error');
-        };
+        // Gestion de la fermeture WebSocket
+        function handleWebSocketClose() {
+            if (wsReconnectAttempts < WS_MAX_RECONNECT_ATTEMPTS) {
+                wsReconnectAttempts++;
+                showNotification(`Tentative de reconnexion (${wsReconnectAttempts}/${WS_MAX_RECONNECT_ATTEMPTS})`, 'info');
+                setTimeout(initWebSocket, WS_RECONNECT_DELAY);
+            } else {
+                showNotification('Impossible de se reconnecter au chat. Veuillez rafraîchir la page.', 'error');
+            }
+        }
 
-        ws.onclose = function() {
-            console.log('Déconnecté du serveur WebSocket');
-            // Tentative de reconnexion après 5 secondes
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000);
-        };
+        // Fonction pour charger les médias
+        function loadMediaAttachments(userId) {
+            // Simuler le chargement des médias pour l'instant
+            const mediaGrid = $('#mediaGrid');
+            mediaGrid.empty();
+            
+            // Exemple de médias (à remplacer par les vrais médias)
+            const demoImages = [
+                'assets/images/demo/1.jpg',
+                'assets/images/demo/2.jpg',
+                'assets/images/demo/3.jpg',
+                'assets/images/demo/4.jpg',
+                'assets/images/demo/5.jpg',
+                'assets/images/demo/6.jpg'
+            ];
+            
+            demoImages.forEach(src => {
+                mediaGrid.append(`
+                    <div class="media-item">
+                        <img src="${src}" alt="Media">
+                    </div>
+                `);
+            });
+        }
 
-        // Sélection d'une conversation
+        // Mise à jour de la fonction de sélection de conversation
         $('.conversation-item').click(function() {
-            selectedUserId = $(this).data('user-id');
-            loadMessages(selectedUserId);
+            const $this = $(this);
+            selectedUserId = $this.data('user-id');
             
             // Mise à jour de l'interface
             $('.conversation-item').removeClass('active');
-            $(this).addClass('active');
+            $this.addClass('active');
             
             // Mise à jour de l'en-tête
-            const userName = $(this).find('h4').text();
-            $('.selected-user-info h3').text(userName);
+            const userName = $this.find('h4').text();
+            const userAvatar = $this.find('.avatar').attr('src');
+            updateChatHeader(userName, userAvatar);
+            
+            // Chargement des messages et des médias
+            loadMessages(selectedUserId);
+            loadMediaAttachments(selectedUserId);
+            
+            // Marquer les messages comme lus
+            markMessagesAsRead(selectedUserId);
         });
+
+        // Mise à jour de l'en-tête du chat
+        function updateChatHeader(userName, userAvatar) {
+            $('.selected-user-info h3').text(userName);
+            $('.selected-user-info .avatar').attr('src', userAvatar);
+        }
 
         // Chargement des messages
         function loadMessages(userId) {
             $.get('message_api.php', {
                 action: 'getMessages',
                 user_id: userId
-            }, function(response) {
+            })
+            .done(function(response) {
                 if (response.success) {
                     $('#chatMessages').empty();
                     response.messages.forEach(message => {
                         appendMessage(message);
                     });
+                    scrollToBottom();
+                } else {
+                    showNotification('Erreur lors du chargement des messages', 'error');
                 }
+            })
+            .fail(function() {
+                showNotification('Erreur de connexion au serveur', 'error');
             });
         }
 
         // Envoi d'un message
         $('#messageForm').submit(function(e) {
             e.preventDefault();
-            if (!selectedUserId) return;
+            if (!selectedUserId) {
+                showNotification('Veuillez sélectionner une conversation', 'info');
+                return;
+            }
 
-            const message = $('#messageInput').val().trim();
+            const $input = $('#messageInput');
+            const message = $input.val().trim();
             if (!message) return;
+
+            const $submitButton = $(this).find('button[type="submit"]');
+            $submitButton.prop('disabled', true);
 
             $.post('message_api.php', {
                 action: 'sendMessage',
                 receiver_id: selectedUserId,
                 message: message
-            }, function(response) {
+            })
+            .done(function(response) {
                 if (response.success) {
-                    $('#messageInput').val('');
+                    $input.val('');
                     appendMessage(response.message);
+                    scrollToBottom();
+                } else {
+                    showNotification('Erreur lors de l\'envoi du message', 'error');
                 }
+            })
+            .fail(function() {
+                showNotification('Erreur de connexion au serveur', 'error');
+            })
+            .always(function() {
+                $submitButton.prop('disabled', false);
             });
         });
 
-        // Recherche d'utilisateurs
+        // Recherche d'utilisateurs avec debounce
         $('#searchUsers').on('input', function() {
             const query = $(this).val().trim();
-            if (query.length < 2) return;
+            if (query.length < 2) {
+                $('.search-results').removeClass('show').empty();
+                return;
+            }
 
-            $.get('message_api.php', {
-                action: 'searchUsers',
-                query: query
-            }, function(response) {
-                if (response.success) {
-                    // Afficher les résultats de recherche
-                    // À implémenter selon vos besoins
-                }
-            });
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                $.get('message_api.php', {
+                    action: 'searchUsers',
+                    query: query
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        displaySearchResults(response.users);
+                    }
+                })
+                .fail(function() {
+                    showNotification('Erreur lors de la recherche', 'error');
+                });
+            }, SEARCH_DELAY);
+        });
+
+        // Affichage des résultats de recherche
+        function displaySearchResults(users) {
+            const $results = $('.search-results').empty();
+            
+            if (users.length === 0) {
+                $results.append('<div class="no-results">Aucun utilisateur trouvé</div>');
+            } else {
+                users.forEach(user => {
+                    $results.append(`
+                        <div class="search-result-item" data-user-id="${user.id}">
+                            <div class="user-info">
+                                <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar" class="avatar">
+                                <div class="user-details">
+                                    <h4>${user.first_name} ${user.last_name}</h4>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            }
+            
+            $results.addClass('show');
+        }
+
+        // Gestion des clics sur les résultats de recherche
+        $(document).on('click', '.search-result-item', function() {
+            const userId = $(this).data('user-id');
+            const userName = $(this).find('h4').text();
+            
+            // Vérifier si une conversation existe déjà
+            if (!$(`.conversation-item[data-user-id="${userId}"]`).length) {
+                // Créer une nouvelle conversation
+                $.post('message_api.php', {
+                    action: 'createConversation',
+                    user_id: userId
+                })
+                .done(function(response) {
+                    if (response.success) {
+                        location.reload(); // Recharger pour afficher la nouvelle conversation
+                    } else {
+                        showNotification('Erreur lors de la création de la conversation', 'error');
+                    }
+                });
+            } else {
+                // Sélectionner la conversation existante
+                $(`.conversation-item[data-user-id="${userId}"]`).click();
+            }
+            
+            $('.search-results').removeClass('show');
+            $('#searchUsers').val('');
+        });
+
+        // Fermeture des résultats de recherche lors d'un clic en dehors
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.search-box, .search-results').length) {
+                $('.search-results').removeClass('show');
+            }
         });
 
         // Fonctions utilitaires
         function appendMessage(message) {
             const isCurrentUser = message.sender_id === currentUserId;
+            let messageContent = '';
+
+            if (message.type === 'image') {
+                messageContent = `<img src="${message.content}" alt="Image" class="message-image">`;
+            } else if (message.type === 'video') {
+                messageContent = `
+                    <video controls class="message-video">
+                        <source src="${message.content}" type="video/mp4">
+                        Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>`;
+            } else {
+                messageContent = `<p>${escapeHtml(message.content)}</p>`;
+            }
+
             const messageHtml = `
-                <div class="message ${isCurrentUser ? 'sent' : 'received'}">
+                <div class="message ${isCurrentUser ? 'sent' : 'received'}" data-message-id="${message.id}">
                     <div class="message-content">
-                        <p>${message.content}</p>
-                        <span class="message-time">${message.created_at}</span>
+                        ${messageContent}
+                        <span class="message-time">${formatTime(message.created_at)}</span>
                     </div>
+                    <div class="message-reactions"></div>
                 </div>
             `;
+            
             $('#chatMessages').append(messageHtml);
-            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const $messages = $('#chatMessages');
+            $messages.scrollTop($messages[0].scrollHeight);
         }
 
         function showNotification(message, type = 'info') {
             const notification = $('<div>')
                 .addClass(`notification ${type}`)
-                .text(message)
+                .append(`
+                    <i class="fas ${getNotificationIcon(type)}"></i>
+                    <span>${message}</span>
+                `)
                 .appendTo('body');
 
             setTimeout(() => {
                 notification.fadeOut(() => notification.remove());
-            }, 3000);
+            }, NOTIFICATION_DURATION);
         }
+
+        function getNotificationIcon(type) {
+            switch (type) {
+                case 'success': return 'fa-check-circle';
+                case 'error': return 'fa-exclamation-circle';
+                case 'info': return 'fa-info-circle';
+                default: return 'fa-info-circle';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Gestion des appels
+        async function startCall(isVideo = false) {
+            try {
+                const constraints = {
+                    audio: true,
+                    video: isVideo
+                };
+                
+                localStream = await navigator.mediaDevices.getUserMedia(constraints);
+                document.getElementById('localVideo').srcObject = localStream;
+                
+                if (isVideo) {
+                    document.getElementById('localVideo').style.display = 'block';
+                }
+
+                peerConnection = new RTCPeerConnection(configuration);
+                
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                peerConnection.ontrack = event => {
+                    remoteStream = event.streams[0];
+                    document.getElementById('remoteVideo').srcObject = remoteStream;
+                    if (isVideo) {
+                        document.getElementById('remoteVideo').style.display = 'block';
+                    }
+                };
+
+                // Créer et envoyer l'offre
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Envoyer l'offre via WebSocket
+                ws.send(JSON.stringify({
+                    type: 'call-offer',
+                    offer: offer,
+                    target: selectedUserId,
+                    isVideo: isVideo
+                }));
+
+                showCallModal(true, isVideo);
+            } catch (error) {
+                console.error('Erreur lors du démarrage de l\'appel:', error);
+                showNotification('Erreur lors du démarrage de l\'appel', 'error');
+            }
+        }
+
+        function showCallModal(isOutgoing = true, isVideo = false) {
+            const modal = document.getElementById('callModal');
+            const avatar = document.getElementById('callAvatar');
+            const userName = document.getElementById('callUserName');
+            const status = document.getElementById('callStatus');
+            const acceptBtn = document.getElementById('acceptCall');
+            const declineBtn = document.getElementById('declineCall');
+
+            avatar.src = $('.selected-user-info .avatar').attr('src');
+            userName.textContent = $('.selected-user-info h3').text();
+            status.textContent = isOutgoing ? 'Appel en cours...' : 'Appel entrant...';
+
+            acceptBtn.style.display = isOutgoing ? 'none' : 'block';
+            modal.style.display = 'flex';
+
+            if (isVideo) {
+                document.getElementById('localVideo').style.display = 'block';
+                document.getElementById('remoteVideo').style.display = 'block';
+            }
+        }
+
+        // Gestion des émojis
+        let emojiPicker = null;
+        
+        $('#emojiBtn').click(function(e) {
+            e.stopPropagation();
+            const picker = document.getElementById('emojiPicker');
+            
+            if (!emojiPicker) {
+                emojiPicker = new EmojiMart.Picker({
+                    onSelect: emoji => {
+                        document.getElementById('messageInput').value += emoji.native;
+                        picker.style.display = 'none';
+                    },
+                    set: 'native',
+                    theme: 'light',
+                    showPreview: false,
+                    showSkinTones: false,
+                    style: {
+                        position: 'absolute',
+                        bottom: '60px',
+                        right: '10px'
+                    }
+                });
+                picker.appendChild(emojiPicker);
+            }
+            
+            picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Gestion des réactions aux messages
+        $(document).on('contextmenu', '.message', function(e) {
+            e.preventDefault();
+            const messageElement = $(this);
+            const reactionMenu = $('#reactionMenu');
+            
+            reactionMenu.css({
+                display: 'block',
+                left: e.pageX + 'px',
+                top: e.pageY + 'px'
+            });
+
+            $('.reaction-item').off('click').on('click', function() {
+                const emoji = $(this).data('emoji');
+                addReaction(messageElement, emoji);
+                reactionMenu.hide();
+            });
+        });
+
+        function addReaction(messageElement, emoji) {
+            const messageId = messageElement.data('message-id');
+            const reactions = messageElement.find('.message-reactions');
+            
+            if (!reactions.length) {
+                messageElement.append(`
+                    <div class="message-reactions">
+                        <span class="reaction" data-emoji="${emoji}">${emoji} 1</span>
+                    </div>
+                `);
+            } else {
+                const existingReaction = reactions.find(`[data-emoji="${emoji}"]`);
+                if (existingReaction.length) {
+                    const count = parseInt(existingReaction.text().match(/\d+/)[0]) + 1;
+                    existingReaction.html(`${emoji} ${count}`);
+                } else {
+                    reactions.append(`<span class="reaction" data-emoji="${emoji}">${emoji} 1</span>`);
+                }
+            }
+
+            // Envoyer la réaction au serveur
+            $.post('message_api.php', {
+                action: 'addReaction',
+                message_id: messageId,
+                reaction: emoji
+            });
+        }
+
+        // Gestion des pièces jointes
+        $('#attachmentBtn').click(function() {
+            $('#fileInput').click();
+        });
+
+        $('#fileInput').change(function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                const formData = new FormData();
+                for (let i = 0; i < files.length; i++) {
+                    formData.append('files[]', files[i]);
+                }
+                formData.append('receiver_id', selectedUserId);
+                formData.append('action', 'uploadFiles');
+
+                $.ajax({
+                    url: 'message_api.php',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.success) {
+                            response.files.forEach(file => {
+                                appendMessage({
+                                    content: file.url,
+                                    type: file.type,
+                                    sender_id: currentUserId,
+                                    created_at: new Date().toISOString()
+                                });
+                            });
+                            loadMediaAttachments(selectedUserId);
+                        } else {
+                            showNotification('Erreur lors de l\'envoi des fichiers', 'error');
+                        }
+                    },
+                    error: function() {
+                        showNotification('Erreur lors de l\'envoi des fichiers', 'error');
+                    }
+                });
+            }
+        });
+
+        // Gestionnaires d'événements pour les appels
+        $('#audioCallBtn').click(() => startCall(false));
+        $('#videoCallBtn').click(() => startCall(true));
+        $('#declineCall').click(() => endCall());
+        $('#acceptCall').click(() => acceptCall());
+
+        // Initialisation
+        initWebSocket();
     </script>
 </body>
 </html>

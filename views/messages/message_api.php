@@ -1,57 +1,106 @@
 <?php
-require_once dirname(__DIR__, 2) . '/config/database.php';
+session_start();
+require_once '../../models/Message.php';
+require_once '../../models/User.php';
 
-$database = new Database();
-$db = $database->getConnection();
+header('Content-Type: application/json');
 
-$action = $_GET['action'] ?? '';
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['error' => 'Not authenticated']);
+    exit;
+}
+
+$message = new Message();
+$action = $_POST['action'] ?? '';
 
 switch ($action) {
-    case 'sendMessage':
-        sendMessage($db);
-        break;
-    case 'getMessages':
-        getMessages($db);
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
-}
-
-function sendMessage($db) {
-    $sender_id = $_POST['sender_id'] ?? null;
-    $receiver_id = $_POST['receiver_id'] ?? null;
-    $message = $_POST['message'] ?? '';
-
-    if ($sender_id && $receiver_id && $message) {
-        $query = "INSERT INTO messages (sender_id, receiver_id, message) VALUES (:sender_id, :receiver_id, :message)";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':sender_id', $sender_id);
-        $stmt->bindParam(':receiver_id', $receiver_id);
-        $stmt->bindParam(':message', $message);
-
-        if ($stmt->execute()) {
-            echo json_encode(['success' => true]);
+    case 'send':
+        $receiver_id = $_POST['receiver_id'] ?? null;
+        $content = $_POST['content'] ?? '';
+        
+        if ($receiver_id && $content) {
+            $result = $message->create($_SESSION['user_id'], $receiver_id, $content);
+            echo json_encode(['success' => $result !== false]);
         } else {
-            echo json_encode(['success' => false, 'message' => 'Message could not be sent']);
+            echo json_encode(['error' => 'Missing parameters']);
         }
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid input']);
-    }
-}
+        break;
 
-function getMessages($db) {
-    $receiver_id = $_GET['receiver_id'] ?? null;
+    case 'load':
+        $other_user_id = $_POST['other_user_id'] ?? null;
+        
+        if ($other_user_id) {
+            $messages = $message->getConversation($_SESSION['user_id'], $other_user_id);
+            echo json_encode(['success' => true, 'messages' => $messages]);
+        } else {
+            echo json_encode(['error' => 'Missing parameters']);
+        }
+        break;
 
-    if ($receiver_id) {
-        $query = "SELECT * FROM messages WHERE receiver_id = :receiver_id ORDER BY created_at ASC";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':receiver_id', $receiver_id);
-        $stmt->execute();
+    case 'uploadFiles':
+        $receiver_id = $_POST['receiver_id'] ?? null;
+        $uploadedFiles = $_FILES['files'] ?? null;
+        $response = ['success' => false, 'files' => []];
+        
+        if ($receiver_id && $uploadedFiles) {
+            $uploadDir = '../../uploads/messages/';
+            if (!file_exists($uploadDir)) {
+                mkdir($uploadDir, 0777, true);
+            }
 
-        $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['success' => true, 'messages' => $messages]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Invalid input']);
-    }
+            foreach ($uploadedFiles['tmp_name'] as $key => $tmp_name) {
+                $fileName = $uploadedFiles['name'][$key];
+                $fileType = $uploadedFiles['type'][$key];
+                $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+                $newFileName = uniqid() . '_' . time() . '.' . $extension;
+                $targetPath = $uploadDir . $newFileName;
+                
+                if (move_uploaded_file($tmp_name, $targetPath)) {
+                    $type = strpos($fileType, 'image/') === 0 ? 'image' : 
+                           (strpos($fileType, 'video/') === 0 ? 'video' : 'file');
+                    
+                    $url = '/uploads/messages/' . $newFileName;
+                    $content = json_encode(['url' => $url, 'type' => $type]);
+                    
+                    if ($message->create($_SESSION['user_id'], $receiver_id, $content, $type)) {
+                        $response['files'][] = [
+                            'url' => $url,
+                            'type' => $type
+                        ];
+                        $response['success'] = true;
+                    }
+                }
+            }
+        }
+        
+        echo json_encode($response);
+        break;
+
+    case 'addReaction':
+        $message_id = $_POST['message_id'] ?? null;
+        $reaction = $_POST['reaction'] ?? null;
+        
+        if ($message_id && $reaction) {
+            $result = $message->addReaction($message_id, $_SESSION['user_id'], $reaction);
+            echo json_encode(['success' => $result !== false]);
+        } else {
+            echo json_encode(['error' => 'Missing parameters']);
+        }
+        break;
+
+    case 'markAsRead':
+        $other_user_id = $_POST['other_user_id'] ?? null;
+        
+        if ($other_user_id) {
+            $result = $message->markAsRead($_SESSION['user_id'], $other_user_id);
+            echo json_encode(['success' => $result !== false]);
+        } else {
+            echo json_encode(['error' => 'Missing parameters']);
+        }
+        break;
+
+    default:
+        echo json_encode(['error' => 'Invalid action']);
+        break;
 }
 ?>
