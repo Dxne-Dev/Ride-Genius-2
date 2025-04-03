@@ -1,45 +1,60 @@
 <?php
+require_once 'config/database.php';
 require_once 'controllers/MessageController.php';
 
-$messageController = new MessageController();
+session_start();
 
-if ($_GET['action'] === 'getMessages') {
-    echo json_encode($messageController->getMessages($_GET['receiver_id']));
-} elseif ($_GET['action'] === 'sendMessage') {
-    $receiver_id = $_POST['receiver_id'];
-    $message = $_POST['message'] ?? '';
-    $file = null;
-    $file_type = 'text';
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Non authentifié']);
+    exit;
+}
 
-    // Gestion des fichiers uploadés
-    if (!empty($_FILES['file']['name'])) {
-        $uploadDir = __DIR__ . '/uploads/';
-        $fileName = uniqid() . '_' . basename($_FILES['file']['name']);
-        $filePath = $uploadDir . $fileName;
+$database = new Database();
+$db = $database->getConnection();
+$messageController = new MessageController($db);
 
-        if (move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
-            $file = 'uploads/' . $fileName;
-            $file_type = explode('/', $_FILES['file']['type'])[0]; // Détermine le type de fichier (image, video, audio)
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+    case 'searchUsers':
+        $query = $_GET['query'] ?? '';
+        if (strlen($query) >= 2) {
+            $users = $messageController->searchUsers($query);
+            echo json_encode(['success' => true, 'users' => $users]);
         } else {
-            echo json_encode(['success' => false, 'error' => 'Erreur lors du téléchargement du fichier.']);
-            exit();
+            echo json_encode(['success' => false, 'message' => 'La recherche doit contenir au moins 2 caractères']);
         }
-    }
+        break;
 
-    $success = $messageController->sendMessage($receiver_id, $message, $file, $file_type);
-    echo json_encode(['success' => $success]);
-} elseif ($_GET['action'] === 'getConversations') {
-    session_start(); // Assure-toi que la session est démarrée
-    $user_id = $_SESSION['user_id'];
-    $user_role = $_SESSION['user_role'];
-    $conversations = [];
+    case 'sendMessage':
+        $data = json_decode(file_get_contents('php://input'), true);
+        $receiver_id = $data['receiver_id'] ?? null;
+        $message = $data['message'] ?? '';
 
-    if ($user_role === 'passager') {
-        $conversations = $messageController->getPassengerConversations($user_id);
-    } elseif ($user_role === 'conducteur') {
-        $conversations = $messageController->getDriverConversations($user_id);
-    }
+        if ($receiver_id && $message) {
+            $result = $messageController->sendMessage($_SESSION['user_id'], $receiver_id, $message);
+            echo json_encode($result);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Données invalides']);
+        }
+        break;
 
-    echo json_encode($conversations);
+    case 'getMessages':
+        $other_user_id = $_GET['user_id'] ?? null;
+        if ($other_user_id) {
+            $result = $messageController->getMessages($_SESSION['user_id'], $other_user_id);
+            echo json_encode($result);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'ID utilisateur manquant']);
+        }
+        break;
+
+    case 'getConversations':
+        $result = $messageController->getConversations($_SESSION['user_id']);
+        echo json_encode($result);
+        break;
+
+    default:
+        echo json_encode(['success' => false, 'message' => 'Action non valide']);
 }
 ?>

@@ -1,321 +1,214 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+// Vérification de la session
+if (!isset($_SESSION['user_id'])) {
+    header('Location: index.php?page=login');
+    exit;
 }
-require_once dirname(__DIR__, 2) . '/config/database.php';
 
-$database = new Database(); 
-$db = $database->getConnection();
-
-$current_user_id = $_SESSION['user_id'] ?? null;
-$receiver_id = isset($_GET['receiver_id']) ? (int)$_GET['receiver_id'] : 0;
-$jwt_token = $_SESSION['jwt_token'] ?? '';
-
-// Récupération du nom du conducteur
-$driver_name = 'Conducteur inconnu';
-if ($current_user_id) {
-    $query = "SELECT u.first_name, u.last_name 
-              FROM users u
-              JOIN rides r ON u.id = r.driver_id
-              JOIN bookings b ON r.id = b.ride_id
-              WHERE b.passenger_id = :passenger_id
-              LIMIT 1";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':passenger_id', $current_user_id);
-    $stmt->execute();
-    if ($driver = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $driver_name = htmlspecialchars($driver['first_name'] . ' ' . $driver['last_name']);
-    }
+// Récupération des informations de l'utilisateur connecté
+$currentUser = $this->user->findById($_SESSION['user_id']);
+if (!$currentUser) {
+    $_SESSION['error'] = "Utilisateur non trouvé";
+    header('Location: index.php?page=login');
+    exit;
 }
+
+// Récupération des conversations
+$conversations = $this->message->getConversations($_SESSION['user_id']);
 ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chat Application</title>
-  <style>
-    /* Style principal */
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background-color: #0b141a;
-      color: #e9edef;
-      margin: 0;
-      height: 100vh;
-    }
-
-    #chat-container {
-      display: flex;
-      height: 100vh;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    /* Sidebar */
-    #conversations-list {
-      width: 350px;
-      background: #111b21;
-      border-right: 1px solid #2a3942;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #conversations-list h3 {
-      padding: 15px;
-      margin: 0;
-      color: #d1d7db;
-      background: #202c33;
-      font-size: 1.1rem;
-    }
-
-    #conversation-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 5px;
-    }
-
-    .conversation-item {
-      display: flex;
-      align-items: center;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .conversation-item:hover {
-      background: #2a3942;
-    }
-
-    .active-conversation {
-      background: #2d3b44;
-    }
-
-    .default-avatar {
-      width: 49px;
-      height: 49px;
-      border-radius: 50%;
-      background: #54656f;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
-      font-weight: 500;
-      margin-right: 15px;
-    }
-
-    /* Zone de chat */
-    #chat-window {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: #0b141a;
-    }
-
-    #chat-header {
-      padding: 15px 20px;
-      background: #202c33;
-      display: flex;
-      align-items: center;
-      border-bottom: 1px solid #2a3942;
-    }
-
-    #chat-title {
-      margin: 0;
-      font-size: 1.1rem;
-      color: #d1d7db;
-    }
-
-    #messages-container {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      background: #0b141a url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" opacity="0.05"><pattern id="pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="%23ffffff"/></pattern><rect x="0" y="0" width="100%" height="100%" fill="url(%23pattern)"/></svg>');
-    }
-
-    .message {
-      max-width: 65%;
-      padding: 8px 12px;
-      margin-bottom: 10px;
-      border-radius: 7.5px;
-      font-size: 0.95rem;
-      line-height: 1.4;
-      position: relative;
-    }
-
-    .message.sent {
-      background: #005c4b;
-      margin-left: auto;
-      border-bottom-right-radius: 0;
-    }
-
-    .message.received {
-      background: #202c33;
-      margin-right: auto;
-      border-bottom-left-radius: 0;
-    }
-
-    .message small {
-      display: block;
-      font-size: 0.75rem;
-      color: #ffffff99;
-      margin-top: 4px;
-    }
-
-    /* Formulaire */
-    #chat-form {
-      padding: 10px 15px;
-      background: #202c33;
-      display: flex;
-      align-items: center;
-    }
-
-    #message-input {
-      flex: 1;
-      padding: 12px 15px;
-      border-radius: 8px;
-      border: none;
-      background: #2a3942;
-      color: #e9edef;
-      font-size: 1rem;
-    }
-
-    #chat-form button {
-      background: #00a884;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 20px;
-      margin-left: 10px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-  </style>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messagerie - Ride Genius</title>
+    <link rel="stylesheet" href="assets/css/custom.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-<div id="chat-container">
-  <!-- Sidebar -->
-  <div id="conversations-list">
-    <h3>Conversations</h3>
-    <ul id="conversation-list">
-      <?php
-      if ($current_user_id) {
-        $query = "SELECT DISTINCT 
-                    CASE WHEN m.sender_id = :user_id THEN m.receiver_id ELSE m.sender_id END as contact_id,
-                    u.first_name, u.last_name,
-                    MAX(m.created_at) as last_message_date
-                  FROM messages m
-                  JOIN users u ON u.id = CASE WHEN m.sender_id = :user_id THEN m.receiver_id ELSE m.sender_id END
-                  WHERE m.sender_id = :user_id OR m.receiver_id = :user_id
-                  GROUP BY contact_id, u.first_name, u.last_name
-                  ORDER BY last_message_date DESC";
-        
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':user_id', $current_user_id);
-        $stmt->execute();
-        
-        while ($conv = $stmt->fetch(PDO::FETCH_ASSOC)) {
-          $initials = substr($conv['first_name'], 0, 1) . substr($conv['last_name'], 0, 1);
-          $activeClass = $conv['contact_id'] == $receiver_id ? 'active-conversation' : '';
-          echo '<li class="conversation-item ' . $activeClass . '" onclick="window.location=\'?receiver_id=' . $conv['contact_id'] . '\'">
-                  <div class="default-avatar">' . $initials . '</div>
-                  <div>
-                    <div class="contact-name">' . htmlspecialchars($conv['first_name'] . ' ' . $conv['last_name']) . '</div>
-                    <small>' . date('H:i', strtotime($conv['last_message_date'])) . '</small>
-                  </div>
-                </li>';
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar des conversations -->
+            <div class="col-md-4 col-lg-3 chat-sidebar">
+                <div class="chat-header">
+                    <h2>Messages</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchUsers" placeholder="Rechercher un utilisateur...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+                <div class="conversations-list">
+                    <?php foreach ($conversations as $conv): ?>
+                        <div class="conversation-item" data-user-id="<?php echo $conv['other_user_id']; ?>">
+                            <div class="user-info">
+                                <img src="assets/images/default-avatar.png" alt="Avatar" class="avatar">
+                                <div class="user-details">
+                                    <h4><?php echo htmlspecialchars($conv['first_name'] . ' ' . $conv['last_name']); ?></h4>
+                                    <p class="last-message"><?php echo htmlspecialchars($conv['last_message'] ?? 'Aucun message'); ?></p>
+                                </div>
+                            </div>
+                            <div class="conversation-meta">
+                                <span class="time"><?php echo date('H:i', strtotime($conv['last_message_at'])); ?></span>
+                                <?php if ($conv['unread_count'] > 0): ?>
+                                    <span class="unread-badge"><?php echo $conv['unread_count']; ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- Zone de chat principale -->
+            <div class="col-md-8 col-lg-9 chat-main">
+                <div class="chat-header">
+                    <div class="selected-user-info">
+                        <img src="<?php echo $currentUser['profile_image'] ?? 'assets/images/default-avatar.png'; ?>" alt="Avatar" class="avatar">
+                        <h3>Sélectionnez une conversation</h3>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Les messages seront chargés ici -->
+                </div>
+                <div class="chat-input">
+                    <form id="messageForm">
+                        <input type="text" id="messageInput" placeholder="Écrivez votre message...">
+                        <button type="submit">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialisation de la connexion WebSocket
+        const ws = new WebSocket('ws://localhost:3000');
+        let currentUserId = <?php echo $_SESSION['user_id']; ?>;
+        let selectedUserId = null;
+
+        // Gestion des événements WebSocket
+        ws.onopen = function() {
+            console.log('Connecté au serveur WebSocket');
+            ws.send(JSON.stringify({
+                type: 'auth',
+                userId: currentUserId
+            }));
+        };
+
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.type === 'message' && data.senderId === selectedUserId) {
+                appendMessage(data);
+            }
+        };
+
+        ws.onerror = function(error) {
+            console.error('Erreur WebSocket:', error);
+            showNotification('Erreur de connexion au chat', 'error');
+        };
+
+        ws.onclose = function() {
+            console.log('Déconnecté du serveur WebSocket');
+            // Tentative de reconnexion après 5 secondes
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        };
+
+        // Sélection d'une conversation
+        $('.conversation-item').click(function() {
+            selectedUserId = $(this).data('user-id');
+            loadMessages(selectedUserId);
+            
+            // Mise à jour de l'interface
+            $('.conversation-item').removeClass('active');
+            $(this).addClass('active');
+            
+            // Mise à jour de l'en-tête
+            const userName = $(this).find('h4').text();
+            $('.selected-user-info h3').text(userName);
+        });
+
+        // Chargement des messages
+        function loadMessages(userId) {
+            $.get('message_api.php', {
+                action: 'getMessages',
+                user_id: userId
+            }, function(response) {
+                if (response.success) {
+                    $('#chatMessages').empty();
+                    response.messages.forEach(message => {
+                        appendMessage(message);
+                    });
+                }
+            });
         }
-      }
-      ?>
-    </ul>
-  </div>
 
-  <!-- Zone de discussion -->
-  <div id="chat-window">
-    <div id="chat-header">
-      <h4 id="chat-title"><?= $driver_name ?></h4>
-    </div>
-    
-    <div id="messages-container">
-      <!-- Messages chargés dynamiquement -->
-    </div>
-    
-    <form id="chat-form" onsubmit="return false;">
-      <input type="text" id="message-input" placeholder="Écrivez un message..." autocomplete="off">
-      <button type="button" id="send-button">Envoyer</button>
-    </form>
-  </div>
-</div>
+        // Envoi d'un message
+        $('#messageForm').submit(function(e) {
+            e.preventDefault();
+            if (!selectedUserId) return;
 
-<script>
-// Configuration de Socket.IO
-const socket = io('http://127.0.0.1:3000', {
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  query: { token: '<?= addslashes($jwt_token) ?>' }
-});
+            const message = $('#messageInput').val().trim();
+            if (!message) return;
 
-const messagesContainer = document.getElementById('messages-container');
-const chatForm = document.getElementById('chat-form');
-const messageInput = document.getElementById('message-input');
+            $.post('message_api.php', {
+                action: 'sendMessage',
+                receiver_id: selectedUserId,
+                message: message
+            }, function(response) {
+                if (response.success) {
+                    $('#messageInput').val('');
+                    appendMessage(response.message);
+                }
+            });
+        });
 
-// Gestion des événements WebSocket
-socket.on('connect', () => console.log('Connecté au serveur WebSocket'));
-socket.on('disconnect', () => console.log('Déconnecté du serveur WebSocket'));
-socket.on('updateMessages', (data) => renderMessages(data.messages));
+        // Recherche d'utilisateurs
+        $('#searchUsers').on('input', function() {
+            const query = $(this).val().trim();
+            if (query.length < 2) return;
 
-// Affichage des messages
-function renderMessages(messages) {
-  messagesContainer.innerHTML = messages.map(msg => {
-    const isSent = msg.sender_id == <?= $current_user_id ?? 'null' ?>;
-    return `<div class="message ${isSent ? 'sent' : 'received'}">
-              <strong>${isSent ? 'Moi' : msg.first_name}:</strong> ${msg.message}
-              <br><small>${msg.created_at || ''}</small>
-            </div>`;
-  }).join('');
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
+            $.get('message_api.php', {
+                action: 'searchUsers',
+                query: query
+            }, function(response) {
+                if (response.success) {
+                    // Afficher les résultats de recherche
+                    // À implémenter selon vos besoins
+                }
+            });
+        });
 
-// Envoi de message
-document.getElementById('send-button').addEventListener('click', async (e) => {
-  if (!messageInput.value.trim()) return;
+        // Fonctions utilitaires
+        function appendMessage(message) {
+            const isCurrentUser = message.sender_id === currentUserId;
+            const messageHtml = `
+                <div class="message ${isCurrentUser ? 'sent' : 'received'}">
+                    <div class="message-content">
+                        <p>${message.content}</p>
+                        <span class="message-time">${message.created_at}</span>
+                    </div>
+                </div>
+            `;
+            $('#chatMessages').append(messageHtml);
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        }
 
-  try {
-    const formData = new FormData(chatForm);
-    formData.append('receiver_id', <?= $receiver_id ?>);
+        function showNotification(message, type = 'info') {
+            const notification = $('<div>')
+                .addClass(`notification ${type}`)
+                .text(message)
+                .appendTo('body');
 
-    const response = await fetch('/views/messages/message_api.php?action=sendMessage', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer <?= addslashes($jwt_token) ?>' },
-      body: formData
-    });
-
-    const result = await response.json();
-    if (result.success) {
-      messageInput.value = '';
-      socket.emit('sendMessage', {
-        receiver_id: <?= $receiver_id ?>,
-        message: formData.get('message'),
-        file_path: result.file_path || null,
-        file_type: result.file_type || 'text'
-      });
-    }
-  } catch (error) {
-    console.error('Erreur:', error);
-  }
-});
-
-// Chargement initial
-loadMessages();
-function loadMessages() {
-  fetch(`/views/messages/message_api.php?action=getMessages&receiver_id=<?= $receiver_id ?>`)
-    .then(response => response.json())
-    .then(renderMessages)
-    .catch(console.error);
-}
-</script>
+            setTimeout(() => {
+                notification.fadeOut(() => notification.remove());
+            }, 3000);
+        }
+    </script>
 </body>
+</html>

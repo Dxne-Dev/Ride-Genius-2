@@ -1,103 +1,176 @@
 <?php
+require_once 'models/User.php';
+require_once 'models/Message.php';
+
 class MessageController {
     private $db;
+    private $message;
+    private $user;
 
-    public function __construct() {
-        $database = new Database();
-        $this->db = $database->getConnection();
+    public function __construct($db) {
+        $this->db = $db;
+        $this->message = new Message($this->db);
+        $this->user = new User($this->db);
     }
 
-    private function encryptMessage($message) {
-        $key = 'your-secret-key';
-        return openssl_encrypt($message, 'AES-256-CBC', $key, 0, substr($key, 0, 16));
-    }
-
-    private function decryptMessage($encryptedMessage) {
-        $key = 'your-secret-key';
-        return openssl_decrypt($encryptedMessage, 'AES-256-CBC', $key, 0, substr($key, 0, 16));
-    }
-
-    public function sendMessage($receiver_id, $message, $file = null, $file_type = 'text') {
-        $query = "INSERT INTO messages (sender_id, receiver_id, message, file_path, file_type) 
-                    VALUES (:sender_id, :receiver_id, :message, :file_path, :file_type)";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':sender_id', $_SESSION['user_id']);
-        $stmt->bindParam(':receiver_id', $receiver_id);
-        $stmt->bindParam(':message', $message);
-        $stmt->bindParam(':file_path', $file);
-        $stmt->bindParam(':file_type', $file_type);
-        return $stmt->execute();
-    }
-
-    public function getMessages($receiver_id) {
-        $query = "SELECT m.*, u.first_name, u.last_name FROM messages m
-                    JOIN users u ON m.sender_id = u.id
-                    WHERE (m.sender_id = :user_id AND m.receiver_id = :receiver_id)
-                       OR (m.sender_id = :receiver_id AND m.receiver_id = :user_id)
-                    ORDER BY m.created_at ASC";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $_SESSION['user_id']);
-        $stmt->bindParam(':receiver_id', $receiver_id);
-        $stmt->execute();
-        $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($messages as &$row) {
-            $row['message'] = $this->decryptMessage($row['message']);
+    // Protéger les routes
+    private function authGuard() {
+        if(!isset($_SESSION['user_id'])) {
+            $_SESSION['error'] = "Vous devez être connecté pour accéder à cette page";
+            header("Location: index.php?page=login");
+            exit();
         }
-
-        return $messages;
     }
 
-    public function getPassengerConversations($passenger_id) {
-        $query = "
-            SELECT u.id, u.first_name, u.last_name, MAX(m.created_at) AS last_message_time
-            FROM users u
-            JOIN rides r ON u.id = r.driver_id
-            JOIN bookings b ON r.id = b.ride_id
-            LEFT JOIN messages m ON (m.sender_id = u.id OR m.receiver_id = u.id)
-            WHERE b.passenger_id = :passenger_id
-            GROUP BY u.id
-            ORDER BY last_message_time DESC
-        ";
+    // Recherche d'utilisateurs
+    public function searchUsers($query) {
+        try {
+            $sql = "SELECT id, first_name, last_name, email, role, is_verified 
+                    FROM users 
+                    WHERE (first_name LIKE :query 
+                    OR last_name LIKE :query 
+                    OR email LIKE :query)
+                    AND is_verified = 1
+                    AND id != :user_id
+                    LIMIT 10";
+            
+            $stmt = $this->db->prepare($sql);
+            $searchQuery = "%{$query}%";
+            $stmt->execute([
+                ':query' => $searchQuery,
+                ':user_id' => $_SESSION['user_id']
+            ]);
 
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':passenger_id', $passenger_id);
-        $stmt->execute();
-
-        $conversations = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $conversations[] = $row;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Erreur lors de la recherche d'utilisateurs: " . $e->getMessage());
+            return [];
         }
-
-        return $conversations;
     }
 
-    public function getDriverConversations($driver_id) {
-        $query = "
-            SELECT u.id, u.first_name, u.last_name, MAX(m.created_at) AS last_message_time
-            FROM users u
-            JOIN bookings b ON u.id = b.passenger_id
-            JOIN rides r ON b.ride_id = r.id
-            LEFT JOIN messages m ON (m.sender_id = u.id OR m.receiver_id = u.id)
-            WHERE r.driver_id = :driver_id
-            GROUP BY u.id
-            ORDER BY last_message_time DESC
-        ";
+    // Envoi d'un message
+    public function sendMessage($sender_id, $receiver_id, $message) {
+        try {
+            // Vérifier que les deux utilisateurs sont vérifiés
+            $sender = $this->user->findById($sender_id);
+            $receiver = $this->user->findById($receiver_id);
 
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':driver_id', $driver_id);
-        $stmt->execute();
+            if (!$sender['is_verified'] || !$receiver['is_verified']) {
+                return ['success' => false, 'message' => 'Les deux utilisateurs doivent être vérifiés'];
+            }
 
-        $conversations = [];
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $conversations[] = $row;
+            // Créer le message
+            $message_id = $this->message->create($sender_id, $receiver_id, $message);
+            if (!$message_id) {
+                return ['success' => false, 'message' => 'Erreur lors de l\'envoi du message'];
+            }
+
+            // Mettre à jour la conversation
+            $this->updateConversation($sender_id, $receiver_id);
+
+            return [
+                'success' => true,
+                'message_id' => $message_id,
+                'created_at' => date('Y-m-d H:i:s')
+            ];
+        } catch (Exception $e) {
+            error_log("Erreur lors de l'envoi du message: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de l\'envoi du message'];
         }
-
-        return $conversations;
     }
 
+    // Récupération des messages entre deux utilisateurs
+    public function getMessages($user_id, $other_user_id) {
+        try {
+            $messages = $this->message->getMessagesBetweenUsers($user_id, $other_user_id);
+            
+            // Marquer les messages comme lus
+            $this->message->markAsRead($user_id, $other_user_id);
+
+            return [
+                'success' => true,
+                'messages' => $messages
+            ];
+        } catch (Exception $e) {
+            error_log("Erreur lors de la récupération des messages: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la récupération des messages'];
+        }
+    }
+
+    // Mise à jour de la conversation
+    private function updateConversation($user1_id, $user2_id) {
+        try {
+            $sql = "INSERT INTO conversations (user1_id, user2_id, last_message_at) 
+                    VALUES (:user1_id, :user2_id, CURRENT_TIMESTAMP)
+                    ON DUPLICATE KEY UPDATE last_message_at = CURRENT_TIMESTAMP";
+            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':user1_id' => $user1_id,
+                ':user2_id' => $user2_id
+            ]);
+        } catch (Exception $e) {
+            error_log("Erreur lors de la mise à jour de la conversation: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Récupération des conversations d'un utilisateur
+    public function getConversations($user_id) {
+        try {
+            $sql = "SELECT c.*, 
+                    CASE 
+                        WHEN c.user1_id = :user_id THEN c.user2_id 
+                        ELSE c.user1_id 
+                    END as other_user_id,
+                    u.first_name,
+                    u.last_name,
+                    u.email,
+                    (SELECT message FROM messages 
+                     WHERE (sender_id = c.user1_id AND receiver_id = c.user2_id)
+                     OR (sender_id = c.user2_id AND receiver_id = c.user1_id)
+                     ORDER BY created_at DESC LIMIT 1) as last_message,
+                    (SELECT COUNT(*) FROM messages 
+                     WHERE receiver_id = :user_id 
+                     AND sender_id = CASE 
+                        WHEN c.user1_id = :user_id THEN c.user2_id 
+                        ELSE c.user1_id 
+                     END
+                     AND read_at IS NULL) as unread_count
+                    FROM conversations c
+                    JOIN users u ON u.id = CASE 
+                        WHEN c.user1_id = :user_id THEN c.user2_id 
+                        ELSE c.user1_id 
+                    END
+                    WHERE c.user1_id = :user_id OR c.user2_id = :user_id
+                    ORDER BY c.last_message_at DESC";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':user_id' => $user_id]);
+
+            return [
+                'success' => true,
+                'conversations' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+            ];
+        } catch (Exception $e) {
+            error_log("Erreur lors de la récupération des conversations: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la récupération des conversations'];
+        }
+    }
+
+    // Affichage de la page de chat
     public function index() {
-        include "views/messages/chat.php";
+        $this->authGuard();
+        
+        // Récupérer les conversations de l'utilisateur
+        $conversationsResult = $this->getConversations($_SESSION['user_id']);
+        $conversations = $conversationsResult['success'] ? $conversationsResult['conversations'] : [];
+        
+        // Récupérer les informations de l'utilisateur connecté
+        $currentUser = $this->user->findById($_SESSION['user_id']);
+        
+        // Passer les données à la vue
+        require_once 'views/messages/chat.php';
     }
 }
 ?>

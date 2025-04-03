@@ -140,7 +140,9 @@ switch($page) {
     // Page de messagerie
     case 'messages':
         require_once "controllers/MessageController.php";
-        $message = new MessageController();
+        $database = new Database();
+        $db = $database->getConnection();
+        $message = new MessageController($db);
         $message->index();
         break;
     // Page d'accueil par défaut

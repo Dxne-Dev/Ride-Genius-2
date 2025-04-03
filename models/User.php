@@ -245,6 +245,32 @@ class User {
         return $stmt->rowCount() > 0;
     }
 
+    // Trouver un utilisateur par son ID
+    public function findById($id) {
+        try {
+            $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            
+            if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $this->id = $row['id'];
+                $this->first_name = $row['first_name'];
+                $this->last_name = $row['last_name'];
+                $this->email = $row['email'];
+                $this->phone = $row['phone'];
+                $this->role = $row['role'];
+                $this->created_at = $row['created_at'];
+                $this->verified = $row['verified'];
+                return $row;
+            }
+            return false;
+        } catch (Exception $e) {
+            error_log("Erreur lors de la recherche de l'utilisateur: " . $e->getMessage());
+            return false;
+        }
+    }
+
     // Lire tous les utilisateurs
     public function read() {
         $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC";
