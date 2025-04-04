@@ -1,16 +1,28 @@
 <?php
+require_once 'models/Booking.php';
+require_once 'models/Commission.php';
+require_once 'models/BookingTransaction.php';
+require_once 'models/Wallet.php';
 
 class BookingController {
 
     private $db;
     private $booking;
     private $ride;
+    private $bookingModel;
+    private $commissionModel;
+    private $transactionModel;
+    private $walletModel;
 
     public function __construct() {
         $database = new Database();
         $this->db = $database->getConnection();
         $this->booking = new Booking($this->db);
         $this->ride = new Ride($this->db);
+        $this->bookingModel = new Booking($this->db);
+        $this->commissionModel = new Commission($this->db);
+        $this->transactionModel = new BookingTransaction($this->db);
+        $this->walletModel = new Wallet($this->db);
     }
 
     // Protéger les routes
@@ -238,6 +250,147 @@ class BookingController {
             }
             header("Location: index.php?page=my-rides");
             exit();
+        }
+    }
+
+    public function createBooking($data) {
+        try {
+            $this->db->beginTransaction();
+
+            // Vérifier le solde du passager
+            $passengerBalance = $this->walletModel->getBalance($data['passenger_id']);
+            if ($passengerBalance < $data['amount']) {
+                throw new Exception("Solde insuffisant pour effectuer la réservation");
+            }
+
+            // Créer la réservation
+            $bookingId = $this->bookingModel->create($data);
+
+            // Calculer la commission en fonction du type d'abonnement du conducteur
+            $driverSubscription = $this->getDriverSubscriptionType($data['driver_id']);
+            $commission = $this->commissionModel->calculateCommission($data['amount'], $driverSubscription);
+
+            // Créer la transaction
+            $this->transactionModel->createTransaction(
+                $bookingId,
+                $data['passenger_id'],
+                $data['driver_id'],
+                $data['amount'],
+                $commission['amount']
+            );
+
+            // Gérer le paiement selon le type d'abonnement
+            if ($driverSubscription === 'free') {
+                // Pour les conducteurs gratuits, la commission est déduite de leur portefeuille
+                $this->walletModel->deduct($data['driver_id'], $commission['amount']);
+            } else {
+                // Pour les abonnés, la commission est incluse dans le montant payé par le passager
+                $this->walletModel->add($data['passenger_id'], $commission['amount']);
+            }
+
+            // Déduire le montant du passager
+            $this->walletModel->deduct($data['passenger_id'], $data['amount']);
+
+            // Créer l'enregistrement de commission
+            $this->commissionModel->createCommission($bookingId, $commission['amount'], $commission['rate']);
+
+            $this->db->commit();
+            return [
+                'success' => true,
+                'booking_id' => $bookingId,
+                'commission' => $commission
+            ];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    private function getDriverSubscriptionType($driverId) {
+        $query = "SELECT subscription_type FROM users WHERE id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$driverId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['subscription_type'] ?? 'free';
+    }
+
+    public function cancelBooking($bookingId, $userId) {
+        try {
+            $this->db->beginTransaction();
+
+            $booking = $this->bookingModel->getById($bookingId);
+            if (!$booking) {
+                throw new Exception("Réservation non trouvée");
+            }
+
+            if ($booking['passenger_id'] != $userId && $booking['driver_id'] != $userId) {
+                throw new Exception("Non autorisé à annuler cette réservation");
+            }
+
+            // Mettre à jour le statut de la réservation
+            $this->bookingModel->updateStatus($bookingId, 'cancelled');
+
+            // Mettre à jour le statut de la transaction
+            $this->transactionModel->updateStatus($bookingId, 'cancelled');
+
+            // Rembourser le passager
+            $this->walletModel->add($booking['passenger_id'], $booking['amount']);
+
+            // Si le conducteur est en abonnement gratuit, rembourser la commission
+            $driverSubscription = $this->getDriverSubscriptionType($booking['driver_id']);
+            if ($driverSubscription === 'free') {
+                $commission = $this->commissionModel->getCommissionByBooking($bookingId);
+                $this->walletModel->add($booking['driver_id'], $commission['amount']);
+            }
+
+            $this->db->commit();
+            return ['success' => true];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function completeBooking($bookingId) {
+        try {
+            $this->db->beginTransaction();
+
+            $booking = $this->bookingModel->getById($bookingId);
+            if (!$booking) {
+                throw new Exception("Réservation non trouvée");
+            }
+
+            // Mettre à jour le statut de la réservation
+            $this->bookingModel->updateStatus($bookingId, 'completed');
+
+            // Mettre à jour le statut de la transaction
+            $this->transactionModel->updateStatus($bookingId, 'completed');
+
+            // Transférer le montant au conducteur (moins la commission pour les abonnés gratuits)
+            $driverSubscription = $this->getDriverSubscriptionType($booking['driver_id']);
+            if ($driverSubscription === 'free') {
+                $commission = $this->commissionModel->getCommissionByBooking($bookingId);
+                $amountToTransfer = $booking['amount'] - $commission['amount'];
+            } else {
+                $amountToTransfer = $booking['amount'];
+            }
+
+            $this->walletModel->add($booking['driver_id'], $amountToTransfer);
+
+            $this->db->commit();
+            return ['success' => true];
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
         }
     }
 }
