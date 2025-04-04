@@ -80,6 +80,16 @@ class BookingController {
             exit();
         }
 
+        // Calculer le prix total et la commission selon l'abonnement du conducteur
+        $driverSubscription = $this->getDriverSubscriptionType($this->ride->driver_id);
+        $commissionInfo = $this->commissionModel->calculateCommission($this->ride->price, $driverSubscription);
+        
+        // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+        $totalPrice = $this->ride->price;
+        if ($driverSubscription === 'pro') {
+            $totalPrice = $this->ride->price + $commissionInfo['amount'];
+        }
+
         // Traitement du formulaire
         if($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors = [];
@@ -90,9 +100,9 @@ class BookingController {
             }
 
             // Vérifier si le solde est suffisant pour le prix total
-            $totalPrice = $this->ride->price * $_POST['seats'];
-            if ($balance < $totalPrice) {
-                $errors[] = "Solde insuffisant. Il vous manque " . ($totalPrice - $balance) . "€ pour effectuer cette réservation. Veuillez recharger votre wallet.";
+            $totalPriceForSeats = $totalPrice * $_POST['seats'];
+            if ($balance < $totalPriceForSeats) {
+                $errors[] = "Solde insuffisant. Il vous manque " . ($totalPriceForSeats - $balance) . "€ pour effectuer cette réservation. Veuillez recharger votre wallet.";
             }
 
             // Si pas d'erreurs, créer la réservation
@@ -107,16 +117,16 @@ class BookingController {
                     // Calculer la commission selon le type d'abonnement
                     if ($driverSubscription === 'eco') {
                         $commissionRate = 10; // 10% pour eco
-                        $commissionAmount = $totalPrice * 0.10;
-                        $driverAmount = $totalPrice - $commissionAmount;
+                        $commissionAmount = $totalPriceForSeats * 0.10;
+                        $driverAmount = $totalPriceForSeats - $commissionAmount;
                     } elseif ($driverSubscription === 'pro') {
                         $commissionRate = 2; // 2% pour pro
-                        $commissionAmount = $totalPrice * 0.02;
-                        $driverAmount = $totalPrice;
+                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.02;
+                        $driverAmount = $this->ride->price * $_POST['seats'];
                     } else { // business
                         $commissionRate = 0; // 0% pour business
                         $commissionAmount = 0;
-                        $driverAmount = $totalPrice;
+                        $driverAmount = $totalPriceForSeats;
                     }
 
                     // Créer la réservation
@@ -182,6 +192,7 @@ class BookingController {
         
         // Passer la variable $ride à la vue
         $ride = $this->ride;
+        $commission = $commissionInfo;
         include "views/bookings/create.php";
     }
 
