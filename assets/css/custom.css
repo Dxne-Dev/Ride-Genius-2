@@ -666,6 +666,12 @@ footer a:hover {
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    display: block !important; /* Force display when visible */
+}
+
+/* Ensure the emoji picker is visible when active */
+.emoji-picker.active {
+    display: block !important;
 }
 
 /* Call Modal */

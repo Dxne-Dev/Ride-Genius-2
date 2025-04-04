@@ -159,6 +159,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="assets/js/picmo-twemoji.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
@@ -638,39 +639,67 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         // Gestion des émojis
         let emojiPicker = null;
         
+        // Gérer le clic sur le bouton d'émoji
         $('#emojiBtn').click(function(e) {
+            e.preventDefault();
             e.stopPropagation();
             
-            if (!emojiPicker) {
-                emojiPicker = new EmojiButton({
-                    position: 'top-end',
-                    theme: 'light',
-                    autoHide: false,
-                    emojiSize: '1.5rem',
-                    showSearch: true,
-                    showPreview: false,
-                    showRecents: true,
-                    recentsCount: 20,
-                    styleProperties: {
-                        '--category-label-bg-color': '#f0f0f0',
-                        '--category-label-text-color': '#333',
-                        '--emoji-size': '1.5rem',
-                        '--input-border-color': '#ddd',
-                        '--input-border-radius': '5px',
-                        '--input-font-color': '#333',
-                        '--input-placeholder-color': '#999',
-                        '--outline-color': '#007bff'
-                    }
-                });
-                
-                emojiPicker.on('emoji', emoji => {
-                    const input = document.getElementById('messageInput');
-                    input.value += emoji;
-                    input.focus();
-                });
-            }
+            console.log('Bouton émoji cliqué');
             
-            emojiPicker.togglePicker($('#emojiBtn')[0]);
+            // Vérifier si le sélecteur est déjà initialisé
+            if (!emojiPicker) {
+                console.log('Initialisation du sélecteur d\'émojis...');
+                try {
+                    // Créer l'instance de PicmoTwemoji uniquement si elle n'est pas déjà initialisée
+                    emojiPicker = new PicmoTwemoji({
+                        rootElement: document.getElementById('emojiPicker'),
+                        position: 'top-end',
+                        theme: 'light',
+                        showPreview: true,
+                        showRecents: true,
+                        recentsCount: 20,
+                        autoHide: false
+                    });
+                    
+                    // Initialiser le picker
+                    emojiPicker.init().then(picker => {
+                        console.log('Picmo-Twemoji initialisé avec succès');
+                        
+                        // Écouter la sélection d'émoji
+                        picker.on('emoji:select', event => {
+                            console.log('Émoji sélectionné:', event.emoji);
+                            const input = $('#messageInput');
+                            if (input.length) {
+                                input.val(input.val() + event.emoji);
+                                input.focus();
+                            } else {
+                                console.error('Champ de message non trouvé');
+                            }
+                        });
+                        
+                        // Afficher le sélecteur d'émojis
+                        picker.togglePicker($('#emojiBtn')[0]);
+                    }).catch(error => {
+                        console.error('Erreur lors de l\'initialisation de Picmo-Twemoji:', error);
+                        showNotification('Erreur lors du chargement du sélecteur d\'émojis', 'error');
+                    });
+                } catch (error) {
+                    console.error('Erreur lors de l\'initialisation de PicmoTwemoji:', error);
+                    showNotification('Erreur lors de l\'initialisation du sélecteur d\'émojis', 'error');
+                }
+            } else {
+                console.log('Affichage du picker d\'émojis existant');
+                // Si le sélecteur est déjà initialisé, on l'affiche directement
+                emojiPicker.togglePicker($('#emojiBtn')[0]);
+            }
+        });
+
+        // Fermer le picker lors d'un clic en dehors
+        $(document).on('click', function(e) {
+            if (emojiPicker && !$(e.target).closest('.emoji-picker, #emojiBtn').length) {
+                console.log('Fermeture du picker d\'émojis');
+                emojiPicker.hidePicker();
+            }
         });
 
         // Gestion des réactions aux messages

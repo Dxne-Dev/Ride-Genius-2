@@ -68,11 +68,12 @@
                             <i class="fas fa-user me-1"></i><?php echo $_SESSION['user_name']; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="index.php?page=profile">Mon profil</a></li>
-                            <li><a class="dropdown-item" href="index.php?page=edit-profile">Modifier profil</a></li>
-                            <li><a class="dropdown-item" href="index.php?page=change-password">Changer mot de passe</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=profile"><i class="fas fa-user-circle me-1"></i>Mon profil</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=edit-profile"><i class="fas fa-user-edit me-1"></i>Modifier profil</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=change-password"><i class="fas fa-key me-1"></i>Changer mot de passe</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=wallet"><i class="fas fa-wallet me-1"></i>Wallet</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="index.php?page=logout">Déconnexion</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=logout"><i class="fas fa-sign-out-alt me-1"></i>Déconnexion</a></li>
                         </ul>
                     </li>
                 <?php else: ?>

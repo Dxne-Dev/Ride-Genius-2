@@ -9,6 +9,7 @@ require_once "models/User.php";
 require_once "models/Ride.php";
 require_once "models/Booking.php";
 require_once "models/Review.php";
+require_once "models/Wallet.php";
 
 // Inclure les contrôleurs
 require_once "controllers/AuthController.php";
@@ -145,6 +146,17 @@ switch($page) {
         $message = new MessageController($db);
         $message->index();
         break;
+        
+    // Page de wallet
+    case 'wallet':
+        // Vérifier si l'utilisateur est connecté
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: index.php?page=login');
+            exit();
+        }
+        include "views/wallet/wallet.php";
+        break;
+        
     // Page d'accueil par défaut
     default:
         include "views/home.php";

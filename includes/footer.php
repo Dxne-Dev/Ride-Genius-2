@@ -21,7 +21,7 @@
             </div>
             <div class="col-md-4">
                 <h5>Contact</h5>
-                <p><i class="fas fa-envelope me-2"></i>contact@ridegenius.com</p>
+                <p><i class="fas fa-envelope me-2"></i>ridegenius244@gmail.com</p>
                 <p><i class="fas fa-phone me-2"></i>+33 1 23 45 67 89</p>
                 <div class="mt-3">
                     <a href="#" class="text-white me-2"><i class="fab fa-facebook fa-lg"></i></a>
@@ -42,5 +42,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Custom JS -->
 <script src="assets/js/main.js"></script>
+<!-- Wallet JS -->
+<script src="assets/js/wallet.js"></script>
 </body>
 </html>
