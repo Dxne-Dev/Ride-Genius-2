@@ -113,7 +113,17 @@ include __DIR__ . '/../../includes/navbar.php';
         
         <!-- Historique des transactions -->
         <div class="transactions-card">
-            <h3 class="mb-3">Historique des transactions</h3>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3>Historique des transactions</h3>
+                <div class="transaction-filters">
+                    <select class="form-select form-select-sm" id="transactionFilter">
+                        <option value="all">Toutes les transactions</option>
+                        <option value="credit">Dépôts uniquement</option>
+                        <option value="debit">Retraits uniquement</option>
+                    </select>
+                </div>
+            </div>
+            
             <div class="table-responsive">
                 <table class="transactions-table">
                     <thead>
@@ -132,7 +142,7 @@ include __DIR__ . '/../../includes/navbar.php';
                             </tr>
                         <?php else: ?>
                             <?php foreach ($transactions as $transaction): ?>
-                                <tr>
+                                <tr class="transaction-row <?php echo $transaction['type']; ?>">
                                     <td><?php echo date('d/m/Y H:i', strtotime($transaction['created_at'])); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['description']); ?></td>
                                     <td class="<?php echo $transaction['type'] === 'credit' ? 'credit' : 'debit'; ?>">
@@ -144,12 +154,24 @@ include __DIR__ . '/../../includes/navbar.php';
                                             <?php echo $transaction['type'] === 'credit' ? 'Dépôt' : 'Retrait'; ?>
                                         </span>
                                     </td>
-                                    <td><?php echo number_format($transaction['balance_after'], 2); ?>€</td>
+                                    <td class="d-none d-md-table-cell"><?php echo number_format($transaction['balance_after'], 2); ?>€</td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </tbody>
                 </table>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="transaction-summary">
+                    <span class="me-3">Total dépôts: <strong class="text-success"><?php echo number_format($monthlyIncome, 2); ?>€</strong></span>
+                    <span>Total retraits: <strong class="text-danger"><?php echo number_format($monthlyExpenses, 2); ?>€</strong></span>
+                </div>
+                <div class="transaction-pagination">
+                    <button class="btn btn-sm btn-outline-primary" id="loadMoreTransactions">
+                        <i class="fas fa-plus-circle me-1"></i> Charger plus
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -241,3 +263,101 @@ include __DIR__ . '/../../includes/navbar.php';
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage des transactions
+    const transactionFilter = document.getElementById('transactionFilter');
+    const transactionRows = document.querySelectorAll('.transaction-row');
+    const transactionTableBody = document.querySelector('.transactions-table tbody');
+    const transactionSummary = document.querySelector('.transaction-summary');
+    
+    console.log('Nombre de lignes de transactions:', transactionRows.length);
+    
+    // Fonction pour filtrer les transactions
+    function filterTransactions(filterValue) {
+        console.log('Filtrage avec la valeur:', filterValue);
+        
+        // Vider le tableau
+        transactionTableBody.innerHTML = '';
+        
+        // Compteurs pour le résumé
+        let totalCredit = 0;
+        let totalDebit = 0;
+        
+        // Filtrer et ajouter les lignes correspondantes
+        transactionRows.forEach(row => {
+            const isCredit = row.classList.contains('credit');
+            const isDebit = row.classList.contains('debit');
+            
+            console.log('Ligne:', row);
+            console.log('Est crédit:', isCredit);
+            console.log('Est débit:', isDebit);
+            
+            // Appliquer le filtre
+            if (filterValue === 'all' || 
+                (filterValue === 'credit' && isCredit) || 
+                (filterValue === 'debit' && isDebit)) {
+                
+                // Cloner la ligne pour l'ajouter au tableau
+                const newRow = row.cloneNode(true);
+                transactionTableBody.appendChild(newRow);
+                
+                // Mettre à jour les compteurs
+                if (isCredit) {
+                    const amount = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('+', '').replace('€', '').trim());
+                    totalCredit += amount;
+                } else if (isDebit) {
+                    const amount = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('-', '').replace('€', '').trim());
+                    totalDebit += amount;
+                }
+            }
+        });
+        
+        // Mettre à jour le résumé
+        if (transactionSummary) {
+            transactionSummary.innerHTML = `
+                <span class="me-3">Total dépôts: <strong class="text-success">${totalCredit.toFixed(2)}€</strong></span>
+                <span>Total retraits: <strong class="text-danger">${totalDebit.toFixed(2)}€</strong></span>
+            `;
+        }
+        
+        // Afficher un message si aucune transaction ne correspond au filtre
+        if (transactionTableBody.children.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = '<td colspan="5" class="text-center">Aucune transaction correspondant au filtre</td>';
+            transactionTableBody.appendChild(emptyRow);
+        }
+    }
+    
+    // Appliquer le filtre initial
+    filterTransactions(transactionFilter.value);
+    
+    // Écouter les changements de filtre
+    transactionFilter.addEventListener('change', function() {
+        filterTransactions(this.value);
+    });
+    
+    // Chargement de plus de transactions
+    const loadMoreBtn = document.getElementById('loadMoreTransactions');
+    let currentPage = 1;
+    
+    loadMoreBtn.addEventListener('click', function() {
+        currentPage++;
+        // Ici, vous pourriez implémenter une requête AJAX pour charger plus de transactions
+        // Pour l'instant, nous allons simplement simuler le chargement
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Chargement...';
+        
+        setTimeout(() => {
+            this.innerHTML = '<i class="fas fa-plus-circle me-1"></i> Charger plus';
+            // Dans une implémentation réelle, vous mettriez à jour le tableau avec les nouvelles données
+        }, 1000);
+    });
+    
+    // Initialisation des tooltips Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>

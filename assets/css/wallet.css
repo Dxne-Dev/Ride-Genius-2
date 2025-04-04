@@ -124,17 +124,19 @@
 
 .transactions-table th {
     background-color: #f8f9fc;
-    padding: 1rem;
+    padding: 0.75rem;
     font-weight: 600;
     text-align: left;
     color: #5a5c69;
     border-bottom: 2px solid #e3e6f0;
+    font-size: 0.85rem;
 }
 
 .transactions-table td {
-    padding: 1rem;
+    padding: 0.75rem;
     border-bottom: 1px solid #e3e6f0;
     vertical-align: middle;
+    font-size: 0.9rem;
 }
 
 .transactions-table tr:hover {
@@ -143,15 +145,30 @@
 
 .transactions-table .credit {
     color: #28a745;
+    font-weight: 500;
 }
 
 .transactions-table .debit {
     color: #dc3545;
+    font-weight: 500;
+}
+
+.transaction-filters {
+    min-width: 180px;
+}
+
+.transaction-summary {
+    font-size: 0.9rem;
+}
+
+.transaction-pagination {
+    margin-left: 1rem;
 }
 
 .badge {
-    padding: 0.5rem 0.75rem;
+    padding: 0.4rem 0.6rem;
     font-weight: 500;
+    font-size: 0.75rem;
 }
 
 /* Modal styles */
@@ -297,6 +314,11 @@
     .transactions-table th:last-child,
     .transactions-table td:last-child {
         min-width: 100px;
+    }
+    
+    .transaction-summary {
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }
 
