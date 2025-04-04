@@ -31,11 +31,16 @@ $(document).ready(function() {
             url: 'api/subscription_api.php',
             method: 'POST',
             data: { action: 'getActiveSubscription' },
+            timeout: 5000, // 5 secondes de timeout
             success: function(response) {
                 if (response.success && response.subscription) {
                     // Mettre à jour l'interface pour afficher l'abonnement actif
                     updateSubscriptionUI(response.subscription);
                 }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Erreur lors de la vérification de l'abonnement:", textStatus, errorThrown);
+                // Ne pas afficher de notification d'erreur ici pour éviter de perturber l'utilisateur
             }
         });
     }
@@ -103,6 +108,9 @@ $(document).ready(function() {
             return;
         }
         
+        // Afficher une notification de chargement
+        showNotification('Traitement de votre abonnement en cours...', 'info', 'Chargement');
+        
         // Appel AJAX pour souscrire à l'abonnement
         $.ajax({
             url: 'api/subscription_api.php',
@@ -111,6 +119,7 @@ $(document).ready(function() {
                 action: 'subscribe',
                 plan_type: planType
             },
+            timeout: 10000, // 10 secondes de timeout
             success: function(response) {
                 if (response.success) {
                     // Afficher la notification de succès
@@ -131,12 +140,28 @@ $(document).ready(function() {
                     );
                 }
             },
-            error: function() {
-                showNotification(
-                    'Impossible de se connecter au serveur', 
-                    'error', 
-                    'Erreur de connexion'
-                );
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Erreur AJAX:", textStatus, errorThrown);
+                
+                // Vérifier si l'erreur est due à un timeout
+                if (textStatus === "timeout") {
+                    showNotification(
+                        'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si votre abonnement a été créé.', 
+                        'warning', 
+                        'Délai d\'attente dépassé'
+                    );
+                } else {
+                    showNotification(
+                        'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si votre abonnement a été créé.', 
+                        'error', 
+                        'Erreur de connexion'
+                    );
+                }
+                
+                // Vérifier si l'abonnement a été créé malgré l'erreur
+                setTimeout(function() {
+                    checkActiveSubscription();
+                }, 2000);
             }
         });
     }
@@ -144,6 +169,9 @@ $(document).ready(function() {
     // Fonction pour annuler un abonnement
     function cancelSubscription(subscriptionId) {
         if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')) {
+            // Afficher une notification de chargement
+            showNotification('Traitement de l\'annulation en cours...', 'info', 'Chargement');
+            
             $.ajax({
                 url: 'api/subscription_api.php',
                 method: 'POST',
@@ -151,6 +179,7 @@ $(document).ready(function() {
                     action: 'cancelSubscription',
                     subscription_id: subscriptionId
                 },
+                timeout: 10000, // 10 secondes de timeout
                 success: function(response) {
                     if (response.success) {
                         showNotification('Votre abonnement a été annulé avec succès', 'success', 'Abonnement annulé');
@@ -159,8 +188,22 @@ $(document).ready(function() {
                         showNotification(response.message || 'Une erreur est survenue lors de l\'annulation', 'error', 'Erreur');
                     }
                 },
-                error: function() {
-                    showNotification('Impossible de se connecter au serveur', 'error', 'Erreur de connexion');
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    if (textStatus === "timeout") {
+                        showNotification(
+                            'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
+                            'warning', 
+                            'Délai d\'attente dépassé'
+                        );
+                    } else {
+                        showNotification(
+                            'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
+                            'error', 
+                            'Erreur de connexion'
+                        );
+                    }
                 }
             });
         }
@@ -168,6 +211,9 @@ $(document).ready(function() {
 
     // Fonction pour activer/désactiver le renouvellement automatique
     function toggleAutoRenew(subscriptionId, autoRenew) {
+        // Afficher une notification de chargement
+        showNotification('Mise à jour des paramètres en cours...', 'info', 'Chargement');
+        
         $.ajax({
             url: 'api/subscription_api.php',
             method: 'POST',
@@ -176,6 +222,7 @@ $(document).ready(function() {
                 subscription_id: subscriptionId,
                 auto_renew: autoRenew
             },
+            timeout: 10000, // 10 secondes de timeout
             success: function(response) {
                 if (response.success) {
                     showNotification(
@@ -188,8 +235,22 @@ $(document).ready(function() {
                     showNotification(response.message || 'Une erreur est survenue', 'error', 'Erreur');
                 }
             },
-            error: function() {
-                showNotification('Impossible de se connecter au serveur', 'error', 'Erreur de connexion');
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Erreur AJAX:", textStatus, errorThrown);
+                
+                if (textStatus === "timeout") {
+                    showNotification(
+                        'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
+                        'warning', 
+                        'Délai d\'attente dépassé'
+                    );
+                } else {
+                    showNotification(
+                        'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
+                        'error', 
+                        'Erreur de connexion'
+                    );
+                }
             }
         });
     }
