@@ -136,14 +136,23 @@ include __DIR__ . '/../../includes/navbar.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if (empty($transactions)): ?>
-                            <tr>
+                        <?php if (empty($transactions)): ?>                        <tr>
                                 <td colspan="5" class="text-center">Aucune transaction</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($transactions as $transaction): ?>
-                                <tr class="transaction-row <?php echo $transaction['type']; ?>">
-                                    <td><?php echo date('d/m/Y H:i', strtotime($transaction['created_at'])); ?></td>
+                                <tr class="transaction-row <?php echo $transaction['type']; ?>" data-date="<?php echo $transaction['created_at']; ?>">
+                                    <td data-date-raw="<?php echo $transaction['created_at']; ?>">
+                                        <?php 
+                                        // Vérifier si la date est valide avant de l'afficher
+                                        $date = $transaction['created_at'];
+                                        if (!empty($date) && $date != '0000-00-00 00:00:00') {
+                                            echo date('d/m/Y H:i', strtotime($date));
+                                        } else {
+                                            echo "Date inconnue";
+                                        }
+                                        ?>
+                                    </td>
                                     <td><?php echo htmlspecialchars($transaction['description']); ?></td>
                                     <td class="<?php echo $transaction['type'] === 'credit' ? 'credit' : 'debit'; ?>">
                                         <?php echo $transaction['type'] === 'credit' ? '+' : '-'; ?>
@@ -266,51 +275,93 @@ include __DIR__ . '/../../includes/navbar.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Filtrage des transactions
+    // Éléments du DOM
     const transactionFilter = document.getElementById('transactionFilter');
-    const transactionRows = document.querySelectorAll('.transaction-row');
     const transactionTableBody = document.querySelector('.transactions-table tbody');
     const transactionSummary = document.querySelector('.transaction-summary');
+    const loadMoreBtn = document.getElementById('loadMoreTransactions');
     
-    console.log('Nombre de lignes de transactions:', transactionRows.length);
+    // Fonction simplifiée pour formater la date
+    function formatDate(dateString) {
+        try {
+            // Vérifier si la date est vide ou invalide
+            if (!dateString || dateString === '0000-00-00 00:00:00' || dateString === 'null') {
+                return "Date inconnue";
+            }
+            
+            // Créer un objet Date à partir de la chaîne
+            const date = new Date(dateString);
+            
+            // Vérifier si la date est valide
+            if (isNaN(date.getTime())) {
+                console.error('Date invalide:', dateString);
+                return "Date inconnue";
+            }
+            
+            // Formater la date au format JJ/MM/AA HH:MM
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear()).substr(-2);
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        } catch (error) {
+            console.error('Erreur lors du formatage de la date:', error);
+            return "Date inconnue";
+        }
+    }
     
-    // Fonction pour filtrer les transactions
+    // Fonction pour filtrer et afficher les transactions
     function filterTransactions(filterValue) {
-        console.log('Filtrage avec la valeur:', filterValue);
-        
-        // Vider le tableau
-        transactionTableBody.innerHTML = '';
+        // Récupérer toutes les lignes de transaction
+        const rows = document.querySelectorAll('.transaction-row');
         
         // Compteurs pour le résumé
         let totalCredit = 0;
         let totalDebit = 0;
+        let visibleCount = 0;
         
-        // Filtrer et ajouter les lignes correspondantes
-        transactionRows.forEach(row => {
-            const isCredit = row.classList.contains('credit');
-            const isDebit = row.classList.contains('debit');
+        // Vider le tableau
+        transactionTableBody.innerHTML = '';
+        
+        // Parcourir toutes les lignes
+        rows.forEach(row => {
+            const type = row.classList.contains('credit') ? 'credit' : 'debit';
             
-            console.log('Ligne:', row);
-            console.log('Est crédit:', isCredit);
-            console.log('Est débit:', isDebit);
-            
-            // Appliquer le filtre
-            if (filterValue === 'all' || 
-                (filterValue === 'credit' && isCredit) || 
-                (filterValue === 'debit' && isDebit)) {
-                
-                // Cloner la ligne pour l'ajouter au tableau
+            // Vérifier si la ligne correspond au filtre
+            if (filterValue === 'all' || filterValue === type) {
+                // Cloner la ligne
                 const newRow = row.cloneNode(true);
+                
+                // Formater la date
+                const dateCell = newRow.querySelector('td:first-child');
+                if (dateCell) {
+                    const rawDate = dateCell.getAttribute('data-date-raw');
+                    if (rawDate) {
+                        dateCell.textContent = formatDate(rawDate);
+                    }
+                }
+                
+                // Ajouter la ligne au tableau
                 transactionTableBody.appendChild(newRow);
                 
                 // Mettre à jour les compteurs
-                if (isCredit) {
-                    const amount = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('+', '').replace('€', '').trim());
-                    totalCredit += amount;
-                } else if (isDebit) {
-                    const amount = parseFloat(row.querySelector('td:nth-child(3)').textContent.replace('-', '').replace('€', '').trim());
-                    totalDebit += amount;
+                const amountCell = newRow.querySelector('td:nth-child(3)');
+                if (amountCell) {
+                    const amountText = amountCell.textContent.trim();
+                    const amount = parseFloat(amountText.replace(/[^0-9.-]+/g, ''));
+                    
+                    if (!isNaN(amount)) {
+                        if (type === 'credit') {
+                            totalCredit += amount;
+                        } else {
+                            totalDebit += amount;
+                        }
+                    }
                 }
+                
+                visibleCount++;
             }
         });
         
@@ -323,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Afficher un message si aucune transaction ne correspond au filtre
-        if (transactionTableBody.children.length === 0) {
+        if (visibleCount === 0) {
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = '<td colspan="5" class="text-center">Aucune transaction correspondant au filtre</td>';
             transactionTableBody.appendChild(emptyRow);
@@ -339,13 +390,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Chargement de plus de transactions
-    const loadMoreBtn = document.getElementById('loadMoreTransactions');
-    let currentPage = 1;
-    
     loadMoreBtn.addEventListener('click', function() {
-        currentPage++;
-        // Ici, vous pourriez implémenter une requête AJAX pour charger plus de transactions
-        // Pour l'instant, nous allons simplement simuler le chargement
+        // Simuler le chargement
         this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Chargement...';
         
         setTimeout(() => {
