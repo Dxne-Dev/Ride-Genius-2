@@ -3,6 +3,8 @@ session_start();
 require_once '../config/database.php';
 require_once '../models/Wallet.php';
 
+header('Content-Type: application/json');
+
 // Vérification de la session
 if (!isset($_SESSION['user_id'])) {
     echo json_encode([
@@ -13,6 +15,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
+$database = new Database();
+$db = $database->getConnection();
 $wallet = new Wallet($db);
 
 // Récupération de l'action demandée
@@ -36,87 +40,82 @@ switch ($action) {
         break;
 
     case 'addFunds':
-        // Validation des données
-        if (!isset($_POST['amount']) || !isset($_POST['paymentMethod'])) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Données manquantes'
-            ]);
-            exit();
-        }
+        $amount = floatval($_POST['amount'] ?? 0);
+        $paymentMethod = $_POST['paymentMethod'] ?? '';
+        $description = $_POST['description'] ?? 'Dépôt de fonds';
 
-        $amount = floatval($_POST['amount']);
-        $paymentMethod = $_POST['paymentMethod'];
-        $description = $_POST['description'] ?? '';
-
-        // Validation du montant
         if ($amount <= 0) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Le montant doit être supérieur à 0'
             ]);
-            exit();
+            break;
         }
 
-        // Ajout des fonds
-        if ($wallet->addFunds($userId, $amount, $paymentMethod, $description)) {
+        // En mode sandbox, on accepte tous les paiements
+        if ($paymentMethod === 'sandbox') {
+            $result = $wallet->addFunds($userId, $amount, $description);
             echo json_encode([
-                'success' => true,
-                'message' => 'Fonds ajoutés avec succès'
+                'success' => $result,
+                'message' => $result ? 'Fonds ajoutés avec succès' : 'Erreur lors de l\'ajout des fonds'
             ]);
         } else {
+            // En mode démonstration, on accepte tous les paiements
+            $result = $wallet->addFunds($userId, $amount, $description);
             echo json_encode([
-                'success' => false,
-                'message' => 'Erreur lors de l\'ajout des fonds'
+                'success' => $result,
+                'message' => $result ? 'Fonds ajoutés avec succès' : 'Erreur lors de l\'ajout des fonds'
             ]);
         }
         break;
 
     case 'withdrawFunds':
-        // Validation des données
-        if (!isset($_POST['amount']) || !isset($_POST['withdrawMethod'])) {
-            echo json_encode([
-                'success' => false,
-                'message' => 'Données manquantes'
-            ]);
-            exit();
-        }
+        $amount = floatval($_POST['amount'] ?? 0);
+        $withdrawMethod = $_POST['withdrawMethod'] ?? '';
+        $description = $_POST['description'] ?? 'Retrait de fonds';
 
-        $amount = floatval($_POST['amount']);
-        $withdrawMethod = $_POST['withdrawMethod'];
-        $description = $_POST['description'] ?? '';
-
-        // Validation du montant
         if ($amount <= 0) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Le montant doit être supérieur à 0'
             ]);
-            exit();
+            break;
         }
 
-        // Vérification du solde
-        $currentBalance = $wallet->getBalance($userId);
-        if ($amount > $currentBalance) {
+        // Vérifier le solde disponible
+        $balance = $wallet->getBalance($userId);
+        if ($balance < $amount) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Solde insuffisant'
             ]);
-            exit();
+            break;
         }
 
-        // Retrait des fonds
-        if ($wallet->withdrawFunds($userId, $amount, $withdrawMethod, $description)) {
+        // En mode sandbox, on accepte tous les retraits
+        if ($withdrawMethod === 'sandbox') {
+            $result = $wallet->withdrawFunds($userId, $amount, $description);
             echo json_encode([
-                'success' => true,
-                'message' => 'Retrait effectué avec succès'
+                'success' => $result,
+                'message' => $result ? 'Fonds retirés avec succès' : 'Erreur lors du retrait des fonds'
             ]);
         } else {
+            // En mode démonstration, on accepte tous les retraits
+            $result = $wallet->withdrawFunds($userId, $amount, $description);
             echo json_encode([
-                'success' => false,
-                'message' => 'Erreur lors du retrait des fonds'
+                'success' => $result,
+                'message' => $result ? 'Fonds retirés avec succès' : 'Erreur lors du retrait des fonds'
             ]);
         }
+        break;
+
+    case 'resetBalance':
+        $amount = floatval($_POST['amount'] ?? 100);
+        $result = $wallet->resetBalance($userId, $amount);
+        echo json_encode([
+            'success' => $result,
+            'message' => $result ? 'Solde réinitialisé avec succès' : 'Erreur lors de la réinitialisation du solde'
+        ]);
         break;
 
     default:

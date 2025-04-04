@@ -30,7 +30,14 @@ include __DIR__ . '/../../includes/navbar.php';
 
 <div class="container mt-5 pt-5">
     <div class="wallet-container">
-        <h1 class="mb-4"><i class="fas fa-wallet me-2"></i>Mon Wallet</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-wallet me-2"></i>Mon Wallet</h1>
+            <div class="sandbox-badge">
+                <span class="badge bg-warning text-dark">
+                    <i class="fas fa-flask me-1"></i> Mode démonstration
+                </span>
+            </div>
+        </div>
         
         <!-- Carte de solde -->
         <div class="balance-card mb-4">
@@ -46,6 +53,40 @@ include __DIR__ . '/../../includes/navbar.php';
                         </button>
                         <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#withdrawFundsModal">
                             <i class="fas fa-minus-circle me-1"></i> Retirer des fonds
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Boutons de simulation rapide -->
+        <div class="quick-actions mb-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Actions rapides (Mode démonstration)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6>Simuler un dépôt</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="10">10€</button>
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="50">50€</button>
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="100">100€</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Simuler un retrait</h6>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="10">10€</button>
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="50">50€</button>
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="100">100€</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-outline-secondary" id="resetBalance">
+                            <i class="fas fa-redo me-1"></i> Réinitialiser le solde à 100€
                         </button>
                     </div>
                 </div>
@@ -94,15 +135,16 @@ include __DIR__ . '/../../includes/navbar.php';
                                 <tr>
                                     <td><?php echo date('d/m/Y H:i', strtotime($transaction['created_at'])); ?></td>
                                     <td><?php echo htmlspecialchars($transaction['description']); ?></td>
-                                    <td class="<?php echo $transaction['type'] === 'credit' ? 'text-success' : 'text-danger'; ?>">
-                                        <?php echo ($transaction['type'] === 'credit' ? '+' : '-') . number_format($transaction['amount'], 2); ?> €
+                                    <td class="<?php echo $transaction['type'] === 'credit' ? 'credit' : 'debit'; ?>">
+                                        <?php echo $transaction['type'] === 'credit' ? '+' : '-'; ?>
+                                        <?php echo number_format($transaction['amount'], 2); ?>€
                                     </td>
                                     <td>
                                         <span class="badge <?php echo $transaction['type'] === 'credit' ? 'bg-success' : 'bg-danger'; ?>">
-                                            <?php echo $transaction['type'] === 'credit' ? 'Crédit' : 'Débit'; ?>
+                                            <?php echo $transaction['type'] === 'credit' ? 'Dépôt' : 'Retrait'; ?>
                                         </span>
                                     </td>
-                                    <td class="d-none d-md-table-cell"><?php echo number_format($transaction['balance_after'], 2); ?> €</td>
+                                    <td><?php echo number_format($transaction['balance_after'], 2); ?>€</td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -114,7 +156,7 @@ include __DIR__ . '/../../includes/navbar.php';
 </div>
 
 <!-- Modal Ajouter des fonds -->
-<div class="modal fade" id="addFundsModal" tabindex="-1" aria-labelledby="addFundsModalLabel" aria-hidden="true">
+<div class="modal fade" id="addFundsModal" tabindex="-1" aria-labelledby="addFundsModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -150,7 +192,7 @@ include __DIR__ . '/../../includes/navbar.php';
 </div>
 
 <!-- Modal Retirer des fonds -->
-<div class="modal fade" id="withdrawFundsModal" tabindex="-1" aria-labelledby="withdrawFundsModalLabel" aria-hidden="true">
+<div class="modal fade" id="withdrawFundsModal" tabindex="-1" aria-labelledby="withdrawFundsModalLabel">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
