@@ -12,6 +12,9 @@ class Wallet {
      * @return float Solde actuel
      */
     public function getBalance($userId) {
+        // Vérifier si le wallet existe, sinon le créer
+        $this->ensureWalletExists($userId);
+        
         $query = "SELECT balance FROM wallets WHERE user_id = ?";
         $stmt = $this->db->prepare($query);
         $stmt->execute([$userId]);
@@ -20,14 +23,36 @@ class Wallet {
     }
 
     /**
+     * S'assure qu'un wallet existe pour l'utilisateur
+     * @param int $userId ID de l'utilisateur
+     * @return bool True si le wallet existe ou a été créé
+     */
+    private function ensureWalletExists($userId) {
+        $query = "SELECT id FROM wallets WHERE user_id = ?";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([$userId]);
+        
+        if (!$stmt->fetch()) {
+            return $this->createWallet($userId);
+        }
+        
+        return true;
+    }
+
+    /**
      * Crée un wallet pour un utilisateur
      * @param int $userId ID de l'utilisateur
      * @return bool Succès de l'opération
      */
     public function createWallet($userId) {
-        $query = "INSERT INTO wallets (user_id, balance) VALUES (?, 0)";
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([$userId]);
+        try {
+            $query = "INSERT INTO wallets (user_id, balance, created_at) VALUES (?, 0, NOW())";
+            $stmt = $this->db->prepare($query);
+            return $stmt->execute([$userId]);
+        } catch (Exception $e) {
+            error_log("Erreur lors de la création du wallet: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**

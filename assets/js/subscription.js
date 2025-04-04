@@ -7,33 +7,14 @@ $(document).ready(function() {
         }).format(amount);
     }
 
-    // Fonction pour afficher les notifications
-    function showNotification(message, type = 'success') {
-        const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.setAttribute('aria-live', 'assertive');
-        toast.setAttribute('aria-atomic', 'true');
-        
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        `;
-        
-        const container = document.getElementById('toastContainer') || createToastContainer();
-        container.appendChild(toast);
-        
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.show();
-        
-        // Supprimer le toast après qu'il soit caché
-        toast.addEventListener('hidden.bs.toast', () => {
-            toast.remove();
-        });
+    // Fonction pour afficher une notification flottante
+    function showNotification(message, type = 'success', title = null) {
+        if (typeof showFloatingNotification === 'function') {
+            showFloatingNotification(message, type, title);
+        } else {
+            // Fallback si la fonction n'est pas disponible
+            alert(message);
+        }
     }
 
     function createToastContainer() {
@@ -59,72 +40,70 @@ $(document).ready(function() {
         });
     }
 
-    // Mettre à jour l'interface en fonction de l'abonnement actif
+    // Fonction pour mettre à jour l'interface utilisateur après une souscription
     function updateSubscriptionUI(subscription) {
-        const subscriptionInfo = document.getElementById('subscriptionInfo');
-        const subscriptionSection = document.querySelector('.subscription-section');
+        // Cacher la section des abonnements
+        $('.subscription-section').hide();
         
-        if (subscription) {
-            // Masquer la section des abonnements
-            if (subscriptionSection) {
-                subscriptionSection.style.display = 'none';
-            }
-            
-            // Afficher les informations de l'abonnement actif
-            subscriptionInfo.innerHTML = `
-                <div class="alert alert-success">
-                    <h4 class="alert-heading">Abonnement actif : ${subscription.plan_type.toUpperCase()}</h4>
-                    <p>Date de début : ${new Date(subscription.start_date).toLocaleDateString()}</p>
-                    <p>Date de fin : ${new Date(subscription.end_date).toLocaleDateString()}</p>
-                    <p>Renouvellement automatique : ${subscription.auto_renew ? 'Activé' : 'Désactivé'}</p>
-                    <hr>
-                    <button class="btn btn-danger" onclick="cancelSubscription()">Annuler l'abonnement</button>
-                    <button class="btn btn-secondary" onclick="toggleAutoRenew()">
-                        ${subscription.auto_renew ? 'Désactiver' : 'Activer'} le renouvellement automatique
-                    </button>
+        // Afficher les informations de l'abonnement actif
+        const subscriptionInfo = $('#subscriptionInfo');
+        subscriptionInfo.html(`
+            <div class="container">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h3 class="card-title">Votre abonnement actif</h3>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Type d'abonnement:</strong> ${subscription.plan_type}</p>
+                                <p><strong>Date de début:</strong> ${new Date(subscription.start_date).toLocaleDateString()}</p>
+                                <p><strong>Date de fin:</strong> ${new Date(subscription.end_date).toLocaleDateString()}</p>
+                                <p><strong>Renouvellement automatique:</strong> ${subscription.auto_renew ? 'Activé' : 'Désactivé'}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex justify-content-end">
+                                    <button class="btn btn-outline-danger me-2" onclick="cancelSubscription(${subscription.id})">
+                                        <i class="fas fa-times-circle"></i> Annuler l'abonnement
+                                    </button>
+                                    <button class="btn btn-outline-primary" onclick="toggleAutoRenew(${subscription.id}, ${subscription.auto_renew ? 0 : 1})">
+                                        <i class="fas fa-sync"></i> ${subscription.auto_renew ? 'Désactiver' : 'Activer'} le renouvellement
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `;
-        } else {
-            // Afficher la section des abonnements
-            if (subscriptionSection) {
-                subscriptionSection.style.display = 'block';
-            }
-            
-            // Masquer les informations d'abonnement
-            subscriptionInfo.innerHTML = '';
-        }
+            </div>
+        `);
+        subscriptionInfo.show();
     }
 
-    // Annuler un abonnement
-    function cancelSubscription() {
-        $.ajax({
-            url: 'api/subscription_api.php',
-            method: 'POST',
-            data: { action: 'cancelSubscription' },
-            success: function(response) {
-                if (response.success) {
-                    showNotification(response.message, 'success');
-                    // Recharger la page pour mettre à jour l'interface
-                    setTimeout(function() {
-                        location.reload();
-                    }, 2000);
-                } else {
-                    showNotification(response.message, 'error');
+    // Fonction pour vérifier si l'utilisateur est connecté
+    function isLoggedIn() {
+        return new Promise((resolve) => {
+            $.ajax({
+                url: 'api/auth_api.php',
+                method: 'POST',
+                data: { action: 'checkAuth' },
+                success: function(response) {
+                    resolve(response.isLoggedIn);
+                },
+                error: function() {
+                    resolve(false);
                 }
-            },
-            error: function() {
-                showNotification('Erreur lors de la communication avec le serveur', 'error');
-            }
+            });
         });
     }
 
-    // Souscrire à un abonnement
-    function subscribe(planType) {
-        if (!isUserLoggedIn()) {
-            showNotification('Veuillez vous connecter pour souscrire à un abonnement', 'warning');
+    // Fonction pour souscrire à un abonnement
+    async function subscribeToPlan(planType) {
+        // Vérifier si l'utilisateur est connecté
+        const loggedIn = await isLoggedIn();
+        if (!loggedIn) {
+            showNotification('Vous devez être connecté pour souscrire à un abonnement', 'error', 'Erreur');
             return;
         }
         
+        // Appel AJAX pour souscrire à l'abonnement
         $.ajax({
             url: 'api/subscription_api.php',
             method: 'POST',
@@ -134,35 +113,93 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    showNotification('Abonnement souscrit avec succès !', 'success');
-                    checkActiveSubscription();
+                    // Afficher la notification de succès
+                    showNotification(
+                        'Votre abonnement ' + planType + ' est maintenant actif jusqu\'au ' + new Date(response.subscription.end_date).toLocaleDateString(), 
+                        'success', 
+                        'Abonnement confirmé'
+                    );
+                    
+                    // Mettre à jour l'interface utilisateur
+                    updateSubscriptionUI(response.subscription);
                 } else {
-                    showNotification(response.message || 'Erreur lors de la souscription', 'error');
+                    // Afficher la notification d'erreur
+                    showNotification(
+                        response.message || 'Une erreur est survenue lors de la souscription', 
+                        'error', 
+                        'Erreur de souscription'
+                    );
                 }
             },
             error: function() {
-                showNotification('Erreur lors de la communication avec le serveur', 'error');
+                showNotification(
+                    'Impossible de se connecter au serveur', 
+                    'error', 
+                    'Erreur de connexion'
+                );
             }
         });
     }
 
-    // Gestionnaires pour les boutons d'abonnement
+    // Fonction pour annuler un abonnement
+    function cancelSubscription(subscriptionId) {
+        if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')) {
+            $.ajax({
+                url: 'api/subscription_api.php',
+                method: 'POST',
+                data: {
+                    action: 'cancelSubscription',
+                    subscription_id: subscriptionId
+                },
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('Votre abonnement a été annulé avec succès', 'success', 'Abonnement annulé');
+                        location.reload(); // Recharger la page pour afficher les plans disponibles
+                    } else {
+                        showNotification(response.message || 'Une erreur est survenue lors de l\'annulation', 'error', 'Erreur');
+                    }
+                },
+                error: function() {
+                    showNotification('Impossible de se connecter au serveur', 'error', 'Erreur de connexion');
+                }
+            });
+        }
+    }
+
+    // Fonction pour activer/désactiver le renouvellement automatique
+    function toggleAutoRenew(subscriptionId, autoRenew) {
+        $.ajax({
+            url: 'api/subscription_api.php',
+            method: 'POST',
+            data: {
+                action: 'updateAutoRenew',
+                subscription_id: subscriptionId,
+                auto_renew: autoRenew
+            },
+            success: function(response) {
+                if (response.success) {
+                    showNotification(
+                        'Le renouvellement automatique a été ' + (autoRenew ? 'activé' : 'désactivé'), 
+                        'success', 
+                        'Paramètres mis à jour'
+                    );
+                    location.reload(); // Recharger la page pour mettre à jour l'interface
+                } else {
+                    showNotification(response.message || 'Une erreur est survenue', 'error', 'Erreur');
+                }
+            },
+            error: function() {
+                showNotification('Impossible de se connecter au serveur', 'error', 'Erreur de connexion');
+            }
+        });
+    }
+
+    // Initialisation des gestionnaires d'événements
     $('.subscribe-btn').on('click', function(e) {
         e.preventDefault();
         const planType = $(this).data('plan');
-        
-        // Confirmer la souscription
-        if (confirm('Êtes-vous sûr de vouloir souscrire à cet abonnement ?')) {
-            subscribe(planType);
-        }
+        subscribeToPlan(planType);
     });
-
-    // Vérifier si l'utilisateur est connecté
-    function isUserLoggedIn() {
-        // Cette fonction devrait être adaptée à votre système d'authentification
-        // Pour l'instant, nous supposons que l'utilisateur est connecté si le bouton de connexion n'est pas visible
-        return $('.login-btn').length === 0;
-    }
 
     // Vérifier l'abonnement actif au chargement de la page
     checkActiveSubscription();

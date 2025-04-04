@@ -1,0 +1,121 @@
+/* Styles pour les notifications flottantes */
+.floating-notifications-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 350px;
+}
+
+.floating-notification {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  animation: slideIn 0.3s ease-out forwards;
+  position: relative;
+  overflow: hidden;
+}
+
+.floating-notification::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.floating-notification.success::before {
+  background-color: #28a745;
+}
+
+.floating-notification.error::before {
+  background-color: #dc3545;
+}
+
+.floating-notification.warning::before {
+  background-color: #ffc107;
+}
+
+.floating-notification.info::before {
+  background-color: #17a2b8;
+}
+
+.floating-notification-icon {
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+.floating-notification.success .floating-notification-icon {
+  color: #28a745;
+}
+
+.floating-notification.error .floating-notification-icon {
+  color: #dc3545;
+}
+
+.floating-notification.warning .floating-notification-icon {
+  color: #ffc107;
+}
+
+.floating-notification.info .floating-notification-icon {
+  color: #17a2b8;
+}
+
+.floating-notification-content {
+  flex: 1;
+}
+
+.floating-notification-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.floating-notification-message {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.floating-notification-close {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  margin-left: 10px;
+}
+
+.floating-notification-close:hover {
+  color: #6c757d;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.floating-notification.hiding {
+  animation: slideOut 0.3s ease-in forwards;
+} 

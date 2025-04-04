@@ -1,6 +1,13 @@
 <?php include 'includes/header.php'; ?>
 <?php include 'includes/navbar.php'; ?>
 
+<head>
+    <!-- Floating Notifications -->
+    <link rel="stylesheet" href="assets/css/floating-notifications.css">
+    <script src="assets/js/floating-notifications.js"></script>
+    <script src="assets/js/subscription.js"></script>
+</head>
+
 <div class="container-fluid p-0">
     <!-- Hero Section -->
     <div class="bg-primary text-white py-5 mb-5">
