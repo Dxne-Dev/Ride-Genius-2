@@ -7,15 +7,26 @@ class Commission {
         $this->db = $db;
     }
 
+    /**
+     * Calcule la commission selon le type d'abonnement
+     * @param float $amount Montant du trajet
+     * @param string $subscriptionType Type d'abonnement (free, pro, business)
+     * @return array ['amount' => montant commission, 'rate' => taux commission]
+     */
     public function calculateCommission($amount, $subscriptionType) {
         $rates = [
-            'free' => 0.10,    // 10%
-            'basic' => 0.08,   // 8%
-            'premium' => 0.05  // 5%
+            'free' => 0.10,  // 10% pour les conducteurs gratuits
+            'pro' => 0.02,   // 2% pour les conducteurs ProTrajet
+            'business' => 0  // 0% pour les conducteurs BusinessTrajet
         ];
 
-        $rate = $rates[$subscriptionType] ?? $rates['free'];
-        return $amount * $rate;
+        $rate = $rates[$subscriptionType] ?? 0.10; // Par défaut 10%
+        $commissionAmount = $amount * $rate;
+
+        return [
+            'amount' => $commissionAmount,
+            'rate' => $rate * 100
+        ];
     }
 
     public function createCommission($bookingId, $amount, $rate) {

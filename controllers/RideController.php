@@ -87,6 +87,32 @@ class RideController {
     public function create() {
         $this->driverGuard();
         
+        // Vérifier les prérequis pour créer un trajet
+        $errors = [];
+        
+        // 1. Vérifier l'abonnement
+        require_once 'models/Subscription.php';
+        $subscription = new Subscription($this->db);
+        $activeSubscription = $subscription->getActiveSubscription($_SESSION['user_id']);
+        if (!$activeSubscription) {
+            $errors[] = "Vous devez avoir un abonnement actif pour créer un trajet";
+        }
+        
+        // 2. Vérifier le solde du wallet
+        require_once 'models/Wallet.php';
+        $wallet = new Wallet($this->db);
+        $balance = $wallet->getBalance($_SESSION['user_id']);
+        if ($balance < 200) {
+            $errors[] = "Vous devez avoir un minimum de 200€ dans votre wallet pour créer un trajet";
+        }
+        
+        // Si des erreurs sont présentes, les afficher et empêcher la création
+        if (!empty($errors)) {
+            $_SESSION['error'] = implode("<br>", $errors);
+            header("Location: index.php?page=subscription");
+            exit();
+        }
+        
         // Traitement du formulaire
         if($_SERVER["REQUEST_METHOD"] == "POST") {
             $errors = [];

@@ -21,35 +21,89 @@ class BookingManager {
 
         // Chargement des transactions
         this.loadTransactions();
+
+        // Mise à jour dynamique des prix
+        this.updateBookingPrices();
     }
 
-    async handleCreateBooking(e) {
+    updateBookingPrices() {
+        const ridePrice = parseFloat(document.querySelector('[name="ride_price"]').value);
+        const driverSubscription = document.querySelector('[name="driver_subscription"]').value;
+        
+        let totalPrice = ridePrice;
+        let commission = 0;
+        let commissionRate = 0;
+
+        switch(driverSubscription) {
+            case 'free':
+                commissionRate = 10;
+                commission = ridePrice * 0.10;
+                break;
+            case 'pro':
+                commissionRate = 2;
+                commission = ridePrice * 0.02;
+                totalPrice = ridePrice + commission;
+                break;
+            case 'business':
+                commissionRate = 0;
+                commission = 0;
+                break;
+        }
+
+        // Mise à jour de l'affichage
+        document.querySelector('.base-price').textContent = ridePrice.toFixed(2) + '€';
+        document.querySelector('.commission-amount').textContent = commission.toFixed(2) + '€';
+        document.querySelector('.commission-rate').textContent = commissionRate + '%';
+        document.querySelector('.total-price').textContent = totalPrice.toFixed(2) + '€';
+
+        // Mise à jour du montant dans le formulaire
+        document.querySelector('[name="amount"]').value = totalPrice;
+    }
+
+    handleCreateBooking(e) {
         e.preventDefault();
         const form = e.target;
         const formData = new FormData(form);
 
-        try {
-            const response = await fetch('api/booking_api.php', {
-                method: 'POST',
-                body: new URLSearchParams({
-                    action: 'create',
-                    ...Object.fromEntries(formData)
-                })
-            });
+        // Vérification du solde
+        const passengerBalance = parseFloat(document.querySelector('.passenger-balance').textContent);
+        const totalPrice = parseFloat(document.querySelector('.total-price').textContent);
 
-            const result = await response.json();
-            
-            if (result.success) {
-                showNotification('Réservation créée avec succès', 'success');
-                form.reset();
-                this.loadTransactions();
-            } else {
-                showNotification(result.message, 'error');
-            }
-        } catch (error) {
-            showNotification('Erreur lors de la création de la réservation', 'error');
-            console.error('Erreur:', error);
+        if (passengerBalance < totalPrice) {
+            this.showNotification('Solde insuffisant. Veuillez recharger votre wallet.', 'error');
+            return;
         }
+
+        // Envoi de la requête
+        fetch('api/booking_api.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.showNotification('Réservation créée avec succès', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.php?page=my-bookings';
+                }, 1500);
+            } else {
+                this.showNotification(data.message || 'Erreur lors de la création de la réservation', 'error');
+            }
+        })
+        .catch(error => {
+            this.showNotification('Erreur lors de la communication avec le serveur', 'error');
+        });
+    }
+
+    showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
     }
 
     async handleCancelBooking(e) {
