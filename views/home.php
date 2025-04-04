@@ -135,8 +135,8 @@
         </div>
     </div>
 
-    <!-- Subscription Plans Section -->
-    <?php if (!isset($_SESSION['user_id']) || !$hasActiveSubscription): ?>
+    <!-- Subscription Section -->
+    <?php if(isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur'): ?>
     <div class="container subscription-section">
         <h2 class="text-center mb-5">Nos formules d'abonnement</h2>
         <div class="row g-4">

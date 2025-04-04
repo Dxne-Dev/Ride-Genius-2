@@ -1,7 +1,14 @@
 <?php
-// Vérification de la session (déjà démarrée dans index.php)
+// Vérification de la session et du rôle
 if (!isset($_SESSION['user_id'])) {
     header('Location: index.php?page=login');
+    exit();
+}
+
+// Vérifier si l'utilisateur est un conducteur
+if ($_SESSION['user_role'] !== 'conducteur') {
+    $_SESSION['error'] = "Cette page n'est accessible qu'aux conducteurs";
+    header('Location: index.php');
     exit();
 }
 
@@ -51,9 +58,11 @@ include __DIR__ . '/../../includes/navbar.php';
                     <a href="index.php?page=wallet" class="list-group-item list-group-item-action">
                         <i class="fas fa-wallet me-2"></i> Mon wallet
                     </a>
+                    <?php if($_SESSION['user_role'] === 'conducteur'): ?>
                     <a href="index.php?page=subscription/manage" class="list-group-item list-group-item-action active">
                         <i class="fas fa-crown me-2"></i> Mon abonnement
                     </a>
+                    <?php endif; ?>
                     <a href="index.php?page=messages" class="list-group-item list-group-item-action">
                         <i class="fas fa-envelope me-2"></i> Mes messages
                     </a>
