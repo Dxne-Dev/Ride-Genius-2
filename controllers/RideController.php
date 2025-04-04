@@ -47,6 +47,32 @@ class RideController {
         // Lire tous les trajets
         $stmt = $this->ride->read();
         
+        // Préparer les informations sur les prix pour chaque trajet
+        require_once 'models/Subscription.php';
+        require_once 'models/Commission.php';
+        $subscription = new Subscription($this->db);
+        $commission = new Commission($this->db);
+        
+        $rides = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $driverSubscription = $subscription->getActiveSubscription($row['driver_id']);
+            $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+            
+            $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
+            
+            // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+            $displayPrice = $row['price'];
+            if ($subscriptionType === 'pro') {
+                $displayPrice = $row['price'] + $commissionInfo['amount'];
+            }
+            
+            $row['display_price'] = $displayPrice;
+            $row['subscription_type'] = $subscriptionType;
+            $row['commission'] = $commissionInfo;
+            
+            $rides[] = $row;
+        }
+        
         // Afficher la vue
         include "views/rides/index.php";
     }
@@ -77,6 +103,28 @@ class RideController {
         
         // Définir la variable $ride pour la vue
         $ride = $this->ride;
+        
+        // Calculer le prix total et la commission selon l'abonnement du conducteur
+        require_once 'models/Subscription.php';
+        require_once 'models/Commission.php';
+        $subscription = new Subscription($this->db);
+        $commission = new Commission($this->db);
+        
+        $driverSubscription = $subscription->getActiveSubscription($ride->driver_id);
+        $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+        
+        $commissionInfo = $commission->calculateCommission($ride->price, $subscriptionType);
+        
+        // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+        $displayPrice = $ride->price;
+        if ($subscriptionType === 'pro') {
+            $displayPrice = $ride->price + $commissionInfo['amount'];
+        }
+        
+        // Passer les variables à la vue
+        $driverSubscription = $subscriptionType;
+        $commission = $commissionInfo;
+        $totalPrice = $displayPrice;
         
         // Afficher la vue
         include "views/rides/show.php";

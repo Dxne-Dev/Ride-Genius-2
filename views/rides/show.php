@@ -9,7 +9,7 @@
                     <h1 class="card-title h3 mb-4">
                         <div class="d-flex align-items-center justify-content-between">
                             <span><?php echo htmlspecialchars($ride->departure); ?> → <?php echo htmlspecialchars($ride->destination); ?></span>
-                            <span class="badge bg-primary fs-5"><?php echo htmlspecialchars($ride->price); ?> €</span>
+                            <span class="badge bg-primary fs-5"><?php echo number_format($totalPrice, 2); ?> €</span>
                         </div>
                     </h1>
                     
@@ -193,9 +193,32 @@
             <div class="card shadow">
                 <div class="card-body">
                     <h5 class="card-title mb-4">Détails de la réservation</h5>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Prix par place</span>
-                        <strong><?php echo htmlspecialchars($ride->price); ?> €</strong>
+                    <h5 class="mb-3 border-bottom pb-2">Prix et disponibilité</h5>
+                    <div class="row mb-3">
+                        <div class="col-7">
+                            <p class="mb-1">
+                                <strong>Prix:</strong>
+                            </p>
+                        </div>
+                        <div class="col-5 text-end">
+                            <?php if ($driverSubscription === 'pro'): ?>
+                                <p class="mb-1 fw-bold">
+                                    <?php echo number_format($totalPrice, 2); ?>€
+                                </p>
+                                <small class="text-muted">
+                                    (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                </small>
+                            <?php else: ?>
+                                <p class="mb-1 fw-bold">
+                                    <?php echo number_format($ride->price, 2); ?>€
+                                </p>
+                                <?php if ($driverSubscription === 'eco'): ?>
+                                    <small class="text-muted">
+                                        (Le conducteur paiera une commission de <?php echo number_format($commission['amount'], 2); ?>€)
+                                    </small>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
                     </div>
                     <hr>
                     <div class="mb-3">

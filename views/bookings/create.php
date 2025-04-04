@@ -20,7 +20,19 @@
                             </div>
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Conducteur:</strong> <?php echo htmlspecialchars($ride->driver_name); ?></p>
-                                <p class="mb-1"><strong>Prix par place:</strong> <?php echo htmlspecialchars($ride->price); ?> €</p>
+                                <?php if ($driverSubscription === 'pro'): ?>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> €</p>
+                                    <small class="text-muted">
+                                        (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                    </small>
+                                <?php else: ?>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> €</p>
+                                    <?php if ($driverSubscription === 'eco'): ?>
+                                        <small class="text-muted">
+                                            (Le conducteur paiera une commission de <?php echo $commission['rate']; ?>%)
+                                        </small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
                                 <p class="mb-0"><strong>Places disponibles:</strong> <?php echo htmlspecialchars($ride->available_seats); ?></p>
                             </div>
                         </div>
@@ -46,10 +58,25 @@
                             <div class="card bg-light">
                                 <div class="card-body">
                                     <h6 class="card-title">Récapitulatif de la réservation</h6>
-                                    <div class="d-flex justify-content-between mb-2">
-                                        <span>Prix par place</span>
-                                        <span><?php echo htmlspecialchars($ride->price); ?> €</span>
-                                    </div>
+                                    <?php if ($driverSubscription === 'pro'): ?>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Prix de base par place</span>
+                                            <span><?php echo number_format($ride->price, 2); ?> €</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Commission (<?php echo $commission['rate']; ?>%)</span>
+                                            <span><?php echo number_format($commission['amount'], 2); ?> €</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Prix total par place</span>
+                                            <span><?php echo number_format($totalPrice, 2); ?> €</span>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Prix par place</span>
+                                            <span><?php echo number_format($ride->price, 2); ?> €</span>
+                                        </div>
+                                    <?php endif; ?>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Nombre de places</span>
                                         <span id="seatsCount">1</span>
@@ -57,7 +84,7 @@
                                     <hr>
                                     <div class="d-flex justify-content-between fw-bold">
                                         <span>Total</span>
-                                        <span id="totalPrice"><?php echo htmlspecialchars($ride->price); ?> €</span>
+                                        <span id="totalPrice"><?php echo number_format($totalPrice, 2); ?> €</span>
                                     </div>
                                 </div>
                             </div>
@@ -85,7 +112,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const seatsInput = document.getElementById('seats');
     const seatsCount = document.getElementById('seatsCount');
     const totalPrice = document.getElementById('totalPrice');
-    const pricePerSeat = <?php echo htmlspecialchars($ride->price); ?>;
+    
+    // Variables pour le calcul du prix
+    const pricePerSeat = <?php echo $totalPrice; ?>;
     
     seatsInput.addEventListener('input', function() {
         const seats = parseInt(this.value) || 0;

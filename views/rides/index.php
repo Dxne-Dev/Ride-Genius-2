@@ -26,7 +26,7 @@
     <div class="row">
         <?php
         $count = 0;
-        while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        foreach ($rides as $row) {
             $departure_time = new DateTime($row['departure_time']);
             $now = new DateTime();
             
@@ -39,7 +39,7 @@
                     <div class="card-body">
                         <div class="d-flex justify-content-between mb-2">
                             <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
-                            <span class="badge bg-primary"><?php echo htmlspecialchars($row['price']); ?> €</span>
+                            <span class="badge bg-primary"><?php echo number_format($row['display_price'], 2); ?> €</span>
                         </div>
                         <p class="card-text text-muted mb-1">
                             <i class="fas fa-calendar-alt me-2"></i><?php echo $departure_time->format('d/m/Y'); ?>
@@ -58,12 +58,12 @@
                 </div>
             </div>
         <?php
+                }
             }
-        }
-        
-        if($count === 0) {
-            echo '<div class="col-12"><div class="alert alert-info">Aucun trajet disponible pour le moment.</div></div>';
-        }
+            
+            if($count === 0) {
+                echo '<div class="col-12 text-center"><p>Aucun trajet disponible pour le moment.</p></div>';
+            }
         ?>
     </div>
 </div>
