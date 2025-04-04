@@ -56,6 +56,63 @@ class Wallet {
     }
 
     /**
+     * Ajoute directement un montant au solde de l'utilisateur (sans transaction imbriquée)
+     * @param int $userId ID de l'utilisateur
+     * @param float $amount Montant à ajouter
+     * @return bool Succès de l'opération
+     */
+    public function addToBalance($userId, $amount) {
+        // Vérifier si le wallet existe, sinon le créer
+        $this->ensureWalletExists($userId);
+        
+        // Mettre à jour le solde
+        $query = "UPDATE wallets SET balance = balance + ? WHERE user_id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$amount, $userId]);
+    }
+
+    /**
+     * Soustrait directement un montant au solde de l'utilisateur (sans transaction imbriquée)
+     * @param int $userId ID de l'utilisateur
+     * @param float $amount Montant à soustraire
+     * @return bool Succès de l'opération
+     */
+    public function substractFromBalance($userId, $amount) {
+        // Vérifier si le wallet existe, sinon le créer
+        $this->ensureWalletExists($userId);
+        
+        // Vérifier le solde
+        $currentBalance = $this->getBalance($userId);
+        if ($currentBalance < $amount) {
+            return false;
+        }
+        
+        // Mettre à jour le solde
+        $query = "UPDATE wallets SET balance = balance - ? WHERE user_id = ?";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$amount, $userId]);
+    }
+
+    /**
+     * Enregistre une transaction dans l'historique
+     * @param int $userId ID de l'utilisateur
+     * @param string $type Type de transaction (credit/debit)
+     * @param float $amount Montant de la transaction
+     * @param string $description Description de la transaction
+     * @return bool Succès de l'opération
+     */
+    public function logTransaction($userId, $type, $amount, $description = '') {
+        // Récupérer le solde actuel
+        $balance = $this->getBalance($userId);
+        
+        // Enregistrer la transaction
+        $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) 
+                  VALUES (?, ?, ?, ?, ?, 'system', NOW())";
+        $stmt = $this->db->prepare($query);
+        return $stmt->execute([$userId, $type, $amount, $description, $balance]);
+    }
+
+    /**
      * Ajoute des fonds au wallet de l'utilisateur
      * @param int $userId ID de l'utilisateur
      * @param float $amount Montant à ajouter
@@ -75,7 +132,8 @@ class Wallet {
             $newBalance = $this->getBalance($userId);
 
             // Enregistrer la transaction
-            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after) VALUES (?, 'credit', ?, ?, ?)";
+            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) 
+                      VALUES (?, 'credit', ?, ?, ?, 'system', NOW())";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$userId, $amount, $description, $newBalance]);
 
@@ -113,7 +171,8 @@ class Wallet {
             $newBalance = $this->getBalance($userId);
 
             // Enregistrer la transaction
-            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after) VALUES (?, 'debit', ?, ?, ?)";
+            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) 
+                      VALUES (?, 'debit', ?, ?, ?, 'system', NOW())";
             $stmt = $this->db->prepare($query);
             $stmt->execute([$userId, $amount, $description, $newBalance]);
 

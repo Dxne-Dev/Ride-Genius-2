@@ -35,7 +35,7 @@ class BookingManager {
         let commissionRate = 0;
 
         switch(driverSubscription) {
-            case 'free':
+            case 'eco':
                 commissionRate = 10;
                 commission = ridePrice * 0.10;
                 break;

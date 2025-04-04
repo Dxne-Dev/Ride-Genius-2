@@ -6,7 +6,7 @@
             <p class="card-text">
                 Prix de base : <?php echo number_format($ride['price'], 2); ?>€
             </p>
-            <?php if ($driverSubscription === 'free'): ?>
+            <?php if ($driverSubscription === 'eco'): ?>
                 <p class="card-text text-danger">
                     Commission : <?php echo number_format($commission['amount'], 2); ?>€ (<?php echo $commission['rate']; ?>%)
                 </p>

@@ -10,12 +10,12 @@ class Commission {
     /**
      * Calcule la commission selon le type d'abonnement
      * @param float $amount Montant du trajet
-     * @param string $subscriptionType Type d'abonnement (free, pro, business)
+     * @param string $subscriptionType Type d'abonnement (eco, pro, business)
      * @return array ['amount' => montant commission, 'rate' => taux commission]
      */
     public function calculateCommission($amount, $subscriptionType) {
         $rates = [
-            'free' => 0.10,  // 10% pour les conducteurs gratuits
+            'eco' => 0.10,   // 10% pour les conducteurs eco (gratuit)
             'pro' => 0.02,   // 2% pour les conducteurs ProTrajet
             'business' => 0  // 0% pour les conducteurs BusinessTrajet
         ];

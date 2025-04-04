@@ -225,4 +225,21 @@ class Ride {
         
         return $stmt;
     }
+
+    // Mettre à jour le nombre de places disponibles
+    public function updateSeats() {
+        $query = "UPDATE rides SET available_seats = :available_seats WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        
+        // Nettoyer les données
+        $this->available_seats = htmlspecialchars(strip_tags($this->available_seats));
+        $this->id = htmlspecialchars(strip_tags($this->id));
+        
+        // Lier les paramètres
+        $stmt->bindParam(':available_seats', $this->available_seats, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+        
+        // Exécuter la requête
+        return $stmt->execute();
+    }
 }

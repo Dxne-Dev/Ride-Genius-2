@@ -97,16 +97,85 @@ class BookingController {
 
             // Si pas d'erreurs, créer la réservation
             if(empty($errors)) {
-                $this->booking->ride_id = $ride_id;
-                $this->booking->passenger_id = $_SESSION['user_id'];
-                $this->booking->seats = $_POST['seats'];
-                $this->booking->status = 'pending'; // Statut par défaut
-                if($this->booking->create()) {
+                try {
+                    // Démarrer une transaction au niveau de la base de données
+                    $this->db->beginTransaction();
+                    
+                    // Obtenir le type d'abonnement du conducteur
+                    $driverSubscription = $this->getDriverSubscriptionType($this->ride->driver_id);
+                    
+                    // Calculer la commission selon le type d'abonnement
+                    if ($driverSubscription === 'eco') {
+                        $commissionRate = 10; // 10% pour eco
+                        $commissionAmount = $totalPrice * 0.10;
+                        $driverAmount = $totalPrice - $commissionAmount;
+                    } elseif ($driverSubscription === 'pro') {
+                        $commissionRate = 2; // 2% pour pro
+                        $commissionAmount = $totalPrice * 0.02;
+                        $driverAmount = $totalPrice;
+                    } else { // business
+                        $commissionRate = 0; // 0% pour business
+                        $commissionAmount = 0;
+                        $driverAmount = $totalPrice;
+                    }
+
+                    // Créer la réservation
+                    $this->booking->ride_id = $ride_id;
+                    $this->booking->passenger_id = $_SESSION['user_id'];
+                    $this->booking->seats = $_POST['seats'];
+                    $this->booking->status = 'pending'; // Statut pending par défaut
+                    
+                    if (!$this->booking->create()) {
+                        throw new Exception("Erreur lors de la création de la réservation");
+                    }
+                    
+                    // Récupérer l'ID de la réservation
+                    $bookingId = $this->db->lastInsertId();
+                    
+                    // Débiter le passager directement (sans transaction imbriquée)
+                    $this->walletModel->substractFromBalance($_SESSION['user_id'], $totalPrice);
+                    $this->walletModel->logTransaction($_SESSION['user_id'], 'debit', $totalPrice, "Paiement trajet #$bookingId");
+                    
+                    // Créditer le conducteur (sans transaction imbriquée)
+                    $this->walletModel->addToBalance($this->ride->driver_id, $driverAmount);
+                    $this->walletModel->logTransaction($this->ride->driver_id, 'credit', $driverAmount, "Revenu trajet #$bookingId");
+                    
+                    // Si commission > 0, créditer l'admin
+                    if ($commissionAmount > 0) {
+                        // Récupérer l'ID admin (à adapter selon votre structure)
+                        $adminId = 1; // Supposons que l'admin a l'ID 1
+                        $this->walletModel->addToBalance($adminId, $commissionAmount);
+                        $this->walletModel->logTransaction($adminId, 'credit', $commissionAmount, "Commission trajet #$bookingId");
+                    }
+                    
+                    // Créer l'enregistrement de commission
+                    $this->commissionModel->createCommission($bookingId, $commissionAmount, $commissionRate);
+                    
+                    // Créer la transaction
+                    $transactionData = [
+                        'booking_id' => $bookingId,
+                        'amount' => $totalPrice,
+                        'status' => 'completed',
+                        'commission_amount' => $commissionAmount
+                    ];
+                    $this->transactionModel->create($transactionData);
+                    
+                    // Mettre à jour le nombre de places disponibles pour le trajet
+                    $this->ride->available_seats -= $_POST['seats'];
+                    $this->ride->updateSeats();
+                    
+                    // Valider la transaction
+                    $this->db->commit();
+                    
                     $_SESSION['success'] = "Réservation créée avec succès";
                     header("Location: index.php?page=my-bookings");
                     exit();
-                } else {
-                    $errors[] = "Une erreur est survenue. Veuillez réessayer.";
+                } catch (Exception $e) {
+                    // En cas d'erreur, annuler toutes les opérations
+                    if ($this->db->inTransaction()) {
+                        $this->db->rollBack();
+                    }
+                    $errors[] = "Erreur: " . $e->getMessage();
                 }
             }
         }
@@ -299,8 +368,8 @@ class BookingController {
                 throw new Exception("Solde insuffisant pour effectuer la réservation");
             }
 
-            // Créer la réservation avec le statut 'accepted' directement
-            $data['status'] = 'accepted';
+            // Créer la réservation avec le statut 'pending' par défaut
+            $data['status'] = 'pending';
             $bookingId = $this->bookingModel->create($data);
 
             // Gérer le paiement selon le type d'abonnement
@@ -352,7 +421,7 @@ class BookingController {
                 'booking_id' => $bookingId,
                 'amount' => $totalPrice,
                 'status' => 'completed',
-                'type' => 'booking'
+                'commission_amount' => $commission['amount']
             ];
             $this->transactionModel->create($transactionData);
 
