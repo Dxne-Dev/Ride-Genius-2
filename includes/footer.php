@@ -46,5 +46,7 @@
 <script src="assets/js/main.js"></script>
 <!-- Wallet JS -->
 <script src="assets/js/wallet.js"></script>
+<!-- Subscription JS -->
+<script src="assets/js/subscription.js"></script>
 </body>
 </html>

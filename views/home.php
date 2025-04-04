@@ -129,71 +129,76 @@
     </div>
 
     <!-- Subscription Plans Section -->
-<div class="container">
-    <h2 class="text-center mb-5">Nos formules d'abonnement</h2>
-    <div class="row g-4">
-        <!-- Formule Eco -->
-        <div class="col-lg-4">
-            <div class="card h-100">
-                <div class="card-body d-flex flex-column position-relative">
-                    <h4 class="card-title">🚗 EcoTrajet</h4>
-                    <p class="card-text">Pour les voyageurs occasionnels</p>
-                    <h5 class="card-price">Gratuit</h5>
-                    <ul class="list-unstyled subscription-details">
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>2 trajets/mois</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche basique</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie standard</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Évaluation des conducteurs</li>
-                        <li><i class="fas fa-times-circle me-2 text-secondary"></i>Pas de trajets prioritaires</li>
-                    </ul>
-                    <a href="#" class="btn btn-outline-primary mt-auto">Choisir cette formule</a>
+    <?php if (!isset($_SESSION['user_id']) || !$hasActiveSubscription): ?>
+    <div class="container subscription-section">
+        <h2 class="text-center mb-5">Nos formules d'abonnement</h2>
+        <div class="row g-4">
+            <!-- Formule Eco -->
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <h4 class="card-title">🚗 EcoTrajet</h4>
+                        <p class="card-text">Pour les voyageurs occasionnels</p>
+                        <h5 class="card-price">Gratuit</h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>2 trajets/mois</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche basique</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie standard</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Évaluation des conducteurs</li>
+                            <li><i class="fas fa-times-circle me-2 text-secondary"></i>Pas de trajets prioritaires</li>
+                        </ul>
+                        <a href="#" class="btn btn-outline-primary mt-auto subscribe-btn subscription-btn" data-plan="eco">Choisir cette formule</a>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Formule Pro -->
-        <div class="col-lg-4">
-            <div class="card h-100 border-primary">
-                <div class="card-body d-flex flex-column position-relative">
-                    <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">LE PLUS CHOISI</span>
-                    <h4 class="card-title">🚙 ProTrajet</h4>
-                    <p class="card-text">Pour les navetteurs réguliers</p>
-                    <h5 class="card-price">7,90 € <small class="text-muted">/mois</small></h5>
-                    <ul class="list-unstyled subscription-details">
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets illimités</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche avancée</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie instantanée</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets prioritaires</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Badge "Conducteur vérifié"</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Support en 24h</li>
-                    </ul>
-                    <a href="#" class="btn btn-primary mt-auto">S'abonner</a>
+            <!-- Formule Pro -->
+            <div class="col-lg-4">
+                <div class="card h-100 border-primary">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">LE PLUS CHOISI</span>
+                        <h4 class="card-title">🚙 ProTrajet</h4>
+                        <p class="card-text">Pour les navetteurs réguliers</p>
+                        <h5 class="card-price">7,90 € <small class="text-muted">/mois</small></h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets illimités</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche avancée</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Messagerie instantanée</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets prioritaires</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Badge "Conducteur vérifié"</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Support en 24h</li>
+                        </ul>
+                        <a href="#" class="btn btn-primary mt-auto subscribe-btn subscription-btn" data-plan="pro">S'abonner</a>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Formule Business -->
-        <div class="col-lg-4">
-            <div class="card h-100 border-warning">
-                <div class="card-body d-flex flex-column position-relative">
-                    <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">ÉCONOMISEZ 20%</span>
-                    <h4 class="card-title">🚘 BusinessTrajet</h4>
-                    <p class="card-text">Pour les professionnels de la route</p>
-                    <h5 class="card-price">14,90 € <small class="text-muted">/mois</small></h5>
-                    <ul class="list-unstyled subscription-details">
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Tous les avantages ProTrajet</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Choix des passagers</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Itinéraires premium</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Statistiques détaillées</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>Support prioritaire 24/7</li>
-                        <li><i class="fas fa-check-circle me-2 text-success"></i>0% de commission</li>
-                    </ul>
-                    <a href="#" class="btn btn-warning mt-auto">Essai gratuit 7 jours</a>
+            <!-- Formule Business -->
+            <div class="col-lg-4">
+                <div class="card h-100 border-warning">
+                    <div class="card-body d-flex flex-column position-relative">
+                        <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">ÉCONOMISEZ 20%</span>
+                        <h4 class="card-title">🚘 BusinessTrajet</h4>
+                        <p class="card-text">Pour les professionnels de la route</p>
+                        <h5 class="card-price">14,90 € <small class="text-muted">/mois</small></h5>
+                        <ul class="list-unstyled subscription-details">
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Tous les avantages ProTrajet</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Choix des passagers</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Itinéraires premium</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Statistiques détaillées</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>Support prioritaire 24/7</li>
+                            <li><i class="fas fa-check-circle me-2 text-success"></i>0% de commission</li>
+                        </ul>
+                        <a href="#" class="btn btn-warning mt-auto subscribe-btn subscription-btn" data-plan="business">Essai gratuit 7 jours</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+    <?php endif; ?>
+
+    <!-- Zone d'affichage des informations d'abonnement actif -->
+    <div id="subscriptionInfo" class="mt-4"></div>
 
     <!-- Recent Rides Section -->
     <div class="container mb-5">

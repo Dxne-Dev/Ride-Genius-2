@@ -10,6 +10,7 @@ require_once "models/Ride.php";
 require_once "models/Booking.php";
 require_once "models/Review.php";
 require_once "models/Wallet.php";
+require_once "models/Subscription.php";
 
 // Inclure les contrôleurs
 require_once "controllers/AuthController.php";
@@ -159,6 +160,19 @@ switch($page) {
         
     // Page d'accueil par défaut
     default:
+        // Initialisation de la connexion à la base de données
+        $database = new Database();
+        $db = $database->getConnection();
+        
+        // Initialisation du modèle Subscription
+        $subscription = new Subscription($db);
+        
+        // Vérifier si l'utilisateur est connecté et a un abonnement actif
+        $hasActiveSubscription = false;
+        if (isset($_SESSION['user_id'])) {
+            $hasActiveSubscription = $subscription->hasActiveSubscription($_SESSION['user_id']);
+        }
+        
         include "views/home.php";
         break;
 }
