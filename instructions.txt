@@ -1,0 +1,27 @@
+The error you're getting is due to a connection problem with your WebSocket server. Here are a few steps to diagnose and resolve the problem.
+
+### 1. **Check WebSocket server URL**
+ The error indicates a connection problem with your WebSocket server. Check that the WebSocket server URL is correct.
+
+   **Check your JavaScript code:**
+ - The WebSocket URL must be set correctly (e.g. `ws://localhost:3000` or `wss://` for secure connections).
+   - If you're using a local WebSocket server during development, the URL should be `ws://localhost:3000`. In production, you should use `wss://` if you're using HTTPS.
+
+   Example:
+
+ ```javascript
+ const socket = new WebSocket( ws://localhost:3000'); // Or 'wss://...' in production
+ ```
+
+ **Action to be checked** :
+   - Confirm that the WebSocket server is running and listening on the right port.
+   - Check that the server is configured to be accessible from the client.
+
+### 2. **Check the WebSocket connection in the browser**
+ Use your browser's development tools to inspect the network and see exactly what's going on.
+
+   - Open Development Tools** (F12 or Ctrl+Shift+I).
+   - Go to the **Network** tab and filter by **WebSocket** to see established connections.
+   - If the connection fails, you should see a detailed error in this section.
+
+   This

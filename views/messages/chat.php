@@ -26,7 +26,6 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
     <title>Messages - Ride Genius</title>
     <link rel="stylesheet" href="assets/css/custom.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-mart@latest/css/emoji-mart.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 <body>
@@ -159,7 +158,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/emoji-mart@latest/dist/emoji-mart.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
     <script>
@@ -168,13 +167,15 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         const WS_MAX_RECONNECT_ATTEMPTS = 5;
         const NOTIFICATION_DURATION = 3000;
         const SEARCH_DELAY = 300;
+        const SOCKET_SERVER_URL = 'http://localhost:3000';
 
         // État de l'application
         let currentUserId = <?php echo $_SESSION['user_id']; ?>;
         let selectedUserId = null;
-        let ws = null;
+        let socket = null;
         let wsReconnectAttempts = 0;
         let searchTimeout = null;
+        let wsConnected = false;
 
         // Configuration WebRTC
         const configuration = {
@@ -186,71 +187,74 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         let localStream = null;
         let remoteStream = null;
 
-        // Initialisation de la connexion WebSocket
+        // Initialisation de la connexion Socket.IO
         function initWebSocket() {
-            ws = new WebSocket('ws://localhost:3000');
+            try {
+                console.log('Tentative de connexion au serveur Socket.IO...');
+                socket = io(SOCKET_SERVER_URL, {
+                    transports: ['websocket'],
+                    reconnection: true,
+                    reconnectionDelay: WS_RECONNECT_DELAY,
+                    reconnectionAttempts: WS_MAX_RECONNECT_ATTEMPTS
+                });
 
-            ws.onopen = function() {
-                console.log('Connecté au serveur WebSocket');
-                wsReconnectAttempts = 0;
-                ws.send(JSON.stringify({
-                    type: 'auth',
-                    userId: currentUserId
-                }));
-                showNotification('Connecté au chat', 'success');
-            };
+                socket.on('connect', function() {
+                    console.log('Connecté au serveur Socket.IO');
+                    wsReconnectAttempts = 0;
+                    wsConnected = true;
+                    socket.emit('auth', {
+                        userId: currentUserId
+                    });
+                    showNotification('Connecté au chat', 'success');
+                });
 
-            ws.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
+                socket.on('disconnect', function() {
+                    console.log('Déconnecté du serveur Socket.IO');
+                    wsConnected = false;
+                    showNotification('Déconnecté du chat', 'error');
+                });
+
+                socket.on('error', function(error) {
+                    console.error('Erreur Socket.IO:', error);
+                    wsConnected = false;
+                    showNotification('Erreur de connexion au chat', 'error');
+                });
+
+                socket.on('receiveMessage', function(data) {
                     handleWebSocketMessage(data);
-                } catch (error) {
-                    console.error('Erreur lors du traitement du message:', error);
-                }
-            };
+                });
 
-            ws.onerror = function(error) {
-                console.error('Erreur WebSocket:', error);
-                showNotification('Erreur de connexion au chat', 'error');
-            };
-
-            ws.onclose = function() {
-                console.log('Déconnecté du serveur WebSocket');
-                handleWebSocketClose();
-            };
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation de Socket.IO:', error);
+                wsConnected = false;
+                showNotification('Impossible de se connecter au chat', 'error');
+            }
         }
 
         // Gestion des messages WebSocket
         function handleWebSocketMessage(data) {
-            switch (data.type) {
-                case 'message':
-                    if (data.senderId === selectedUserId) {
-                        appendMessage(data);
-                    } else {
-                        updateConversationBadge(data.senderId);
-                    }
-                    break;
-                case 'typing':
-                    if (data.userId === selectedUserId) {
-                        updateTypingIndicator(data.isTyping);
-                    }
-                    break;
-                case 'read':
-                    if (data.userId === selectedUserId) {
-                        updateMessageStatus(data.messageIds, 'read');
-                    }
-                    break;
+            if (data.type === 'message') {
+                if (data.senderId === selectedUserId) {
+                    appendMessage(data);
+                } else {
+                    updateConversationBadge(data.senderId);
+                }
             }
         }
 
-        // Gestion de la fermeture WebSocket
-        function handleWebSocketClose() {
-            if (wsReconnectAttempts < WS_MAX_RECONNECT_ATTEMPTS) {
-                wsReconnectAttempts++;
-                showNotification(`Tentative de reconnexion (${wsReconnectAttempts}/${WS_MAX_RECONNECT_ATTEMPTS})`, 'info');
-                setTimeout(initWebSocket, WS_RECONNECT_DELAY);
+        // Envoi d'un message
+        function sendMessage(message) {
+            if (wsConnected && socket && socket.connected) {
+                try {
+                    socket.emit('sendMessage', message);
+                    return true;
+                } catch (error) {
+                    console.error('Erreur lors de l\'envoi du message:', error);
+                    return false;
+                }
             } else {
-                showNotification('Impossible de se reconnecter au chat. Veuillez rafraîchir la page.', 'error');
+                console.warn('Socket.IO non connecté, message non envoyé');
+                return false;
             }
         }
 
@@ -596,13 +600,12 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
 
-                // Envoyer l'offre via WebSocket
-                ws.send(JSON.stringify({
-                    type: 'call-offer',
+                // Envoyer l'offre via Socket.IO
+                socket.emit('call-offer', {
                     offer: offer,
                     target: selectedUserId,
                     isVideo: isVideo
-                }));
+                });
 
                 showCallModal(true, isVideo);
             } catch (error) {
@@ -637,28 +640,37 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         
         $('#emojiBtn').click(function(e) {
             e.stopPropagation();
-            const picker = document.getElementById('emojiPicker');
             
             if (!emojiPicker) {
-                emojiPicker = new EmojiMart.Picker({
-                    onSelect: emoji => {
-                        document.getElementById('messageInput').value += emoji.native;
-                        picker.style.display = 'none';
-                    },
-                    set: 'native',
+                emojiPicker = new EmojiButton({
+                    position: 'top-end',
                     theme: 'light',
+                    autoHide: false,
+                    emojiSize: '1.5rem',
+                    showSearch: true,
                     showPreview: false,
-                    showSkinTones: false,
-                    style: {
-                        position: 'absolute',
-                        bottom: '60px',
-                        right: '10px'
+                    showRecents: true,
+                    recentsCount: 20,
+                    styleProperties: {
+                        '--category-label-bg-color': '#f0f0f0',
+                        '--category-label-text-color': '#333',
+                        '--emoji-size': '1.5rem',
+                        '--input-border-color': '#ddd',
+                        '--input-border-radius': '5px',
+                        '--input-font-color': '#333',
+                        '--input-placeholder-color': '#999',
+                        '--outline-color': '#007bff'
                     }
                 });
-                picker.appendChild(emojiPicker);
+                
+                emojiPicker.on('emoji', emoji => {
+                    const input = document.getElementById('messageInput');
+                    input.value += emoji;
+                    input.focus();
+                });
             }
             
-            picker.style.display = picker.style.display === 'none' ? 'block' : 'none';
+            emojiPicker.togglePicker($('#emojiBtn')[0]);
         });
 
         // Gestion des réactions aux messages
