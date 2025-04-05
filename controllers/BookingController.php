@@ -15,6 +15,7 @@ class BookingController {
     private $transactionModel;
     private $walletModel;
     private $subscriptionModel;
+    private $userModel;
 
     public function __construct() {
         $database = new Database();
@@ -26,6 +27,7 @@ class BookingController {
         $this->transactionModel = new BookingTransaction($this->db);
         $this->walletModel = new Wallet($this->db);
         $this->subscriptionModel = new Subscription($this->db);
+        $this->userModel = new User($this->db);
     }
 
     // Protéger les routes
@@ -111,14 +113,11 @@ class BookingController {
                     // Démarrer une transaction au niveau de la base de données
                     $this->db->beginTransaction();
                     
-                    // Obtenir le type d'abonnement du conducteur
-                    $driverSubscription = $this->getDriverSubscriptionType($this->ride->driver_id);
-                    
                     // Calculer la commission selon le type d'abonnement
                     if ($driverSubscription === 'eco') {
                         $commissionRate = 10; // 10% pour eco
-                        $commissionAmount = $totalPriceForSeats * 0.10;
-                        $driverAmount = $totalPriceForSeats - $commissionAmount;
+                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.10;
+                        $driverAmount = ($this->ride->price * $_POST['seats']) - $commissionAmount;
                     } elseif ($driverSubscription === 'pro') {
                         $commissionRate = 2; // 2% pour pro
                         $commissionAmount = $this->ride->price * $_POST['seats'] * 0.02;
@@ -126,14 +125,14 @@ class BookingController {
                     } else { // business
                         $commissionRate = 0; // 0% pour business
                         $commissionAmount = 0;
-                        $driverAmount = $totalPriceForSeats;
+                        $driverAmount = $this->ride->price * $_POST['seats'];
                     }
 
                     // Créer la réservation
                     $this->booking->ride_id = $ride_id;
                     $this->booking->passenger_id = $_SESSION['user_id'];
                     $this->booking->seats = $_POST['seats'];
-                    $this->booking->status = 'pending'; // Statut pending par défaut
+                    $this->booking->status = 'accepted'; // Statut accepté directement
                     
                     if (!$this->booking->create()) {
                         throw new Exception("Erreur lors de la création de la réservation");
@@ -142,20 +141,25 @@ class BookingController {
                     // Récupérer l'ID de la réservation
                     $bookingId = $this->db->lastInsertId();
                     
-                    // Débiter le passager directement (sans transaction imbriquée)
-                    $this->walletModel->substractFromBalance($_SESSION['user_id'], $totalPrice);
-                    $this->walletModel->logTransaction($_SESSION['user_id'], 'debit', $totalPrice, "Paiement trajet #$bookingId");
+                    // Débiter le passager
+                    if (!$this->walletModel->withdrawFunds($_SESSION['user_id'], $totalPriceForSeats, "Paiement trajet #$bookingId")) {
+                        throw new Exception("Erreur lors du débit du passager");
+                    }
                     
-                    // Créditer le conducteur (sans transaction imbriquée)
-                    $this->walletModel->addToBalance($this->ride->driver_id, $driverAmount);
-                    $this->walletModel->logTransaction($this->ride->driver_id, 'credit', $driverAmount, "Revenu trajet #$bookingId");
+                    // Créditer le conducteur
+                    if (!$this->walletModel->addFunds($this->ride->driver_id, $driverAmount, "Revenu trajet #$bookingId")) {
+                        throw new Exception("Erreur lors du crédit du conducteur");
+                    }
                     
                     // Si commission > 0, créditer l'admin
                     if ($commissionAmount > 0) {
-                        // Récupérer l'ID admin (à adapter selon votre structure)
-                        $adminId = 1; // Supposons que l'admin a l'ID 1
-                        $this->walletModel->addToBalance($adminId, $commissionAmount);
-                        $this->walletModel->logTransaction($adminId, 'credit', $commissionAmount, "Commission trajet #$bookingId");
+                        $adminId = $this->userModel->getAdminId();
+                        if (!$adminId) {
+                            throw new Exception("Aucun administrateur trouvé dans le système");
+                        }
+                        if (!$this->walletModel->addFunds($adminId, $commissionAmount, "Commission trajet #$bookingId")) {
+                            throw new Exception("Erreur lors du crédit de la commission");
+                        }
                     }
                     
                     // Créer l'enregistrement de commission
@@ -164,7 +168,7 @@ class BookingController {
                     // Créer la transaction
                     $transactionData = [
                         'booking_id' => $bookingId,
-                        'amount' => $totalPrice,
+                        'amount' => $totalPriceForSeats,
                         'status' => 'completed',
                         'commission_amount' => $commissionAmount
                     ];

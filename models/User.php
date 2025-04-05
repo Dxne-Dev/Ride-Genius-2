@@ -374,5 +374,13 @@ class User {
         
         return false;
     }
+
+    public function getAdminId() {
+        $query = "SELECT id FROM users WHERE role = 'admin' LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['id'] : null;
+    }
 }
 ?>
