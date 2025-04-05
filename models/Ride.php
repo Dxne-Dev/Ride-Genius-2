@@ -242,4 +242,11 @@ class Ride {
         // Exécuter la requête
         return $stmt->execute();
     }
+
+    public function countByStatus($status) {
+        $query = "SELECT COUNT(*) as total FROM rides WHERE status = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$status]);
+        return $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    }
 }

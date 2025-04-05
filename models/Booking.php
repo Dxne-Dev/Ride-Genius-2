@@ -138,4 +138,11 @@ public function delete() {
     $stmt->bindParam(":id", $this->id);
     return $stmt->execute();
 }
+
+    public function countByStatus($status) {
+        $query = "SELECT COUNT(*) as total FROM bookings WHERE status = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$status]);
+        return $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    }
 }

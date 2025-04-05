@@ -434,4 +434,181 @@
     </div>
 </div>
 
+<?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+    <div class="container py-5">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-dark text-white">
+                    <div class="card-body p-4">
+                        <h2 class="card-title">Bienvenue sur votre espace administrateur</h2>
+                        <p class="card-text">Gérez votre plateforme de covoiturage en toute simplicité.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Statistiques rapides -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Commission Wallet</h5>
+                        <h3 class="text-primary">
+                            <?php
+                            $wallet = new Wallet($db);
+                            $balance = $wallet->getBalance($_SESSION['user_id']);
+                            echo number_format($balance, 2) . ' €';
+                            ?>
+                        </h3>
+                        <p class="text-muted">Total des commissions</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dernières commissions -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-percentage fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Commissions du jour</h5>
+                        <h3 class="text-success">
+                            <?php
+                            $commission = new Commission($db);
+                            $todayCommissions = $commission->getTodayTotal();
+                            echo number_format($todayCommissions, 2) . ' €';
+                            ?>
+                        </h3>
+                        <p class="text-muted">Gains aujourd'hui</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trajets actifs -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-route fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Trajets actifs</h5>
+                        <h3 class="text-info">
+                            <?php
+                            $ride = new Ride($db);
+                            $activeRides = $ride->countByStatus('active');
+                            echo $activeRides;
+                            ?>
+                        </h3>
+                        <p class="text-muted">En cours actuellement</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Réservations en attente -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-warning">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Réservations en attente</h5>
+                        <h3 class="text-warning">
+                            <?php
+                            $booking = new Booking($db);
+                            $pendingBookings = $booking->countByStatus('pending');
+                            echo $pendingBookings;
+                            ?>
+                        </h3>
+                        <p class="text-muted">À traiter</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Actions rapides</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <a href="index.php?page=admin-dashboard" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard complet
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="index.php?page=admin-users" class="btn btn-outline-success w-100">
+                                    <i class="fas fa-users me-2"></i>Gérer les utilisateurs
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="index.php?page=admin-rides" class="btn btn-outline-info w-100">
+                                    <i class="fas fa-car me-2"></i>Gérer les trajets
+                                </a>
+                            </div>
+                            <div class="col-md-3">
+                                <a href="index.php?page=wallet" class="btn btn-outline-warning w-100">
+                                    <i class="fas fa-wallet me-2"></i>Gérer le wallet
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique des commissions -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Aperçu des commissions</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="commissionsChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script pour le graphique -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Données pour le graphique (à remplacer par des données dynamiques)
+        const ctx = document.getElementById('commissionsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                datasets: [{
+                    label: 'Commissions (€)',
+                    data: [
+                        <?php
+                        $commission = new Commission($db);
+                        $weeklyData = $commission->getWeeklyData();
+                        echo implode(',', $weeklyData);
+                        ?>
+                    ],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Commissions de la semaine'
+                    }
+                }
+            }
+        });
+    </script>
+<?php else: ?>
+    <!-- Contenu existant pour les autres utilisateurs -->
+<?php endif; ?>
+
 <?php include 'includes/footer.php'; ?>

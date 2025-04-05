@@ -55,4 +55,37 @@ class Commission {
         $stmt = $this->db->prepare($query);
         return $stmt->execute([$status, $bookingId]);
     }
+
+    public function getTodayTotal() {
+        $query = "SELECT COALESCE(SUM(amount), 0) as total 
+                 FROM commissions 
+                 WHERE DATE(created_at) = CURDATE() 
+                 AND status = 'completed'";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        return $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    }
+
+    public function getWeeklyData() {
+        $query = "SELECT 
+                    DAYOFWEEK(created_at) as day,
+                    COALESCE(SUM(amount), 0) as total
+                 FROM commissions 
+                 WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                 AND status = 'completed'
+                 GROUP BY DAYOFWEEK(created_at)
+                 ORDER BY DAYOFWEEK(created_at)";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute();
+        
+        // Initialiser un tableau avec 7 jours à 0
+        $weekData = array_fill(0, 7, 0);
+        
+        // Remplir avec les données réelles
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $weekData[$row['day'] - 1] = (float)$row['total'];
+        }
+        
+        return $weekData;
+    }
 } 
