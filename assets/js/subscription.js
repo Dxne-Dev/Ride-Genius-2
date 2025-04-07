@@ -28,34 +28,124 @@ function checkJQuery() {
         firstScript.parentNode.insertBefore(script, firstScript);
     } else {
         console.log('jQuery est déjà chargé');
-        initializeSubscription();
+        // Utiliser jQuery.noConflict() pour éviter les conflits
+        const $j = jQuery.noConflict();
+        initializeSubscription($j);
     }
 }
 
+// Fonction pour afficher une notification flottante (définie globalement)
+window.showNotification = function(message, type = 'success', title = null) {
+    if (typeof showFloatingNotification === 'function') {
+        showFloatingNotification(message, type, title);
+    } else {
+        // Fallback si la fonction n'est pas disponible
+        alert(message);
+    }
+};
+
 // Fonction d'initialisation principale
-function initializeSubscription() {
-    if (typeof jQuery === 'undefined') {
+function initializeSubscription($) {
+    if (typeof $ === 'undefined') {
         console.error('jQuery n\'est toujours pas disponible après le chargement');
         return;
     }
     
-    jQuery(document).ready(function($) {
+    // Définir les fonctions globalement
+    window.cancelSubscription = function(subscriptionId) {
+        if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')) {
+            // Afficher une notification de chargement
+            showNotification('Traitement de l\'annulation en cours...', 'info', 'Chargement');
+            
+            $.ajax({
+                url: 'api/subscription_api.php',
+                method: 'POST',
+                data: {
+                    action: 'cancelSubscription',
+                    subscription_id: subscriptionId
+                },
+                timeout: 10000, // 10 secondes de timeout
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('Votre abonnement a été annulé avec succès', 'success', 'Abonnement annulé');
+                        location.reload(); // Recharger la page pour afficher les plans disponibles
+                    } else {
+                        showNotification(response.message || 'Une erreur est survenue lors de l\'annulation', 'error', 'Erreur');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    if (textStatus === "timeout") {
+                        showNotification(
+                            'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
+                            'warning', 
+                            'Délai d\'attente dépassé'
+                        );
+                    } else {
+                        showNotification(
+                            'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
+                            'error', 
+                            'Erreur de connexion'
+                        );
+                    }
+                }
+            });
+        }
+    };
+
+    window.toggleAutoRenew = function(subscriptionId, autoRenew) {
+        // Afficher une notification de chargement
+        showNotification('Mise à jour des paramètres en cours...', 'info', 'Chargement');
+        
+        $.ajax({
+            url: 'api/subscription_api.php',
+            method: 'POST',
+            data: {
+                action: 'updateAutoRenew',
+                subscription_id: subscriptionId,
+                auto_renew: autoRenew
+            },
+            timeout: 10000, // 10 secondes de timeout
+            success: function(response) {
+                if (response.success) {
+                    showNotification(
+                        'Le renouvellement automatique a été ' + (autoRenew ? 'activé' : 'désactivé'), 
+                        'success', 
+                        'Paramètres mis à jour'
+                    );
+                    location.reload(); // Recharger la page pour mettre à jour l'interface
+                } else {
+                    showNotification(response.message || 'Une erreur est survenue', 'error', 'Erreur');
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                console.error("Erreur AJAX:", textStatus, errorThrown);
+                
+                if (textStatus === "timeout") {
+                    showNotification(
+                        'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
+                        'warning', 
+                        'Délai d\'attente dépassé'
+                    );
+                } else {
+                    showNotification(
+                        'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
+                        'error', 
+                        'Erreur de connexion'
+                    );
+                }
+            }
+        });
+    };
+    
+    $(document).ready(function() {
         // Fonction pour formater les montants
         function formatAmount(amount) {
             return new Intl.NumberFormat('fr-FR', {
                 style: 'currency',
                 currency: 'EUR'
             }).format(amount);
-        }
-
-        // Fonction pour afficher une notification flottante
-        function showNotification(message, type = 'success', title = null) {
-            if (typeof showFloatingNotification === 'function') {
-                showFloatingNotification(message, type, title);
-            } else {
-                // Fallback si la fonction n'est pas disponible
-                alert(message);
-            }
         }
 
         function createToastContainer() {
@@ -203,95 +293,6 @@ function initializeSubscription() {
                     setTimeout(function() {
                         checkActiveSubscription();
                     }, 2000);
-                }
-            });
-        }
-
-        // Fonction pour annuler un abonnement
-        function cancelSubscription(subscriptionId) {
-            if (confirm('Êtes-vous sûr de vouloir annuler votre abonnement ?')) {
-                // Afficher une notification de chargement
-                showNotification('Traitement de l\'annulation en cours...', 'info', 'Chargement');
-                
-                $.ajax({
-                    url: 'api/subscription_api.php',
-                    method: 'POST',
-                    data: {
-                        action: 'cancelSubscription',
-                        subscription_id: subscriptionId
-                    },
-                    timeout: 10000, // 10 secondes de timeout
-                    success: function(response) {
-                        if (response.success) {
-                            showNotification('Votre abonnement a été annulé avec succès', 'success', 'Abonnement annulé');
-                            location.reload(); // Recharger la page pour afficher les plans disponibles
-                        } else {
-                            showNotification(response.message || 'Une erreur est survenue lors de l\'annulation', 'error', 'Erreur');
-                        }
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error("Erreur AJAX:", textStatus, errorThrown);
-                        
-                        if (textStatus === "timeout") {
-                            showNotification(
-                                'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
-                                'warning', 
-                                'Délai d\'attente dépassé'
-                            );
-                        } else {
-                            showNotification(
-                                'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si votre abonnement a été annulé.', 
-                                'error', 
-                                'Erreur de connexion'
-                            );
-                        }
-                    }
-                });
-            }
-        }
-
-        // Fonction pour activer/désactiver le renouvellement automatique
-        function toggleAutoRenew(subscriptionId, autoRenew) {
-            // Afficher une notification de chargement
-            showNotification('Mise à jour des paramètres en cours...', 'info', 'Chargement');
-            
-            $.ajax({
-                url: 'api/subscription_api.php',
-                method: 'POST',
-                data: {
-                    action: 'updateAutoRenew',
-                    subscription_id: subscriptionId,
-                    auto_renew: autoRenew
-                },
-                timeout: 10000, // 10 secondes de timeout
-                success: function(response) {
-                    if (response.success) {
-                        showNotification(
-                            'Le renouvellement automatique a été ' + (autoRenew ? 'activé' : 'désactivé'), 
-                            'success', 
-                            'Paramètres mis à jour'
-                        );
-                        location.reload(); // Recharger la page pour mettre à jour l'interface
-                    } else {
-                        showNotification(response.message || 'Une erreur est survenue', 'error', 'Erreur');
-                    }
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    console.error("Erreur AJAX:", textStatus, errorThrown);
-                    
-                    if (textStatus === "timeout") {
-                        showNotification(
-                            'Le serveur met trop de temps à répondre. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
-                            'warning', 
-                            'Délai d\'attente dépassé'
-                        );
-                    } else {
-                        showNotification(
-                            'Impossible de se connecter au serveur. Veuillez rafraîchir la page pour vérifier si vos paramètres ont été mis à jour.', 
-                            'error', 
-                            'Erreur de connexion'
-                        );
-                    }
                 }
             });
         }
