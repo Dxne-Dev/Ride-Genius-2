@@ -222,6 +222,10 @@
             $stmt = $ride->read();
             $count = 0;
             
+            // Préparer les informations sur les prix pour chaque trajet
+            require_once 'models/Commission.php';
+            $commission = new Commission($db);
+            
             while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 if($count >= 6) break; // Limiter à 6 trajets
                 
@@ -231,13 +235,25 @@
                 // Ne montrer que les trajets futurs
                 if($departure_time > $now && $row['status'] === 'active') {
                     $count++;
+                    
+                    // Calculer le prix avec commission selon l'abonnement du conducteur
+                    $driverSubscription = $subscription->getActiveSubscription($row['driver_id']);
+                    $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+                    
+                    $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
+                    
+                    // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+                    $displayPrice = $row['price'];
+                    if ($subscriptionType === 'pro') {
+                        $displayPrice = $row['price'] + $commissionInfo['amount'];
+                    }
             ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 shadow-sm glass-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
-                                <span class="badge bg-primary"><?php echo htmlspecialchars($row['price']); ?> €</span>
+                                <span class="badge bg-primary"><?php echo number_format($displayPrice, 2); ?> €</span>
                             </div>
                             <p class="card-text text-muted mb-1">
                                 <i class="fas fa-calendar-alt me-2"></i><?php echo $departure_time->format('d/m/Y'); ?>

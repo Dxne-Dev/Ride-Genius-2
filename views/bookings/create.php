@@ -60,7 +60,7 @@
                                     <h6 class="card-title">Récapitulatif de la réservation</h6>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Prix par place</span>
-                                        <span><?php echo htmlspecialchars($ride->price); ?> €</span>
+                                        <span><?php echo number_format($totalPrice, 2); ?> €</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Nombre de places</span>
@@ -69,7 +69,7 @@
                                     <hr>
                                     <div class="d-flex justify-content-between fw-bold">
                                         <span>Total</span>
-                                        <span id="totalPrice"><?php echo htmlspecialchars($ride->price); ?> €</span>
+                                        <span id="totalPrice"><?php echo number_format($totalPrice, 2); ?> €</span>
                                     </div>
                                 </div>
                             </div>
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const seatsInput = document.getElementById('seats');
     const seatsCount = document.getElementById('seatsCount');
     const totalPrice = document.getElementById('totalPrice');
-    const pricePerSeat = <?php echo htmlspecialchars($ride->price); ?>;
+    const pricePerSeat = <?php echo $totalPrice; ?>;
     
     seatsInput.addEventListener('input', function() {
         const seats = parseInt(this.value) || 0;

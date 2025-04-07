@@ -63,15 +63,15 @@ if (isset($_GET['query'])) {
     <?php if ($searched): ?>
         <h2 class="mb-4">Résultats de recherche</h2>
 
-        <?php if ($results->rowCount() > 0): ?>
+        <?php if (count($results) > 0): ?>
             <div class="row">
-                <?php while ($row = $results->fetch(PDO::FETCH_ASSOC)): ?>
+                <?php foreach ($results as $row): ?>
                     <div class="col-md-6 col-lg-4 mb-4">
                         <div class="card h-100 shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between mb-2">
                                     <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
-                                    <span class="badge bg-primary"><?php echo htmlspecialchars($row['price']); ?> €</span>
+                                    <span class="badge bg-primary"><?php echo number_format($row['display_price'], 2); ?> €</span>
                                 </div>
 
                                 <?php $departure_time = new DateTime($row['departure_time']); ?>
@@ -92,7 +92,7 @@ if (isset($_GET['query'])) {
                             </div>
                         </div>
                     </div>
-                <?php endwhile; ?>
+                <?php endforeach; ?>
             </div>
         <?php else: ?>
             <div class="alert alert-info">

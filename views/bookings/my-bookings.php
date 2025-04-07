@@ -44,7 +44,7 @@ $db = $database->getConnection();
                             <tbody>
                                 <?php
                                 // Récupérer les réservations "à venir" pour le passager connecté
-                                $query = "SELECT b.*, r.price, r.departure, r.destination, r.departure_time 
+                                $query = "SELECT b.*, r.price, r.departure, r.destination, r.departure_time, r.driver_id 
                                           FROM bookings b 
                                           JOIN rides r ON b.ride_id = r.id 
                                           WHERE b.passenger_id = :user_id AND b.status IN ('pending', 'accepted')";
@@ -66,7 +66,25 @@ $db = $database->getConnection();
                                         $count_upcoming++;
                                         $departure = $row['departure'] ?? 'Inconnu';
                                         $destination = $row['destination'] ?? 'Inconnu';
-                                        $total_price = $row['price'] * $row['seats'];
+                                        
+                                        // Calculer le prix total en tenant compte de l'abonnement du conducteur
+                                        require_once 'models/Subscription.php';
+                                        require_once 'models/Commission.php';
+                                        $subscription = new Subscription($db);
+                                        $commission = new Commission($db);
+                                        
+                                        $driverSubscription = $subscription->getActiveSubscription($row['driver_id']);
+                                        $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+                                        
+                                        $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
+                                        
+                                        // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+                                        $pricePerSeat = $row['price'];
+                                        if ($subscriptionType === 'pro') {
+                                            $pricePerSeat = $row['price'] + $commissionInfo['amount'];
+                                        }
+                                        
+                                        $total_price = $pricePerSeat * $row['seats'];
                                         ?>
                                         <tr>
                                             <td>
@@ -127,7 +145,7 @@ $db = $database->getConnection();
                             <tbody>
                                 <?php
                                 // Récupérer les réservations passées pour le passager connecté
-                                $query = "SELECT b.*, r.price, r.departure, r.destination, r.departure_time 
+                                $query = "SELECT b.*, r.price, r.departure, r.destination, r.departure_time, r.driver_id 
                                           FROM bookings b 
                                           JOIN rides r ON b.ride_id = r.id 
                                           WHERE b.passenger_id = :user_id AND b.status = 'accepted'";
@@ -156,15 +174,21 @@ $db = $database->getConnection();
                                         $review_stmt->execute();
                                         $has_reviewed = $review_stmt->rowCount() > 0;
                                         
-                                        // Récupérer l'ID du conducteur depuis la table rides
-                                        $driver_query = "SELECT driver_id FROM rides WHERE id = ?";
-                                        $driver_stmt = $db->prepare($driver_query);
-                                        $driver_stmt->bindParam(1, $row['ride_id']);
-                                        $driver_stmt->execute();
-                                        $driver_row = $driver_stmt->fetch(PDO::FETCH_ASSOC);
-                                        $driver_id = $driver_row ? $driver_row['driver_id'] : null;
+                                        // Calculer le prix total en tenant compte de l'abonnement du conducteur
+                                        $driver_id = $row['driver_id'];
                                         
-                                        $total_price = $row['price'] * $row['seats'];
+                                        $driverSubscription = $subscription->getActiveSubscription($driver_id);
+                                        $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+                                        
+                                        $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
+                                        
+                                        // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+                                        $pricePerSeat = $row['price'];
+                                        if ($subscriptionType === 'pro') {
+                                            $pricePerSeat = $row['price'] + $commissionInfo['amount'];
+                                        }
+                                        
+                                        $total_price = $pricePerSeat * $row['seats'];
                                         ?>
                                         <tr>
                                             <td>

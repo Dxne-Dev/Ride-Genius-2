@@ -9,7 +9,7 @@
                     <h1 class="card-title h3 mb-4">
                         <div class="d-flex align-items-center justify-content-between">
                             <span><?php echo htmlspecialchars($ride->departure); ?> → <?php echo htmlspecialchars($ride->destination); ?></span>
-                            <span class="badge bg-primary fs-5"><?php echo htmlspecialchars($ride->price); ?> €</span>
+                            <span class="badge bg-primary fs-5"><?php echo htmlspecialchars($totalPrice); ?> €</span>
                         </div>
                     </h1>
                     

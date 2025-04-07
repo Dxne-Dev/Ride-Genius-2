@@ -350,6 +350,36 @@ class RideController {
                 $searched = true;
                 $stmt = $this->ride->search($departure, $destination, $date);
                 $results = $stmt;
+                
+                // Préparer les informations sur les prix pour chaque trajet
+                require_once 'models/Subscription.php';
+                require_once 'models/Commission.php';
+                $subscription = new Subscription($this->db);
+                $commission = new Commission($this->db);
+                
+                // Tableau pour stocker les données de prix ajustées
+                $ridesWithAdjustedPrices = [];
+                
+                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $driverSubscription = $subscription->getActiveSubscription($row['driver_id']);
+                    $subscriptionType = $driverSubscription ? $driverSubscription['plan_type'] : 'eco';
+                    
+                    $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
+                    
+                    // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+                    $displayPrice = $row['price'];
+                    if ($subscriptionType === 'pro') {
+                        $displayPrice = $row['price'] + $commissionInfo['amount'];
+                    }
+                    
+                    $row['display_price'] = $displayPrice;
+                    $row['subscription_type'] = $subscriptionType;
+                    $row['commission'] = $commissionInfo;
+                    
+                    $ridesWithAdjustedPrices[] = $row;
+                }
+                
+                $results = $ridesWithAdjustedPrices;
             }
         }
 
