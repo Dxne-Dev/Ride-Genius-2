@@ -50,11 +50,11 @@ class BookingManager {
                 break;
         }
 
-        // Mise à jour de l'affichage
-        document.querySelector('.base-price').textContent = ridePrice.toFixed(2) + '€';
-        document.querySelector('.commission-amount').textContent = commission.toFixed(2) + '€';
+        // Mise à jour de l'affichage avec formatAmount pour éviter les cassures
+        document.querySelector('.base-price').textContent = formatAmount(ridePrice);
+        document.querySelector('.commission-amount').textContent = formatAmount(commission);
         document.querySelector('.commission-rate').textContent = commissionRate + '%';
-        document.querySelector('.total-price').textContent = totalPrice.toFixed(2) + '€';
+        document.querySelector('.total-price').textContent = formatAmount(totalPrice);
 
         // Mise à jour du montant dans le formulaire
         document.querySelector('[name="amount"]').value = totalPrice;
@@ -220,9 +220,12 @@ class BookingManager {
 
 // Fonction utilitaire pour formater les montants
 function formatAmount(amount) {
+    // Utiliser un format cohérent pour tous les montants avec 2 décimales
     return new Intl.NumberFormat('fr-FR', {
         style: 'currency',
-        currency: 'EUR'
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
     }).format(amount);
 }
 

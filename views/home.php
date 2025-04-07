@@ -253,7 +253,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
-                                <span class="badge bg-primary"><?php echo number_format($displayPrice, 2); ?> €</span>
+                                <span class="badge bg-primary" style="min-width: 70px; text-align: right;"><?php echo number_format($displayPrice, 2); ?> €</span>
                             </div>
                             <p class="card-text text-muted mb-1">
                                 <i class="fas fa-calendar-alt me-2"></i><?php echo $departure_time->format('d/m/Y'); ?>

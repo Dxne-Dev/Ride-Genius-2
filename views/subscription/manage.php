@@ -83,7 +83,7 @@ include __DIR__ . '/../../includes/navbar.php';
                             <p>Date de début: <?php echo date('d/m/Y', strtotime($activeSubscription['start_date'])); ?></p>
                             <p>Date de fin: <?php echo date('d/m/Y', strtotime($activeSubscription['end_date'])); ?></p>
                             <p>Renouvellement automatique: <?php echo $activeSubscription['auto_renew'] ? 'Activé' : 'Désactivé'; ?></p>
-                            <p>Prix: <?php echo number_format($activeSubscription['price'], 2); ?> €</p>
+                            <p>Prix: <span class="price-display"><?php echo number_format($activeSubscription['price'], 2); ?> €</span></p>
                             
                             <div class="mt-3">
                                 <button class="btn btn-danger" id="cancelSubscriptionBtn">

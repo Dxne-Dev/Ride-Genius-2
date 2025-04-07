@@ -205,15 +205,16 @@
                                 <p class="mb-1 fw-bold">
                                     <?php echo number_format($totalPrice, 2); ?>€
                                 </p>
-                                <small class="text-muted">
-                                    (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                <small class="text-muted d-block">
+                                    <span class="d-inline-block">(Prix de base: <?php echo number_format($ride->price, 2); ?>€</span>
+                                    <span class="d-inline-block">+ Commission: <?php echo number_format($commission['amount'], 2); ?>€)</span>
                                 </small>
                             <?php else: ?>
                                 <p class="mb-1 fw-bold">
                                     <?php echo number_format($ride->price, 2); ?>€
                                 </p>
                                 <?php if ($driverSubscription === 'eco'): ?>
-                                    <small class="text-muted">
+                                    <small class="text-muted d-block">
                                         (Le conducteur paiera une commission de <?php echo number_format($commission['amount'], 2); ?>€)
                                     </small>
                                 <?php endif; ?>

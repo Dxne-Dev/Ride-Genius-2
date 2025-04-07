@@ -1,0 +1,25 @@
+/* Si le fichier existe déjà, ajouter à la fin */
+/* Styles pour l'affichage des prix */
+.price-display {
+    display: inline-block;
+    min-width: 70px;
+    text-align: right;
+    font-weight: bold;
+}
+
+/* Eviter les cassures sur les montants */
+.badge.bg-primary {
+    white-space: nowrap;
+}
+
+/* Style pour les colonnes de prix */
+.col-5.text-end p {
+    white-space: nowrap;
+    margin-bottom: 0.25rem;
+}
+
+/* Assurer que les montants dans les tableaux ne cassent pas */
+.table td.price-column {
+    white-space: nowrap;
+    text-align: right;
+} 
