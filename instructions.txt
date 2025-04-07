@@ -1,6 +1,47 @@
-sur la page : http://ride-genius/index.php?page=my-bookings
-le prix et les places ne correspondent pas aux informations saisi sur la page http://ride-genius/index.php?page=book-ride&ride_id=17
-c'est à dire meme si je rentre 3 place sur un trajet de 50 euros par place , je verrai 1 place et 50 euro figurant sur la page : http://ride-genius/index.php?page=my-bookings
+ETANT DEBUATNT DANS L'UTILISATION JE VEUX DES PROMPTS SUPER OPTIMISER FLEXIBLE ET ADAPTAPTER A DIVERS SITUATIONS 
 
+//Reponds ici en fournissant des résultats cohérents//
 
-resous ça 
+[CONTEXTE] Décrivez brièvement la situation ou le domaine
+[OBJECTIF] Définissez clairement ce que vous souhaitez accomplir
+[CONTRAINTES] Listez les limitations ou exigences spécifiques
+[FORMAT] Précisez le format de réponse souhaité
+[EXEMPLES] Fournissez des exemples concrets si pertinent
+
+[CONTEXTE] Développement d'une application web avec PHP/JavaScript
+[OBJECTIF] Créer une fonctionnalité de gestion d'abonnements
+[CONTRAINTES] 
+- Compatibilité avec les navigateurs modernes
+- Sécurité des données utilisateur
+- Performance optimale
+[FORMAT] Code commenté avec explications
+[EXEMPLES] Voir le code existant dans subscription.js
+
+[CONTEXTE] Erreur JavaScript dans la gestion des abonnements
+[OBJECTIF] Identifier et corriger l'erreur "Uncaught ReferenceError"
+[CONTRAINTES]
+- Maintenir la compatibilité existante
+- Ne pas introduire de nouvelles erreurs
+[FORMAT] Analyse détaillée avec solution proposée
+[EXEMPLES] Voir les logs d'erreur dans la console
+
+[CONTEXTE] Amélioration des performances d'une application web
+[OBJECTIF] Optimiser le chargement des scripts
+[CONTRAINTES]
+- Minimiser le temps de chargement
+- Maintenir la fonctionnalité
+[FORMAT] Recommandations avec mesures de performance
+[EXEMPLES] Analyse des temps de chargement actuels
+
+[CONTEXTE] Module de gestion d'abonnements en JavaScript
+[OBJECTIF] Améliorer la gestion des erreurs et la robustesse
+[CONTRAINTES]
+- Maintenir la compatibilité avec le code existant
+- Assurer la disponibilité des dépendances
+- Gérer les cas d'erreur de manière élégante
+[FORMAT] Code JavaScript modulaire avec gestion d'erreurs
+[EXEMPLES] 
+- Vérification de la disponibilité de jQuery
+- Gestion des erreurs AJAX
+- Notifications utilisateur
+

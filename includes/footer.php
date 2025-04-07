@@ -38,15 +38,18 @@
     </div>
 </footer>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" 
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" 
+        crossorigin="anonymous"
+        defer></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
 <!-- Custom JS -->
-<script src="assets/js/main.js"></script>
+<script src="assets/js/main.js" defer></script>
 <!-- Wallet JS -->
-<script src="assets/js/wallet.js"></script>
+<script src="assets/js/wallet.js" defer></script>
 <!-- Subscription JS -->
-<script src="assets/js/subscription.js"></script>
+<script src="assets/js/subscription.js" defer></script>
 </body>
 </html>
