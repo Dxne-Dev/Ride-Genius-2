@@ -1,1 +1,6 @@
-propose des corrctions pour eviter la cassure au niveau des montants 
+sur la page : http://ride-genius/index.php?page=my-bookings
+le prix et les places ne correspondent pas aux informations saisi sur la page http://ride-genius/index.php?page=book-ride&ride_id=17
+c'est à dire meme si je rentre 3 place sur un trajet de 50 euros par place , je verrai 1 place et 50 euro figurant sur la page : http://ride-genius/index.php?page=my-bookings
+
+
+resous ça 

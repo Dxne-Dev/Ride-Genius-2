@@ -21,10 +21,11 @@ class Booking {
 
     // Créer une nouvelle réservation
     public function create() {
-        $sql = "INSERT INTO bookings (ride_id, passenger_id, status) VALUES (:ride_id, :passenger_id, :status)";
+        $sql = "INSERT INTO bookings (ride_id, passenger_id, seats, status) VALUES (:ride_id, :passenger_id, :seats, :status)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':ride_id', $this->ride_id, PDO::PARAM_INT);
         $stmt->bindParam(':passenger_id', $this->passenger_id, PDO::PARAM_INT);
+        $stmt->bindParam(':seats', $this->seats, PDO::PARAM_INT);
         $stmt->bindParam(':status', $this->status, PDO::PARAM_STR);
         return $stmt->execute();
     }
