@@ -96,7 +96,7 @@ switch ($action) {
         
         if ($subscription->create($subscriptionData)) {
             if ($planType !== 'eco') {
-                $wallet->debit($userId, $planDetails['price'], 'Abonnement ' . strtoupper($planType));
+                $wallet->withdrawFunds($userId, $planDetails['price'], 'Abonnement ' . strtoupper($planType));
             }
             echo json_encode([
                 'success' => true,

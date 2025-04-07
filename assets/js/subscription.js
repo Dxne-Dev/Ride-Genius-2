@@ -253,6 +253,7 @@
                         plan_type: planType
                     },
                     timeout: 10000, // 10 secondes de timeout
+                    dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                     success: function(response) {
                         if (response.success) {
                             // Afficher la notification de succès
@@ -275,6 +276,17 @@
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
                         console.error("Erreur AJAX:", textStatus, errorThrown);
+                        
+                        // Vérifier si l'erreur est due à un problème de parsing JSON
+                        if (textStatus === "parsererror") {
+                            console.error("Réponse brute du serveur:", jqXHR.responseText);
+                            showNotification(
+                                'Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 
+                                'error', 
+                                'Erreur de format'
+                            );
+                            return;
+                        }
                         
                         // Vérifier si l'erreur est due à un timeout
                         if (textStatus === "timeout") {

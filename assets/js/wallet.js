@@ -53,6 +53,7 @@
                 url: 'api/wallet_api.php',
                 method: 'POST',
                 data: { action: 'getBalance' },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         $('.balance-amount').text(formatAmount(response.balance));
@@ -60,6 +61,18 @@
                         $('#withdrawAmount').attr('max', response.balance);
                         $('small.text-muted').text('Solde disponible: ' + formatAmount(response.balance));
                     }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors de la récupération du solde', 'error');
                 }
             });
         }
@@ -70,6 +83,7 @@
                 url: 'api/wallet_api.php',
                 method: 'POST',
                 data: { action: 'getTransactions' },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         const tbody = $('.transactions-table tbody');
@@ -97,6 +111,18 @@
                             tbody.append(row);
                         });
                     }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors du chargement des transactions', 'error');
                 }
             });
         }
@@ -121,6 +147,7 @@
                     paymentMethod: paymentMethod,
                     description: description
                 },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         showNotification('Fonds ajoutés avec succès', 'success');
@@ -133,7 +160,16 @@
                         showNotification(response.message || 'Erreur lors de l\'ajout des fonds', 'error');
                     }
                 },
-                error: function() {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
                     showNotification('Erreur lors de la communication avec le serveur', 'error');
                 }
             });
@@ -159,6 +195,7 @@
                     withdrawMethod: withdrawMethod,
                     description: description
                 },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         showNotification('Fonds retirés avec succès', 'success');
@@ -171,7 +208,16 @@
                         showNotification(response.message || 'Erreur lors du retrait des fonds', 'error');
                     }
                 },
-                error: function() {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
                     showNotification('Erreur lors de la communication avec le serveur', 'error');
                 }
             });
@@ -191,6 +237,7 @@
                     paymentMethod: 'sandbox',
                     description: description
                 },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         showNotification(`Dépôt de ${formatAmount(amount)} simulé avec succès`, 'success');
@@ -200,7 +247,16 @@
                         showNotification(response.message || 'Erreur lors de la simulation du dépôt', 'error');
                     }
                 },
-                error: function() {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
                     showNotification('Erreur lors de la communication avec le serveur', 'error');
                 }
             });
@@ -220,6 +276,7 @@
                     withdrawMethod: 'sandbox',
                     description: description
                 },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
                     if (response.success) {
                         showNotification(`Retrait de ${formatAmount(amount)} simulé avec succès`, 'success');
@@ -229,7 +286,16 @@
                         showNotification(response.message || 'Erreur lors de la simulation du retrait', 'error');
                     }
                 },
-                error: function() {
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
                     showNotification('Erreur lors de la communication avec le serveur', 'error');
                 }
             });
@@ -245,6 +311,7 @@
                         action: 'resetBalance',
                         amount: 100
                     },
+                    dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                     success: function(response) {
                         if (response.success) {
                             showNotification('Solde réinitialisé à 100€ avec succès', 'success');
@@ -254,7 +321,16 @@
                             showNotification(response.message || 'Erreur lors de la réinitialisation du solde', 'error');
                         }
                     },
-                    error: function() {
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("Erreur AJAX:", textStatus, errorThrown);
+                        
+                        // Vérifier si l'erreur est due à un problème de parsing JSON
+                        if (textStatus === "parsererror") {
+                            console.error("Réponse brute du serveur:", jqXHR.responseText);
+                            showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                            return;
+                        }
+                        
                         showNotification('Erreur lors de la communication avec le serveur', 'error');
                     }
                 });
