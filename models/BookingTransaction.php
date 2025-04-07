@@ -26,14 +26,60 @@ class BookingTransaction {
             $stmt->bindParam(':status', $data['status']);
             
             // Obtenir les IDs du passager et du conducteur à partir de la réservation
-            $bookingQuery = "SELECT passenger_id, driver_id FROM bookings WHERE id = ?";
+            $bookingQuery = "SELECT bookings.passenger_id, COALESCE(bookings.driver_id, rides.driver_id) as driver_id 
+                            FROM bookings 
+                            LEFT JOIN rides ON bookings.ride_id = rides.id 
+                            WHERE bookings.id = ?";
             $bookingStmt = $this->db->prepare($bookingQuery);
             $bookingStmt->execute([$data['booking_id']]);
             $bookingData = $bookingStmt->fetch(PDO::FETCH_ASSOC);
             
+            if (!$bookingData) {
+                error_log("BookingTransaction::create - Réservation non trouvée pour l'ID: " . $data['booking_id']);
+                return false;
+            }
+            
+            error_log("BookingTransaction::create - Données de réservation récupérées: " . json_encode($bookingData));
+            
+            // Vérifier si le driver_id est NULL
+            if (empty($bookingData['driver_id'])) {
+                error_log("BookingTransaction::create - driver_id est NULL, recherche du driver_id dans la table rides");
+                // Récupérer le ride_id associé à cette réservation
+                $rideQuery = "SELECT ride_id FROM bookings WHERE id = ?";
+                $rideStmt = $this->db->prepare($rideQuery);
+                $rideStmt->execute([$data['booking_id']]);
+                $rideData = $rideStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($rideData) {
+                    // Récupérer le driver_id du trajet
+                    $driverQuery = "SELECT driver_id FROM rides WHERE id = ?";
+                    $driverStmt = $this->db->prepare($driverQuery);
+                    $driverStmt->execute([$rideData['ride_id']]);
+                    $driverData = $driverStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($driverData && !empty($driverData['driver_id'])) {
+                        $bookingData['driver_id'] = $driverData['driver_id'];
+                        error_log("BookingTransaction::create - driver_id récupéré du trajet: " . $bookingData['driver_id']);
+                    } else {
+                        error_log("BookingTransaction::create - Impossible de trouver le driver_id");
+                        return false;
+                    }
+                } else {
+                    error_log("BookingTransaction::create - Impossible de trouver le ride_id");
+                    return false;
+                }
+            }
+            
             // Paramètres de la réservation
             $passengerId = $bookingData['passenger_id'];
             $driverId = $bookingData['driver_id'];
+            
+            // Vérifier que les IDs ne sont pas NULL
+            if (empty($passengerId) || empty($driverId)) {
+                error_log("BookingTransaction::create - passenger_id ou driver_id manquant: passenger_id=" . $passengerId . ", driver_id=" . $driverId);
+                return false;
+            }
+            
             $stmt->bindParam(':passenger_id', $passengerId);
             $stmt->bindParam(':driver_id', $driverId);
             

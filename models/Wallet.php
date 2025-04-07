@@ -78,19 +78,67 @@ class Wallet {
      * @return bool Succès de l'opération
      */
     public function substractFromBalance($userId, $amount) {
-        // Vérifier si le wallet existe, sinon le créer
-        $this->ensureWalletExists($userId);
-        
-        // Vérifier le solde
-        $currentBalance = $this->getBalance($userId);
-        if ($currentBalance < $amount) {
+        try {
+            // Convertir les paramètres pour s'assurer qu'ils sont du bon type
+            $userId = intval($userId);
+            $amount = floatval($amount);
+            
+            error_log("substractFromBalance - userId: $userId, amount: $amount");
+            
+            // Vérifier que les valeurs sont valides
+            if ($userId <= 0 || $amount <= 0) {
+                error_log("substractFromBalance - Valeurs invalides: userId=$userId, amount=$amount");
+                return false;
+            }
+            
+            // Vérifier si le wallet existe, sinon le créer
+            if (!$this->ensureWalletExists($userId)) {
+                error_log("substractFromBalance - Wallet inexistant pour l'utilisateur $userId");
+                return false;
+            }
+            
+            // Vérifier le solde avec une requête directe pour éviter les problèmes de cache
+            $query = "SELECT balance FROM wallets WHERE user_id = ? FOR UPDATE";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$userId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                error_log("substractFromBalance - Solde introuvable pour l'utilisateur $userId");
+                return false;
+            }
+            
+            $currentBalance = floatval($result['balance']);
+            error_log("substractFromBalance - Solde actuel: $currentBalance");
+            
+            if ($currentBalance < $amount) {
+                error_log("substractFromBalance - Solde insuffisant: $currentBalance < $amount");
+                return false;
+            }
+            
+            // Mettre à jour le solde avec verrouillage explicite pour éviter les problèmes de concurrence
+            $newBalance = $currentBalance - $amount;
+            $query = "UPDATE wallets SET balance = ? WHERE user_id = ?";
+            $stmt = $this->db->prepare($query);
+            $result = $stmt->execute([$newBalance, $userId]);
+            
+            if (!$result) {
+                $errorInfo = $stmt->errorInfo();
+                error_log("substractFromBalance - Erreur SQL: " . json_encode($errorInfo));
+                return false;
+            }
+            
+            if ($stmt->rowCount() === 0) {
+                error_log("substractFromBalance - Aucune ligne mise à jour");
+                return false;
+            }
+            
+            error_log("substractFromBalance - Mise à jour réussie, nouveau solde: $newBalance");
+            return true;
+        } catch (Exception $e) {
+            error_log("substractFromBalance - Exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return false;
         }
-        
-        // Mettre à jour le solde
-        $query = "UPDATE wallets SET balance = balance - ? WHERE user_id = ?";
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute([$amount, $userId]);
     }
 
     /**

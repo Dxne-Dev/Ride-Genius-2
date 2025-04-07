@@ -1,27 +1,20 @@
-The error you're getting is due to a connection problem with your WebSocket server. Here are a few steps to diagnose and resolve the problem.
-
-### 1. **Check WebSocket server URL**
- The error indicates a connection problem with your WebSocket server. Check that the WebSocket server URL is correct.
-
-   **Check your JavaScript code:**
- - The WebSocket URL must be set correctly (e.g. `ws://localhost:3000` or `wss://` for secure connections).
-   - If you're using a local WebSocket server during development, the URL should be `ws://localhost:3000`. In production, you should use `wss://` if you're using HTTPS.
-
-   Example:
-
- ```javascript
- const socket = new WebSocket( ws://localhost:3000'); // Or 'wss://...' in production
- ```
-
- **Action to be checked** :
-   - Confirm that the WebSocket server is running and listening on the right port.
-   - Check that the server is configured to be accessible from the client.
-
-### 2. **Check the WebSocket connection in the browser**
- Use your browser's development tools to inspect the network and see exactly what's going on.
-
-   - Open Development Tools** (F12 or Ctrl+Shift+I).
-   - Go to the **Network** tab and filter by **WebSocket** to see established connections.
-   - If the connection fails, you should see a detailed error in this section.
-
-   This
+logs 
+[07-Apr-2025 02:48:10 UTC] BookingController: Réservation créée avec succès, ID: 35
+[07-Apr-2025 02:48:10 UTC] BookingController: Tentative de débit - User: 37 - Amount: 1530
+[07-Apr-2025 02:48:10 UTC] substractFromBalance - userId: 37, amount: 1530
+[07-Apr-2025 02:48:10 UTC] substractFromBalance - Solde actuel: 3200
+[07-Apr-2025 02:48:10 UTC] substractFromBalance - Mise à jour réussie, nouveau solde: 1670
+[07-Apr-2025 02:48:10 UTC] BookingController: Débit réussi - User: 37 - Amount: 1530
+[07-Apr-2025 02:48:10 UTC] PHP Warning:  Undefined variable $driverAmount in C:\wamp64\www\Ride-Genius\controllers\BookingController.php on line 158
+[07-Apr-2025 02:48:10 UTC] PHP Stack trace:
+[07-Apr-2025 02:48:10 UTC] PHP   1. {main}() C:\wamp64\www\Ride-Genius\index.php:0
+[07-Apr-2025 02:48:10 UTC] PHP   2. BookingController->create() C:\wamp64\www\Ride-Genius\index.php:99
+[07-Apr-2025 02:48:10 UTC] BookingController: Tentative de crédit - Driver: 5 - Amount: 
+[07-Apr-2025 02:48:10 UTC] PHP Warning:  Undefined variable $driverAmount in C:\wamp64\www\Ride-Genius\controllers\BookingController.php on line 159
+[07-Apr-2025 02:48:10 UTC] PHP Stack trace:
+[07-Apr-2025 02:48:10 UTC] PHP   1. {main}() C:\wamp64\www\Ride-Genius\index.php:0
+[07-Apr-2025 02:48:10 UTC] PHP   2. BookingController->create() C:\wamp64\www\Ride-Genius\index.php:99
+[07-Apr-2025 02:48:10 UTC] PHP Warning:  Undefined variable $driverAmount in C:\wamp64\www\Ride-Genius\controllers\BookingController.php on line 165
+[07-Apr-2025 02:48:10 UTC] PHP Stack trace:
+[07-Apr-2025 02:48:10 UTC] PHP   1. {main}() C:\wamp64\www\Ride-Genius\index.php:0
+[07-Apr-2025 02:48:10 UTC] PHP   2. BookingController->create() C:\wamp64\www\Ride-Genius\index.php:99
