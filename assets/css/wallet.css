@@ -23,41 +23,35 @@
     font-weight: bold;
 }
 
-.balance-card .actions {
-    display: flex;
-    gap: 15px;
+.balance-card .d-grid {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .balance-card .btn {
-    flex: 1;
     padding: 10px 20px;
     border-radius: 8px;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 160px;
+    text-align: center;
     transition: all 0.3s ease;
 }
 
-.balance-card .btn-add {
-    background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    color: white;
-}
-
-.balance-card .btn-add:hover {
-    background-color: rgba(255, 255, 255, 0.3);
+.balance-card .btn:hover {
     transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.balance-card .btn-withdraw {
-    background-color: white;
-    color: #000DFF;
+.balance-card .btn-light {
+    background: rgba(255, 255, 255, 0.9);
     border: none;
+    color: #4e73df;
 }
 
-.balance-card .btn-withdraw:hover {
-    background-color: rgba(255, 255, 255, 0.9);
-    transform: translateY(-2px);
+.balance-card .btn-light:hover {
+    background: #ffffff;
 }
 
 .stats-container {
@@ -286,9 +280,14 @@
         font-size: 2rem;
     }
 
-    .balance-card .actions {
+    .balance-card .d-grid {
         flex-direction: column;
-        gap: 10px;
+        width: 100%;
+    }
+
+    .balance-card .btn {
+        width: 100%;
+        margin: 0;
     }
 
     .stat-card {
@@ -398,5 +397,16 @@
     .transactions-table th,
     .transactions-table td {
         padding: 1.25rem;
+    }
+}
+
+/* Desktop optimizations */
+@media (min-width: 769px) {
+    .balance-card .d-grid {
+        justify-content: flex-end;
+    }
+
+    .balance-card .btn {
+        flex: 0 0 auto;
     }
 } 

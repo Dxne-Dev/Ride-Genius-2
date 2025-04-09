@@ -14,8 +14,8 @@ $database = new Database();
 $db = $database->getConnection();
 $messageController = new MessageController($db);
 
-// Router API
-$action = $_GET['action'] ?? '';
+// Router API - Accepte les actions en GET et POST
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 header('Content-Type: application/json');
 
@@ -25,7 +25,7 @@ switch ($action) {
         break;
 
     case 'getMessages':
-        $other_user_id = $_GET['user_id'] ?? null;
+        $other_user_id = $_GET['user_id'] ?? $_POST['user_id'] ?? null;
         if ($other_user_id) {
             echo json_encode($messageController->getMessages($_SESSION['user_id'], $other_user_id));
         } else {
@@ -44,7 +44,7 @@ switch ($action) {
         break;
 
     case 'createConversation':
-        $other_user_id = $_POST['user_id'] ?? null;
+        $other_user_id = $_POST['user_id'] ?? $_GET['user_id'] ?? null;
         if ($other_user_id) {
             // Initialiser une conversation vide
             $result = $messageController->createConversation($_SESSION['user_id'], $other_user_id);

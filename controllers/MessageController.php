@@ -252,5 +252,69 @@ class MessageController {
         // Passer les données à la vue
         require_once 'views/messages/chat.php';
     }
+
+    // Création d'une nouvelle conversation
+    public function createConversation($user1_id, $user2_id) {
+        try {
+            // Vérifier si les utilisateurs existent et sont vérifiés
+            $user1 = $this->user->findById($user1_id);
+            $user2 = $this->user->findById($user2_id);
+
+            if (!$user1 || !$user2) {
+                return [
+                    'success' => false,
+                    'message' => "Un ou plusieurs utilisateurs n'existent pas"
+                ];
+            }
+
+            // Vérifier si une conversation existe déjà
+            $sql = "SELECT id FROM conversations 
+                    WHERE (user1_id = :user1_id AND user2_id = :user2_id)
+                    OR (user1_id = :user2_id AND user2_id = :user1_id)";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':user1_id' => $user1_id,
+                ':user2_id' => $user2_id
+            ]);
+
+            if ($stmt->rowCount() > 0) {
+                return [
+                    'success' => true,
+                    'message' => "La conversation existe déjà",
+                    'conversation' => $stmt->fetch(PDO::FETCH_ASSOC)
+                ];
+            }
+
+            // Créer une nouvelle conversation
+            $sql = "INSERT INTO conversations (user1_id, user2_id, last_message_at) 
+                    VALUES (:user1_id, :user2_id, CURRENT_TIMESTAMP)";
+            
+            $stmt = $this->db->prepare($sql);
+            $success = $stmt->execute([
+                ':user1_id' => $user1_id,
+                ':user2_id' => $user2_id
+            ]);
+
+            if ($success) {
+                return [
+                    'success' => true,
+                    'message' => "Conversation créée avec succès",
+                    'conversation_id' => $this->db->lastInsertId()
+                ];
+            } else {
+                return [
+                    'success' => false,
+                    'message' => "Erreur lors de la création de la conversation"
+                ];
+            }
+        } catch (Exception $e) {
+            error_log("Erreur lors de la création de la conversation: " . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => "Une erreur est survenue lors de la création de la conversation"
+            ];
+        }
+    }
 }
 ?>

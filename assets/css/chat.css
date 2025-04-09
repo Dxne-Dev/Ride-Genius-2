@@ -1,0 +1,356 @@
+/* Styles pour le système de chat */
+
+/* Container principal */
+.chat-container {
+    display: flex;
+    height: 100vh;
+    background: #f0f2f5;
+}
+
+/* Sidebar des conversations */
+.chat-sidebar {
+    width: 360px;
+    background: #ffffff;
+    border-right: 1px solid #e4e6eb;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    padding: 16px;
+    border-bottom: 1px solid #e4e6eb;
+}
+
+.chat-header h2 {
+    margin: 0 0 16px;
+    font-size: 24px;
+    color: #050505;
+}
+
+/* Zone de recherche */
+.search-box {
+    position: relative;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: none;
+    border-radius: 8px;
+    background: #f0f2f5;
+    font-size: 15px;
+}
+
+.search-box i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #65676b;
+}
+
+.search-results {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.search-results.show {
+    display: block;
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.search-result-item:hover {
+    background-color: #f0f2f5;
+}
+
+.search-result-item .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+
+.search-result-item .user-details h4 {
+    margin: 0;
+    font-size: 15px;
+    color: #050505;
+}
+
+.search-result-item .user-details p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #65676b;
+}
+
+/* Liste des conversations */
+.conversations-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.conversation-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.conversation-item:hover {
+    background-color: #f0f2f5;
+}
+
+.conversation-item.active {
+    background-color: #e7f3ff;
+}
+
+/* Zone de chat principale */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    min-width: 0;
+}
+
+.selected-user-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid #e4e6eb;
+    background: #ffffff;
+}
+
+.chat-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.chat-action-btn {
+    padding: 8px;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: #050505;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.chat-action-btn:hover {
+    background-color: #f0f2f5;
+}
+
+/* Messages */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 60%;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.message.sent {
+    align-self: flex-end;
+}
+
+.message.received {
+    align-self: flex-start;
+}
+
+.message-content {
+    padding: 8px 12px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.message.sent .message-content {
+    background: #0084ff;
+    color: #ffffff;
+}
+
+.message.received .message-content {
+    background: #f0f2f5;
+    color: #050505;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #65676b;
+    margin-top: 4px;
+    display: block;
+}
+
+.message.sent .message-time {
+    text-align: right;
+}
+
+/* Zone de saisie */
+.chat-input {
+    padding: 16px;
+    background: #ffffff;
+    border-top: 1px solid #e4e6eb;
+}
+
+.message-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0f2f5;
+    padding: 8px;
+    border-radius: 20px;
+}
+
+.input-group input[type="text"] {
+    flex: 1;
+    border: none;
+    background: none;
+    padding: 8px;
+    font-size: 15px;
+    min-width: 0;
+}
+
+.input-group button {
+    padding: 8px;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: #0084ff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.input-group button:hover {
+    background-color: #e4e6eb;
+}
+
+/* Pièces jointes */
+.message-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.attachment-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f0f2f5;
+    border-radius: 4px;
+}
+
+.attachment-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.attachment-name {
+    font-size: 12px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-size {
+    font-size: 11px;
+    color: #65676b;
+}
+
+.remove-attachment {
+    padding: 2px;
+    background: none;
+    border: none;
+    color: #65676b;
+    cursor: pointer;
+}
+
+.remove-attachment:hover {
+    color: #dc3545;
+}
+
+/* Indicateur de frappe */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    margin: 8px;
+    background: #f0f2f5;
+    border-radius: 16px;
+    width: fit-content;
+}
+
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    background: #90949c;
+    border-radius: 50%;
+    animation: typing 1s infinite;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* Statut de lecture */
+.message.read .message-content::after {
+    content: '✓✓';
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    font-size: 12px;
+    color: #0084ff;
+}
+
+/* Support du drag & drop */
+.chat-messages.drag-over {
+    background-color: rgba(0, 132, 255, 0.1);
+    border: 2px dashed #0084ff;
+} 
