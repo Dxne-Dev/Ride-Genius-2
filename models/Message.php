@@ -51,7 +51,11 @@ class Message {
 
     public function getConversation($user_id, $other_user_id) {
         try {
-            $query = "SELECT m.*, u.username as sender_name, u.profile_image as sender_image 
+            $query = "SELECT m.*, 
+                    CONCAT(u.first_name, ' ', u.last_name) as sender_name,
+                    u.id as sender_id,
+                    m.created_at,
+                    m.is_read
                     FROM " . $this->table . " m 
                     JOIN users u ON m.sender_id = u.id 
                     WHERE (m.sender_id = :user_id AND m.receiver_id = :other_user_id) 
@@ -59,15 +63,24 @@ class Message {
                     ORDER BY m.created_at ASC";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $user_id);
-            $stmt->bindParam(':other_user_id', $other_user_id);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+            $stmt->bindParam(':other_user_id', $other_user_id, PDO::PARAM_INT);
             $stmt->execute();
 
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Get reactions for each message
+            // Format each message
             foreach ($messages as &$message) {
-                $message['reactions'] = $this->getMessageReactions($message['id']);
+                $message['created_at'] = date('Y-m-d H:i:s', strtotime($message['created_at']));
+                $message['is_read'] = (bool)$message['is_read'];
+                $message['sender'] = [
+                    'id' => $message['sender_id'],
+                    'name' => $message['sender_name']
+                ];
+                
+                // Remove redundant fields
+                unset($message['sender_id']);
+                unset($message['sender_name']);
             }
 
             return $messages;
@@ -80,8 +93,11 @@ class Message {
     public function getConversations($user_id) {
         try {
             $query = "SELECT 
-                        u.id, u.username, u.profile_image,
-                        m.content, m.type, m.created_at,
+                        u.id, 
+                        CONCAT(u.first_name, ' ', u.last_name) as name,
+                        m.content, 
+                        m.type, 
+                        m.created_at,
                         (SELECT COUNT(*) FROM messages 
                          WHERE receiver_id = :user_id 
                          AND sender_id = u.id 
@@ -105,10 +121,18 @@ class Message {
                     ORDER BY m.created_at DESC";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':user_id', $user_id);
+            $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
             $stmt->execute();
 
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $conversations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Format each conversation
+            foreach ($conversations as &$conv) {
+                $conv['created_at'] = date('Y-m-d H:i:s', strtotime($conv['created_at']));
+                $conv['unread_count'] = (int)$conv['unread_count'];
+            }
+
+            return $conversations;
         } catch (PDOException $e) {
             error_log("Error getting conversations: " . $e->getMessage());
             return false;

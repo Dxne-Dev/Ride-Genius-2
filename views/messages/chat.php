@@ -109,12 +109,12 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     <div class="input-group">
                         <button type="button" class="attach-btn" id="attachButton">
                             <i class="fas fa-paperclip"></i>
-                        </button>
+                    </button>
                         <input type="text" id="messageInput" placeholder="Écrivez votre message..." autocomplete="off">
                         <input type="file" id="fileInput" style="display: none" multiple>
-                        <button type="submit">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                    <button type="submit">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                     </div>
                 </form>
             </div>
@@ -417,25 +417,25 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
         // Charger les messages d'une conversation
         function loadMessages(userId) {
-            $.ajax({
-                url: 'message_api.php',
+                $.ajax({
+                    url: 'message_api.php',
                 method: 'GET',
                 data: {
                     action: 'getMessages',
                     user_id: userId
                 },
                 dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
+                    success: function(response) {
+                        if (response.success) {
                         $('#chatMessages').empty();
                         response.messages.forEach(message => {
                             appendMessage(message);
                         });
                         scrollToBottom();
                     }
-                }
-            });
-        }
+                    }
+                });
+            }
     </script>
 </body>
 </html>

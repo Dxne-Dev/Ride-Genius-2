@@ -3,209 +3,123 @@
 putenv('RATCHET_DISABLE_XDEBUG_WARN=1');
 
 require 'vendor/autoload.php';
-require 'config/database.php';
-require 'controllers/MessageController.php';
+require_once 'config/Database.php';
+require_once 'models/Message.php';
+require_once 'models/User.php';
 
+use Ratchet\Server\IoServer;
+use Ratchet\Http\HttpServer;
+use Ratchet\WebSocket\WsServer;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 
 class ChatServer implements MessageComponentInterface {
     protected $clients;
-    protected $messageController;
+    protected $userConnections;
+    protected $database;
+    protected $messageModel;
+    protected $userModel;
 
     public function __construct() {
         $this->clients = new \SplObjectStorage;
+        $this->userConnections = [];
+        
+        // Initialiser la connexion à la base de données
         $database = new Database();
-        $db = $database->getConnection();
-        $this->messageController = new MessageController($db);
+        $this->database = $database->getConnection();
+        $this->messageModel = new Message($this->database);
+        $this->userModel = new User($this->database);
+
+        echo "Base de données connectée avec succès\n";
     }
 
     public function onOpen(ConnectionInterface $conn) {
-        // Vérifier le token JWT
-        $query = $conn->httpRequest->getUri()->getQuery();
-        parse_str($query, $params);
-        
-        try {
-            if (empty($params['token']) || !$this->validateToken($params['token'])) {
-                $conn->close();
-                return;
-            }
-            
-            $this->clients->attach($conn);
-            $session = $this->getSessionFromToken($params['token']);
-            $conn->userId = $session['user_id'];
-            $conn->userRole = $session['user_role'];
-        } catch (\Exception $e) {
-            $conn->close();
-        }
-    }
-
-    private function validateToken($token) {
-        // Implémentez la validation JWT ici
-        // Exemple avec firebase/php-jwt
-        try {
-            $decoded = \Firebase\JWT\JWT::decode(
-                $token,
-                new \Firebase\JWT\Key('votre_secret_key', 'HS256')
-            );
-            return true;
-        } catch (\Exception $e) {
-            return false;
-        }
-    }
-
-    private function getSessionFromToken($token) {
-        $decoded = \Firebase\JWT\JWT::decode(
-            $token,
-            new \Firebase\JWT\Key('votre_secret_key', 'HS256')
-        );
-        return (array)$decoded;
+        $this->clients->attach($conn);
+        echo "Nouvelle connexion! ({$conn->resourceId})\n";
     }
 
     public function onMessage(ConnectionInterface $from, $msg) {
-        $data = json_decode($msg, true);
+        $data = json_decode($msg);
         
-        if (!isset($data['type'])) {
+        if ($data->type === 'auth') {
+            // Authentification de l'utilisateur
+            $this->userConnections[$data->userId] = $from;
+            echo "Utilisateur {$data->userId} authentifié\n";
             return;
         }
 
-        switch ($data['type']) {
-            case 'sendMessage':
-                $this->handleSendMessage($from, $data);
-                break;
-            case 'uploadFile':
-                $this->handleFileUpload($from, $data);
-                break;
-            case 'typing':
-                $this->handleTypingStatus($from, $data);
-                break;
-            case 'markAsRead':
-                $this->handleMarkAsRead($from, $data);
-                break;
-        }
-    }
+        if ($data->type === 'message') {
+            try {
+                // Sauvegarder le message dans la base de données
+                $messageId = $this->messageModel->create([
+                    'sender_id' => $data->senderId,
+                    'receiver_id' => $data->receiverId,
+                    'content' => $data->content,
+                    'type' => 'text'
+                ]);
 
-    private function handleSendMessage(ConnectionInterface $from, array $data) {
-        try {
-            // Enregistrer le message en base de données
-            $messageId = $this->messageController->sendMessage(
-                $from->userId,
-                $data['receiver_id'], 
-                $data['message'],
-                $data['file_path'] ?? null,
-                $data['file_type'] ?? 'text'
-            );
-            
-            if (!$messageId) {
-                throw new \Exception("Erreur lors de l'enregistrement du message");
-            }
+                if ($messageId) {
+                    // Préparer le message à envoyer
+                    $messageData = [
+                        'id' => $messageId,
+                        'type' => 'message',
+                        'senderId' => $data->senderId,
+                        'receiverId' => $data->receiverId,
+                        'content' => $data->content,
+                        'timestamp' => date('Y-m-d H:i:s')
+                    ];
 
-            // Préparer les données du message
-            $messageData = [
-                'id' => $messageId,
-                'type' => 'message',
-                'sender_id' => $from->userId,
-                'receiver_id' => $data['receiver_id'],
-                'content' => $data['message'],
-                'file_path' => $data['file_path'] ?? null,
-                'file_type' => $data['file_type'] ?? 'text',
-                'timestamp' => date('Y-m-d H:i:s')
-            ];
+                    // Envoyer au destinataire s'il est connecté
+                    if (isset($this->userConnections[$data->receiverId])) {
+                        $this->userConnections[$data->receiverId]->send(json_encode($messageData));
+                    }
 
-            // Envoyer au destinataire
-            foreach ($this->clients as $client) {
-                if ($client->userId == $data['receiver_id'] || $client === $from) {
-                    $client->send(json_encode($messageData));
-                }
-            }
-        } catch (\Exception $e) {
-            $from->send(json_encode([
-                'type' => 'error',
-                'message' => "Erreur lors de l'envoi du message: " . $e->getMessage()
-            ]));
-        }
-    }
-
-    private function handleFileUpload(ConnectionInterface $from, array $data) {
-        try {
-            $uploadDir = __DIR__ . '/uploads/messages/';
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-
-            $fileData = base64_decode($data['file_content']);
-            $fileName = uniqid() . '_' . $data['file_name'];
-            $filePath = $uploadDir . $fileName;
-            
-            if (file_put_contents($filePath, $fileData)) {
-                $messageData = [
-                    'type' => 'message',
-                    'sender_id' => $from->userId,
-                    'receiver_id' => $data['receiver_id'],
-                    'content' => $data['message'] ?? '',
-                    'file_path' => 'uploads/messages/' . $fileName,
-                    'file_type' => $data['file_type'],
-                    'timestamp' => date('Y-m-d H:i:s')
-                ];
-
-                // Enregistrer le message avec le fichier
-                $this->handleSendMessage($from, $messageData);
-            } else {
-                throw new \Exception("Erreur lors de l'upload du fichier");
-            }
-        } catch (\Exception $e) {
-            $from->send(json_encode([
-                'type' => 'error',
-                'message' => "Erreur lors de l'upload du fichier: " . $e->getMessage()
-            ]));
-        }
-    }
-
-    private function handleTypingStatus(ConnectionInterface $from, array $data) {
-        foreach ($this->clients as $client) {
-            if ($client->userId == $data['receiver_id']) {
-                $client->send(json_encode([
-                    'type' => 'typing',
-                    'sender_id' => $from->userId,
-                    'is_typing' => $data['is_typing']
-                ]));
-                break;
-            }
-        }
-    }
-
-    private function handleMarkAsRead(ConnectionInterface $from, array $data) {
-        try {
-            $this->messageController->markAsRead($from->userId, $data['sender_id']);
-            
-            // Notifier l'expéditeur que ses messages ont été lus
-            foreach ($this->clients as $client) {
-                if ($client->userId == $data['sender_id']) {
-                    $client->send(json_encode([
-                        'type' => 'messagesRead',
-                        'reader_id' => $from->userId
+                    // Confirmer à l'expéditeur
+                    $from->send(json_encode([
+                        'type' => 'confirmation',
+                        'messageId' => $messageId,
+                        'status' => 'sent'
                     ]));
-                    break;
                 }
+            } catch (Exception $e) {
+                echo "Erreur: " . $e->getMessage() . "\n";
+                $from->send(json_encode([
+                    'type' => 'error',
+                    'message' => 'Erreur lors de l\'envoi du message'
+                ]));
             }
-        } catch (\Exception $e) {
-            $from->send(json_encode([
-                'type' => 'error',
-                'message' => "Erreur lors du marquage des messages comme lus: " . $e->getMessage()
-            ]));
         }
     }
 
     public function onClose(ConnectionInterface $conn) {
         $this->clients->detach($conn);
+        
+        // Retirer l'utilisateur des connexions actives
+        foreach ($this->userConnections as $userId => $connection) {
+            if ($connection === $conn) {
+                unset($this->userConnections[$userId]);
+                break;
+            }
+        }
+        
+        echo "Connexion {$conn->resourceId} fermée\n";
     }
 
     public function onError(ConnectionInterface $conn, \Exception $e) {
-        echo "Error: {$e->getMessage()}\n";
+        echo "Erreur: {$e->getMessage()}\n";
         $conn->close();
     }
 }
 
-$server = new Ratchet\App('localhost', 3000, '0.0.0.0');
-$server->route('/chat', new ChatServer, ['*']);
+// Lancer le serveur WebSocket
+$server = IoServer::factory(
+    new HttpServer(
+        new WsServer(
+            new ChatServer()
+        )
+    ),
+    3000
+);
+
+echo "Serveur WebSocket démarré sur le port 3000\n";
 $server->run();
