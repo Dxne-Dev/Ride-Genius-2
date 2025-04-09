@@ -283,4 +283,285 @@ body,
 .modal-content,
 .list-group-item {
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Global Responsive Styles */
+:root {
+    --navbar-height: 60px;
+    --container-padding: 1rem;
+}
+
+/* Base Responsive Styles */
+html {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 14px;
+    }
+}
+
+/* Container Responsiveness */
+.container {
+    padding-left: var(--container-padding);
+    padding-right: var(--container-padding);
+}
+
+/* Images and Icons Responsiveness */
+img, svg {
+    max-width: 100%;
+    height: auto;
+}
+
+.icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Responsive Typography */
+h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+h3 {
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+}
+
+h4 {
+    font-size: clamp(1.1rem, 2vw, 1.5rem);
+}
+
+p, .body-text {
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+}
+
+/* Cards Responsiveness */
+.card {
+    margin-bottom: 1rem;
+}
+
+.card-img-top {
+    height: auto;
+    object-fit: cover;
+}
+
+/* Forms Responsiveness */
+.form-control, .form-select {
+    font-size: 1rem;
+    padding: 0.5rem 0.75rem;
+}
+
+@media (max-width: 576px) {
+    .form-control, .form-select {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+}
+
+/* Buttons Responsiveness */
+.btn {
+    padding: 0.5rem 1rem;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    white-space: nowrap;
+}
+
+@media (max-width: 576px) {
+    .btn {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Tables Responsiveness */
+.table-responsive {
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Grid System Enhancements */
+.row {
+    margin-right: calc(var(--container-padding) * -1);
+    margin-left: calc(var(--container-padding) * -1);
+}
+
+.row > * {
+    padding-right: var(--container-padding);
+    padding-left: var(--container-padding);
+}
+
+/* Navigation Responsiveness */
+.navbar {
+    padding: 0.5rem var(--container-padding);
+}
+
+.navbar-brand {
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+}
+
+.nav-link {
+    padding: 0.5rem clamp(0.5rem, 1vw, 1rem);
+}
+
+/* Dropdown Menus */
+.dropdown-menu {
+    min-width: 200px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .dropdown-menu {
+        min-width: 100%;
+        position: static !important;
+        transform: none !important;
+    }
+}
+
+/* Modal Responsiveness */
+.modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+}
+
+@media (min-width: 576px) {
+    .modal-dialog {
+        margin: 1.75rem auto;
+    }
+}
+
+/* Ride Cards and Lists */
+.ride-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.ride-card .card-body {
+    flex: 1;
+}
+
+/* Profile and User Elements */
+.profile-image {
+    width: 100%;
+    max-width: 150px;
+    height: auto;
+    border-radius: 50%;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Search Form Responsiveness */
+.search-form {
+    gap: 1rem;
+}
+
+@media (max-width: 768px) {
+    .search-form {
+        flex-direction: column;
+    }
+    
+    .search-form .form-group {
+        width: 100%;
+    }
+}
+
+/* Wallet and Payment Elements */
+.wallet-card {
+    min-height: 200px;
+}
+
+.transaction-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Reviews and Ratings */
+.rating-stars {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+}
+
+.review-card {
+    margin-bottom: 1rem;
+}
+
+/* Messages and Notifications */
+.message-list {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.notification-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Subscription Cards */
+.subscription-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.subscription-card .card-body {
+    flex: 1;
+}
+
+/* Loading States and Placeholders */
+.placeholder {
+    min-height: 1rem;
+}
+
+/* Utility Classes for Responsiveness */
+.w-auto-sm {
+    width: auto !important;
+}
+
+@media (max-width: 576px) {
+    .w-100-sm {
+        width: 100% !important;
+    }
+    
+    .text-center-sm {
+        text-align: center !important;
+    }
+}
+
+/* Dark Mode Specific Responsive Adjustments */
+.dark-mode .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Animation and Transition Optimizations */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .container {
+        width: 100% !important;
+        max-width: none !important;
+    }
 } 
