@@ -129,41 +129,72 @@ class MessageController {
     }
 
     // Envoi d'un message
-    public function sendMessage($sender_id, $receiver_id, $message) {
+    public function sendMessage() {
+        header('Content-Type: application/json');
+        
         try {
-            // Vérifier que les deux utilisateurs sont vérifiés
-            $sender = $this->user->findById($sender_id);
-            $receiver = $this->user->findById($receiver_id);
-
-            if (!$sender['is_verified'] || !$receiver['is_verified']) {
-                return ['success' => false, 'message' => 'Les deux utilisateurs doivent être vérifiés'];
+            // Vérification de la méthode HTTP
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Invalid request method');
             }
 
-            // Créer le message
-            $message_id = $this->message->create($sender_id, $receiver_id, $message);
+            // Vérification des données requises
+            $content = isset($_POST['content']) ? $_POST['content'] : (isset($_POST['message']) ? $_POST['message'] : null);
+            if (!isset($_POST['receiver_id']) || !$content) {
+                throw new Exception('Missing required parameters');
+            }
+
+            $sender_id = $_SESSION['user_id'];
+            $receiver_id = $_POST['receiver_id'];
+            $content = trim($content);
+            $type = isset($_POST['type']) ? $_POST['type'] : 'text';
+
+            if (empty($content)) {
+                throw new Exception('Message content cannot be empty');
+            }
+
+            // Création du message
+            $message_id = $this->message->create($sender_id, $receiver_id, $content, $type);
+            
             if (!$message_id) {
-                return ['success' => false, 'message' => 'Erreur lors de l\'envoi du message'];
+                throw new Exception('Failed to create message');
             }
 
-            // Mettre à jour la conversation
-            $this->updateConversation($sender_id, $receiver_id);
+            // Récupération du message créé pour le retourner
+            $message = $this->message->getMessageById($message_id);
+            
+            if (!$message) {
+                throw new Exception('Message created but could not be retrieved');
+            }
 
-            return [
-                'success' => true,
-                'message_id' => $message_id,
-                'created_at' => date('Y-m-d H:i:s')
-            ];
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Message sent successfully',
+                'data' => $message
+            ]);
+
         } catch (Exception $e) {
-            error_log("Erreur lors de l'envoi du message: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Erreur lors de l\'envoi du message'];
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ]);
         }
+        exit;
     }
 
     // Récupération des messages entre deux utilisateurs
     public function getMessages($user_id, $other_user_id) {
         try {
-            $messages = $this->message->getMessagesBetweenUsers($user_id, $other_user_id);
+            $messages = $this->message->getConversation($user_id, $other_user_id);
             
+            if ($messages === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Erreur lors de la récupération des messages'
+                ];
+            }
+
             // Marquer les messages comme lus
             $this->message->markAsRead($user_id, $other_user_id);
 
@@ -173,7 +204,10 @@ class MessageController {
             ];
         } catch (Exception $e) {
             error_log("Erreur lors de la récupération des messages: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Erreur lors de la récupération des messages'];
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des messages'
+            ];
         }
     }
 

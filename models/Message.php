@@ -3,31 +3,48 @@ class Message {
     private $conn;
     private $table = 'messages';
 
-    public function __construct() {
-        require_once dirname(__DIR__) . '/config/database.php';
-        $database = new Database();
-        $this->conn = $database->getConnection();
+    public function __construct($db) {
+        $this->conn = $db;
     }
 
     public function create($sender_id, $receiver_id, $content, $type = 'text') {
         try {
+            if (!$this->conn) {
+                error_log("Error: Database connection is null in Message::create");
+                return false;
+            }
+
             $query = "INSERT INTO " . $this->table . " 
-                    (sender_id, receiver_id, content, type, created_at) 
-                    VALUES (:sender_id, :receiver_id, :content, :type, NOW())";
+                    (sender_id, receiver_id, content, type, is_read, created_at) 
+                    VALUES (:sender_id, :receiver_id, :content, :type, 0, NOW())";
 
             $stmt = $this->conn->prepare($query);
 
-            $stmt->bindParam(':sender_id', $sender_id);
-            $stmt->bindParam(':receiver_id', $receiver_id);
-            $stmt->bindParam(':content', $content);
-            $stmt->bindParam(':type', $type);
+            // Validation des paramètres
+            if (!$sender_id || !$receiver_id || !$content) {
+                error_log("Error: Missing required parameters in Message::create");
+                return false;
+            }
+
+            // Bind parameters
+            $stmt->bindParam(':sender_id', $sender_id, PDO::PARAM_INT);
+            $stmt->bindParam(':receiver_id', $receiver_id, PDO::PARAM_INT);
+            $stmt->bindParam(':content', $content, PDO::PARAM_STR);
+            $stmt->bindParam(':type', $type, PDO::PARAM_STR);
 
             if ($stmt->execute()) {
-                return $this->conn->lastInsertId();
+                $message_id = $this->conn->lastInsertId();
+                error_log("Success: Message created with ID " . $message_id);
+                return $message_id;
             }
+
+            error_log("Error: Failed to execute message creation query");
             return false;
         } catch (PDOException $e) {
-            error_log("Error creating message: " . $e->getMessage());
+            error_log("Database Error in Message::create: " . $e->getMessage());
+            return false;
+        } catch (Exception $e) {
+            error_log("General Error in Message::create: " . $e->getMessage());
             return false;
         }
     }
@@ -189,6 +206,42 @@ class Message {
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Error deleting message: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getMessageById($id) {
+        try {
+            $query = "SELECT m.id, m.content, m.type, m.is_read, m.created_at, 
+                    CONCAT(u.first_name, ' ', u.last_name) as sender_name,
+                    u.id as sender_id
+                    FROM " . $this->table . " m 
+                    JOIN users u ON m.sender_id = u.id 
+                    WHERE m.id = :id";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $message = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($message) {
+                // Format the message data
+                $message['created_at'] = date('Y-m-d H:i:s', strtotime($message['created_at']));
+                $message['is_read'] = (bool)$message['is_read'];
+                $message['sender'] = [
+                    'id' => $message['sender_id'],
+                    'name' => $message['sender_name']
+                ];
+                
+                // Remove redundant fields
+                unset($message['sender_id']);
+                unset($message['sender_name']);
+            }
+
+            return $message;
+        } catch (PDOException $e) {
+            error_log("Error getting message by ID: " . $e->getMessage());
             return false;
         }
     }

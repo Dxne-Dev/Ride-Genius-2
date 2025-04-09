@@ -255,8 +255,11 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
+                            // Mettre à jour l'interface sans recharger
+                            updateChatInterface(user);
+                            // Ajouter la conversation à la liste
+                            addConversationToList(user);
                             showNotification('Conversation créée avec succès', 'success');
-                            setTimeout(() => location.reload(), 1000);
                         } else {
                             showNotification(response.message || 'Erreur lors de la création de la conversation', 'error');
                         }
@@ -266,6 +269,115 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     }
                 });
             }
+        }
+
+        // Mettre à jour l'interface du chat
+        function updateChatInterface(user) {
+            selectedUserId = user.id;
+            
+            // Mettre à jour les informations de l'utilisateur en haut
+            $('.selected-user-info .user-info img').attr('src', user.profile_image || 'assets/images/default-avatar.png');
+            $('.selected-user-info .user-info h3').text(user.first_name + ' ' + user.last_name);
+            
+            // Vider la zone de messages
+            $('#chatMessages').empty();
+            
+            // Activer la zone de saisie
+            $('#messageInput').prop('disabled', false);
+            $('#messageForm').show();
+        }
+
+        // Ajouter une conversation à la liste
+        function addConversationToList(user) {
+            const conversationHtml = `
+                <div class="conversation-item" data-user-id="${user.id}">
+                    <div class="user-info">
+                        <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar" class="avatar">
+                        <div class="user-details">
+                            <h4>${user.first_name} ${user.last_name}</h4>
+                            <p class="last-message">Démarrez une conversation</p>
+                        </div>
+                    </div>
+                </div>`;
+            
+            $('.conversations-list').prepend(conversationHtml);
+            $(`.conversation-item[data-user-id="${user.id}"]`).click();
+        }
+
+        // Ajouter un message à l'interface
+        function appendMessage(message) {
+            const isSent = message.sender_id === currentUserId;
+            const messageHtml = `
+                <div class="message ${isSent ? 'sent' : 'received'}">
+                    <div class="message-content">
+                        ${message.content || message.message}
+                    </div>
+                    <span class="message-time">${formatTime(message.created_at)}</span>
+                </div>`;
+            
+            $('#chatMessages').append(messageHtml);
+            scrollToBottom();
+        }
+
+        // Gérer l'envoi des messages
+        $('#messageForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const message = $('#messageInput').val().trim();
+            if (!message || !selectedUserId) return;
+
+            $.ajax({
+                url: 'message_api.php',
+                method: 'POST',
+                data: {
+                    action: 'sendMessage',
+                    receiver_id: selectedUserId,
+                    message: message
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        // Ajouter le message à l'interface
+                        appendMessage({
+                            content: message,
+                            sender_id: currentUserId,
+                            created_at: response.created_at
+                        });
+                        $('#messageInput').val('');
+
+                        // Mettre à jour le dernier message dans la liste des conversations
+                        updateLastMessage(selectedUserId, message);
+                    } else {
+                        showNotification(response.message || 'Erreur lors de l\'envoi du message', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur AJAX:', error);
+                    showNotification('Erreur de connexion au serveur', 'error');
+                }
+            });
+        });
+
+        // Mettre à jour le dernier message dans la liste des conversations
+        function updateLastMessage(userId, message) {
+            const conversationItem = $(`.conversation-item[data-user-id="${userId}"]`);
+            if (conversationItem.length) {
+                conversationItem.find('.last-message').text(message.length > 30 ? message.substring(0, 27) + '...' : message);
+                // Déplacer la conversation en haut de la liste
+                conversationItem.prependTo('.conversations-list');
+            }
+        }
+
+        // Formater l'heure
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Faire défiler jusqu'au dernier message
+        function scrollToBottom() {
+            const chatMessages = $('#chatMessages');
+            chatMessages.scrollTop(chatMessages[0].scrollHeight);
         }
 
         // Notifications
@@ -284,7 +396,46 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         // Initialisation
         $(document).ready(function() {
             initWebSocket();
+            
+            // Gérer le clic sur une conversation existante
+            $('.conversation-item').on('click', function() {
+                const userId = $(this).data('user-id');
+                const userName = $(this).find('.user-details h4').text();
+                const userImage = $(this).find('.avatar').attr('src');
+                
+                updateChatInterface({
+                    id: userId,
+                    first_name: userName.split(' ')[0],
+                    last_name: userName.split(' ')[1] || '',
+                    profile_image: userImage
+                });
+                
+                // Charger les messages existants
+                loadMessages(userId);
+            });
         });
+
+        // Charger les messages d'une conversation
+        function loadMessages(userId) {
+            $.ajax({
+                url: 'message_api.php',
+                method: 'GET',
+                data: {
+                    action: 'getMessages',
+                    user_id: userId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('#chatMessages').empty();
+                        response.messages.forEach(message => {
+                            appendMessage(message);
+                        });
+                        scrollToBottom();
+                    }
+                }
+            });
+        }
     </script>
 </body>
 </html>
