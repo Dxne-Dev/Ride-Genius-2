@@ -1,74 +1,122 @@
 /* Theme Toggle Switch */
-.theme-switch {
+.switch {
+    font-size: 17px;
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 30px;
-    margin: 0;
-    cursor: pointer;
+    width: 64px;
+    height: 34px;
+    transform: translateY(-6px);
 }
 
-.theme-switch input {
+.switch input {
     opacity: 0;
     width: 0;
     height: 0;
 }
 
-.switch-label {
-    position: relative;
-    display: block;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    transition: background-color 0.3s;
-}
-
-.switch-label i {
+.slider {
     position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 14px;
-    transition: opacity 0.3s;
-    z-index: 1;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #73C0FC;
+    transition: .4s;
+    border-radius: 30px;
 }
 
-.switch-label i.fa-sun {
-    left: 8px;
-    color: #ffd700;
-    opacity: 1;
-}
-
-.switch-label i.fa-moon {
-    right: 8px;
-    color: #ffffff;
-    opacity: 0;
-}
-
-.switch-toggle {
+.slider:before {
     position: absolute;
-    top: 2px;
+    content: "";
+    height: 30px;
+    width: 30px;
+    border-radius: 20px;
     left: 2px;
-    width: 26px;
-    height: 26px;
-    background-color: #ffffff;
-    border-radius: 50%;
-    transition: transform 0.3s;
+    bottom: 2px;
+    z-index: 2;
+    background-color: #e8e8e8;
+    transition: .4s;
 }
 
-.theme-switch input:checked + .switch-label {
-    background-color: rgba(0, 0, 0, 0.5);
+.sun svg {
+    position: absolute;
+    top: 6px;
+    left: 36px;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
 }
 
-.theme-switch input:checked + .switch-label .switch-toggle {
+.moon svg {
+    fill: #73C0FC;
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+}
+
+.switch:hover .sun svg {
+    animation: rotate 15s linear infinite;
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.switch:hover .moon svg {
+    animation: tilt 5s linear infinite;
+}
+
+@keyframes tilt {
+    0% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-10deg);
+    }
+    75% {
+        transform: rotate(10deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+.input:checked + .slider {
+    background-color: #183153;
+}
+
+.input:focus + .slider {
+    box-shadow: 0 0 1px #183153;
+}
+
+.input:checked + .slider:before {
     transform: translateX(30px);
 }
 
-.theme-switch input:checked + .switch-label i.fa-sun {
-    opacity: 0;
+/* Responsive theme switch container */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
-.theme-switch input:checked + .switch-label i.fa-moon {
-    opacity: 1;
+@media (max-width: 991.98px) {
+    .theme-switch-wrapper {
+        margin: 0;
+    }
+    
+    .switch {
+        transform: translateY(0);
+    }
 }
 
 /* Dark Mode Styles */
@@ -77,7 +125,16 @@ body.dark-mode {
     color: #ffffff;
 }
 
+/* Card header styles for dark mode */
+.dark-mode .card-header.bg-white {
+    background-color: #1e1e1e !important;
+    border-bottom: 1px solid #2d2d2d;
+}
 
+.dark-mode .card-header h4 {
+    color: #e1e1e1;
+    font-weight: 500;
+}
 
 .dark-mode .navbar {
     background-color: #1e1e1e !important;
