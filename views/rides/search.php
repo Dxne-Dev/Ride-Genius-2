@@ -140,38 +140,78 @@ if (isset($_GET['query'])) {
         <h3 class="mt-5 mb-4">Destinations populaires</h3>
         <div class="row">
             <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="assets/images/paris.jpg" class="card-img-top" alt="Paris">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Paris</h5>
-                        <a href="index.php?page=search-rides&departure=&destination=Paris&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                <div class="card-flip">
+                    <div class="card h-100">
+                        <div class="card-front">
+                            <img src="assets/images/paris.jpg" class="card-img-top" alt="Paris">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Paris</h5>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Paris</h5>
+                                <p class="card-text">Découvrez la ville lumière et ses merveilles architecturales.</p>
+                                <a href="index.php?page=search-rides&departure=&destination=Paris&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="assets/images/lyon.jpg" class="card-img-top" alt="Lyon">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Lyon</h5>
-                        <a href="index.php?page=search-rides&departure=&destination=Lyon&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                <div class="card-flip">
+                    <div class="card h-100">
+                        <div class="card-front">
+                            <img src="assets/images/lyon.jpg" class="card-img-top" alt="Lyon">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Lyon</h5>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Lyon</h5>
+                                <p class="card-text">Explorez la capitale gastronomique de la France.</p>
+                                <a href="index.php?page=search-rides&departure=&destination=Lyon&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="assets/images/marseille.jpg" class="card-img-top" alt="Marseille">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Marseille</h5>
-                        <a href="index.php?page=search-rides&departure=&destination=Marseille&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                <div class="card-flip">
+                    <div class="card h-100">
+                        <div class="card-front">
+                            <img src="assets/images/marseille.jpg" class="card-img-top" alt="Marseille">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Marseille</h5>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Marseille</h5>
+                                <p class="card-text">Visitez la plus ancienne ville de France et son vieux port.</p>
+                                <a href="index.php?page=search-rides&departure=&destination=Marseille&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 mb-4">
-                <div class="card h-100">
-                    <img src="assets/images/bordeaux.jpg" class="card-img-top" alt="Bordeaux">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Bordeaux</h5>
-                        <a href="index.php?page=search-rides&departure=&destination=Bordeaux&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                <div class="card-flip">
+                    <div class="card h-100">
+                        <div class="card-front">
+                            <img src="assets/images/bordeaux.jpg" class="card-img-top" alt="Bordeaux">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Bordeaux</h5>
+                            </div>
+                        </div>
+                        <div class="card-back">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Bordeaux</h5>
+                                <p class="card-text">Découvrez la capitale mondiale du vin.</p>
+                                <a href="index.php?page=search-rides&departure=&destination=Bordeaux&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

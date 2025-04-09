@@ -16,6 +16,8 @@
     <link href="assets/css/custom.css" rel="stylesheet">
     <!-- Wallet CSS -->
     <link href="assets/css/wallet.css" rel="stylesheet">
+    <!-- Destinations CSS -->
+    <link href="assets/css/destinations.css" rel="stylesheet">
     
     <!-- Theme detection script - runs early to prevent flash -->
     <script>
