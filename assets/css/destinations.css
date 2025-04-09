@@ -2,7 +2,7 @@
 .card-flip {
     position: relative;
     width: 100%;
-    height: 300px; /* Fixed height for consistency */
+    height: 340px; /* Increased height for more text */
     perspective: 1000px;
 }
 
@@ -43,7 +43,7 @@
 
 .card-flip .card-img-top {
     width: 100%;
-    height: 180px;
+    height: 200px;
     object-fit: cover;
 }
 
@@ -51,19 +51,35 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    padding: 1rem;
+    padding: 1.25rem;
+}
+
+.card-flip .card-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: var(--primary, #007bff);
+    font-weight: 600;
 }
 
 .card-flip .card-text {
-    margin: 0.5rem 0;
     font-size: 0.9rem;
+    line-height: 1.5;
     text-align: center;
+    margin: 0 0 1rem;
+    font-style: italic;
+    color: var(--text-color, #495057);
 }
 
 .card-flip .btn {
     margin-top: auto;
+    transition: all 0.3s ease;
+}
+
+.card-flip .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 /* Dark mode compatibility */
@@ -74,25 +90,35 @@ html.theme-dark .card-flip .card-back,
 html[data-theme="dark"] .card-flip .card-front,
 html[data-theme="dark"] .card-flip .card-back {
     background-color: var(--dark-card-bg, #2d3748);
-    color: var(--dark-text-color, #fff);
+}
+
+.dark-mode .card-flip .card-text,
+html.theme-dark .card-flip .card-text,
+html[data-theme="dark"] .card-flip .card-text {
+    color: var(--dark-text-color, #e2e8f0);
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-flip {
-        height: 280px;
+        height: 360px; /* Even more height on mobile for text wrapping */
     }
     
     .card-flip .card-img-top {
         height: 160px;
     }
     
-    .card-flip .card-text {
-        font-size: 0.8rem;
+    .card-flip .card-body {
+        padding: 1rem;
     }
     
-    .card-flip .card-body {
-        padding: 0.75rem;
+    .card-flip .card-text {
+        font-size: 0.85rem;
+        line-height: 1.4;
+    }
+    
+    .card-flip .card-title {
+        font-size: 1rem;
     }
 }
 

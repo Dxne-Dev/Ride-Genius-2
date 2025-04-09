@@ -21,13 +21,16 @@
     
     <!-- Theme detection script - runs early to prevent flash -->
     <script>
-        // Check for saved theme preference and apply immediately
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
-        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-            document.body.classList.add('dark-mode');
-        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for saved theme preference and apply immediately
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.documentElement.classList.add('dark-mode');
+                document.body.classList.add('dark-mode');
+            }
+        });
     </script>
 </head>
 <body>

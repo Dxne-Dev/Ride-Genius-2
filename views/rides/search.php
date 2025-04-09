@@ -150,8 +150,8 @@ if (isset($_GET['query'])) {
                         </div>
                         <div class="card-back">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Paris</h5>
-                                <p class="card-text">Découvrez la ville lumière et ses merveilles architecturales.</p>
+                                <h5 class="card-title">Paris - La Ville Lumière</h5>
+                                <p class="card-text">Un poème à ciel ouvert où les toits gris racontent des histoires d'amour. De la Tour Eiffel à Montmartre, chaque quartier chante sa mélodie unique sous le soleil doré qui embrase Notre-Dame.</p>
                                 <a href="index.php?page=search-rides&departure=&destination=Paris&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
                             </div>
                         </div>
@@ -169,8 +169,8 @@ if (isset($_GET['query'])) {
                         </div>
                         <div class="card-back">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Lyon</h5>
-                                <p class="card-text">Explorez la capitale gastronomique de la France.</p>
+                                <h5 class="card-title">Lyon - La muse entre deux collines</h5>
+                                <p class="card-text">Entre Rhône et Saône, Lyon tisse son histoire. Ses traboules mystérieuses et sa gastronomie légendaire envoûtent les visiteurs, sous le regard bienveillant de Fourvière.</p>
                                 <a href="index.php?page=search-rides&departure=&destination=Lyon&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
                             </div>
                         </div>
@@ -188,8 +188,8 @@ if (isset($_GET['query'])) {
                         </div>
                         <div class="card-back">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Marseille</h5>
-                                <p class="card-text">Visitez la plus ancienne ville de France et son vieux port.</p>
+                                <h5 class="card-title">Marseille - L'âme méditerranéenne</h5>
+                                <p class="card-text">Le chant des mouettes se mêle aux accents du Vieux-Port. Ses calanques sauvages et Notre-Dame de la Garde embrassent l'horizon, les bateaux et les rêves.</p>
                                 <a href="index.php?page=search-rides&departure=&destination=Marseille&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
                             </div>
                         </div>
@@ -207,8 +207,8 @@ if (isset($_GET['query'])) {
                         </div>
                         <div class="card-back">
                             <div class="card-body text-center">
-                                <h5 class="card-title">Bordeaux</h5>
-                                <p class="card-text">Découvrez la capitale mondiale du vin.</p>
+                                <h5 class="card-title">Bordeaux - L'âme des vignes</h5>
+                                <p class="card-text">Ville d'art et de vin aux pierres blondes, où la Garonne serpente avec grâce. Entre vignobles ondulants et brasseries raffinées, une invitation à la contemplation.</p>
                                 <a href="index.php?page=search-rides&departure=&destination=Bordeaux&date=<?php echo date('Y-m-d'); ?>" class="btn btn-outline-primary btn-sm">Rechercher</a>
                             </div>
                         </div>
