@@ -333,12 +333,13 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         // Ajouter un message à l'interface
         function appendMessage(message) {
             const isSent = message.sender_id === currentUserId;
+            const timestamp = message.timestamp || message.created_at || new Date();
             const messageHtml = `
                 <div class="message ${isSent ? 'sent' : 'received'}">
                     <div class="message-content">
                         ${message.content || message.message}
                     </div>
-                    <span class="message-time">${formatTime(message.created_at)}</span>
+                    <span class="message-time">${formatTime(timestamp)}</span>
                 </div>`;
             
             $('#chatMessages').append(messageHtml);
@@ -402,7 +403,19 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
         // Formater l'heure
         function formatTime(timestamp) {
+            if (!timestamp) return '';
+            
+            // Si c'est déjà un objet Date
+            if (timestamp instanceof Date) {
+                return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            // Si c'est une chaîne ISO ou un timestamp Unix
             const date = new Date(timestamp);
+            if (isNaN(date.getTime())) {
+                return '';
+            }
+            
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
