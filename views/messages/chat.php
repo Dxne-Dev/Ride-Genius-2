@@ -438,6 +438,22 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             });
         }
 
+        // Jouer le son de notification
+        function playNotificationSound() {
+            try {
+                const audio = new Audio('/assets/sounds/notification.mp3');
+                const playPromise = audio.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        console.log('Info: Lecture du son impossible:', error.message);
+                    });
+                }
+            } catch (error) {
+                console.log('Info: Son de notification non disponible');
+            }
+        }
+
         // Initialisation
         $(document).ready(function() {
             initWebSocket();
