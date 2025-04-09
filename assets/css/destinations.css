@@ -2,7 +2,7 @@
 .card-flip {
     position: relative;
     width: 100%;
-    height: 340px; /* Increased height for more text */
+    height: 340px;
     perspective: 1000px;
 }
 
@@ -13,6 +13,8 @@
     transform-style: preserve-3d;
     transition: transform 0.8s;
     cursor: pointer;
+    border: 1px solid rgba(0,0,0,.125);
+    background: #fff;
 }
 
 .card-flip:hover .card.h-100 {
@@ -41,29 +43,69 @@
     transform: rotateY(180deg);
 }
 
-.card-flip .card-img-top {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
+/* Front card specific styles */
+.card-front {
+    position: relative;
 }
 
-.card-flip .card-body {
-    flex: 1;
+.card-front::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%);
+    z-index: 1;
+    opacity: 0.7;
+}
+
+.card-front .card-img-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.card-front .card-body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 1.5rem;
+    background: transparent;
+    z-index: 2;
+}
+
+.card-front .card-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Back card specific styles */
+.card-back .card-body {
+    padding: 1.5rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem;
+    height: 100%;
 }
 
-.card-flip .card-title {
+.card-back .card-title {
     font-size: 1.1rem;
     margin-bottom: 0.75rem;
     color: var(--primary, #007bff);
     font-weight: 600;
 }
 
-.card-flip .card-text {
+.card-back .card-text {
     font-size: 0.9rem;
     line-height: 1.5;
     text-align: center;
@@ -83,10 +125,13 @@
 }
 
 /* Dark mode compatibility */
+.dark-mode .card-flip .card.h-100,
 .dark-mode .card-flip .card-front,
 .dark-mode .card-flip .card-back,
+html.theme-dark .card-flip .card.h-100,
 html.theme-dark .card-flip .card-front,
 html.theme-dark .card-flip .card-back,
+html[data-theme="dark"] .card-flip .card.h-100,
 html[data-theme="dark"] .card-flip .card-front,
 html[data-theme="dark"] .card-flip .card-back {
     background-color: var(--dark-card-bg, #2d3748);
@@ -98,39 +143,37 @@ html[data-theme="dark"] .card-flip .card-text {
     color: var(--dark-text-color, #e2e8f0);
 }
 
+.dark-mode .card-flip .card-back .card-title,
+html.theme-dark .card-flip .card-back .card-title,
+html[data-theme="dark"] .card-flip .card-back .card-title {
+    color: var(--primary, #3182ce);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-flip {
-        height: 360px; /* Even more height on mobile for text wrapping */
+        height: 300px;
     }
     
-    .card-flip .card-img-top {
-        height: 160px;
+    .card-front .card-title {
+        font-size: 1.25rem;
     }
     
-    .card-flip .card-body {
+    .card-back .card-body {
         padding: 1rem;
     }
     
-    .card-flip .card-text {
+    .card-back .card-text {
         font-size: 0.85rem;
         line-height: 1.4;
     }
     
-    .card-flip .card-title {
+    .card-back .card-title {
         font-size: 1rem;
     }
 }
 
-/* Fix for Bootstrap card override */
-.card-flip .card {
-    border: 1px solid rgba(0,0,0,.125);
-    margin: 0;
-}
-
-/* Ensure proper stacking context */
-.card-flip .card-front *,
-.card-flip .card-back * {
-    position: relative;
-    z-index: 1;
+/* Fix for image loading */
+.card-front {
+    background-color: #f8f9fa;
 } 
