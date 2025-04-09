@@ -166,12 +166,12 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
     <script src="assets/js/chat-user-search.js"></script>
     <script>
         // Configuration
-        const SOCKET_SERVER_URL = 'ws://localhost:3000';
+        const SOCKET_SERVER_URL = 'http://localhost:3000';
         const WS_RECONNECT_DELAY = 5000;
         const WS_MAX_RECONNECT_ATTEMPTS = 5;
 
         // Variables globales
-        let socket;
+        let socket = null;
         let wsConnected = false;
         let wsReconnectAttempts = 0;
         let selectedUserId = null;
@@ -190,7 +190,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             }
         });
 
-        // Initialisation de la connexion WebSocket
+        // Initialisation de la connexion Socket.IO
         function initWebSocket() {
             try {
                 console.log('Tentative de connexion au serveur Socket.IO...');
@@ -201,36 +201,62 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     reconnectionAttempts: WS_MAX_RECONNECT_ATTEMPTS
                 });
 
+                // Événement de connexion
                 socket.on('connect', function() {
-                    console.log('Connecté au serveur Socket.IO');
+                    console.log('✅ Connecté au serveur Socket.IO');
                     wsReconnectAttempts = 0;
                     wsConnected = true;
+                    
+                    // Authentifier l'utilisateur
                     socket.emit('auth', {
                         userId: currentUserId
                     });
+                    
                     showNotification('Connecté au chat', 'success');
                 });
 
+                // Événement de déconnexion
                 socket.on('disconnect', function() {
-                    console.log('Déconnecté du serveur Socket.IO');
+                    console.log('❌ Déconnecté du serveur Socket.IO');
                     wsConnected = false;
                     showNotification('Déconnecté du chat', 'error');
                 });
 
+                // Gestion des erreurs
                 socket.on('error', function(error) {
-                    console.error('Erreur Socket.IO:', error);
+                    console.error('❌ Erreur Socket.IO:', error);
                     wsConnected = false;
                     showNotification('Erreur de connexion au chat', 'error');
                 });
 
-                socket.on('receiveMessage', function(data) {
-                    handleWebSocketMessage(data);
+                // Réception des messages existants
+                socket.on('loadMessages', function(messages) {
+                    console.log('📚 Messages existants reçus:', messages);
+                    messages.forEach(message => appendMessage(message));
+                    scrollToBottom();
+                });
+
+                // Réception d'un nouveau message
+                socket.on('receiveMessage', function(message) {
+                    console.log('📨 Nouveau message reçu:', message);
+                    appendMessage(message);
+                    if (message.senderId !== currentUserId) {
+                        playNotificationSound();
+                    }
+                });
+
+                // Confirmation d'envoi de message
+                socket.on('messageSent', function(response) {
+                    console.log('✅ Message envoyé avec succès:', response);
                 });
 
                 // Mettre à jour la référence du socket dans le gestionnaire de fichiers
-                fileHandler.socket = socket;
+                if (fileHandler) {
+                    fileHandler.socket = socket;
+                }
+
             } catch (error) {
-                console.error('Erreur lors de l\'initialisation de Socket.IO:', error);
+                console.error('❌ Erreur lors de l\'initialisation de Socket.IO:', error);
                 wsConnected = false;
                 showNotification('Impossible de se connecter au chat', 'error');
             }
@@ -320,42 +346,48 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         }
 
         // Gérer l'envoi des messages
+        function sendMessage(messageContent) {
+            if (!messageContent || !selectedUserId) return false;
+
+            // Préparer les données du message
+            const messageData = {
+                receiver_id: selectedUserId,
+                message: messageContent
+            };
+
+            // Envoyer via Socket.IO
+            if (socket && socket.connected) {
+                console.log('🚀 Envoi du message via Socket.IO:', messageData);
+                socket.emit('sendMessage', messageData);
+                
+                // Afficher immédiatement le message dans l'interface
+                appendMessage({
+                    content: messageContent,
+                    sender_id: currentUserId,
+                    created_at: new Date().toISOString()
+                });
+                
+                // Mettre à jour le dernier message dans la liste
+                updateLastMessage(selectedUserId, messageContent);
+                return true;
+            } else {
+                console.error('❌ Socket.IO non connecté');
+                showNotification('Erreur : non connecté au serveur de chat', 'error');
+                return false;
+            }
+        }
+
+        // Gestionnaire de soumission du formulaire
         $('#messageForm').on('submit', function(e) {
             e.preventDefault();
             
-            const message = $('#messageInput').val().trim();
-            if (!message || !selectedUserId) return;
-
-            $.ajax({
-                url: 'message_api.php',
-                method: 'POST',
-                data: {
-                    action: 'sendMessage',
-                    receiver_id: selectedUserId,
-                    message: message
-                },
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        // Ajouter le message à l'interface
-                        appendMessage({
-                            content: message,
-                            sender_id: currentUserId,
-                            created_at: response.created_at
-                        });
-                        $('#messageInput').val('');
-
-                        // Mettre à jour le dernier message dans la liste des conversations
-                        updateLastMessage(selectedUserId, message);
-                    } else {
-                        showNotification(response.message || 'Erreur lors de l\'envoi du message', 'error');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    console.error('Erreur AJAX:', error);
-                    showNotification('Erreur de connexion au serveur', 'error');
-                }
-            });
+            const input = $('#messageInput');
+            const message = input.val().trim();
+            
+            if (sendMessage(message)) {
+                input.val('');
+                input.focus();
+            }
         });
 
         // Mettre à jour le dernier message dans la liste des conversations

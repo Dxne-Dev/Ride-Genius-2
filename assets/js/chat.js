@@ -1,56 +1,64 @@
-// Établir la connexion WebSocket
-const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const wsUrl = `${wsProtocol}//${window.location.hostname}:3000/chat`;
-let ws = null;
-let reconnectAttempts = 0;
-const maxReconnectAttempts = 5;
+// Initialiser la connexion Socket.IO
+let socket = null;
 
 // File d'attente pour les messages pendant la déconnexion
 let messageQueue = [];
 
-// Fonction pour établir la connexion WebSocket
-function connectWebSocket() {
+// Fonction pour établir la connexion Socket.IO
+function connectSocket() {
     try {
-        ws = new WebSocket(wsUrl);
+        // Connexion au serveur Socket.IO
+        socket = io('http://localhost:3000', {
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 3000
+        });
 
-        ws.onopen = () => {
-            console.log('Connecté au serveur WebSocket');
+        // Gestion de la connexion
+        socket.on('connect', () => {
+            console.log('✅ Connecté au serveur Socket.IO');
+            
             // Authentifier l'utilisateur
-            ws.send(JSON.stringify({
-                type: 'auth',
+            socket.emit('auth', {
                 userId: currentUserId
-            }));
+            });
 
             // Envoyer les messages en attente
             while (messageQueue.length > 0) {
                 const message = messageQueue.shift();
-                ws.send(JSON.stringify(message));
+                socket.emit('sendMessage', message);
             }
-        };
+        });
 
-        ws.onmessage = (event) => {
-            console.log('Message reçu:', event.data);
-            const data = JSON.parse(event.data);
-            if (data.type === 'message') {
-                displayMessage(data);
-            }
-        };
+        // Réception des messages existants
+        socket.on('loadMessages', (messages) => {
+            console.log('📚 Messages existants reçus:', messages);
+            messages.forEach(message => displayMessage(message));
+            scrollToBottom();
+        });
 
-        ws.onclose = () => {
-            console.log('Déconnecté du serveur WebSocket');
-            if (reconnectAttempts < maxReconnectAttempts) {
-                setTimeout(() => {
-                    reconnectAttempts++;
-                    connectWebSocket();
-                }, 3000); // Attendre 3 secondes avant de reconnecter
-            }
-        };
+        // Réception d'un nouveau message
+        socket.on('receiveMessage', (data) => {
+            console.log('📨 Message reçu:', data);
+            displayMessage(data);
+        });
 
-        ws.onerror = (error) => {
-            console.error('Erreur WebSocket:', error);
-        };
+        // Confirmation d'envoi de message
+        socket.on('messageSent', (response) => {
+            console.log('✅ Message envoyé avec succès:', response);
+        });
+
+        // Gestion de la déconnexion
+        socket.on('disconnect', () => {
+            console.log('❌ Déconnecté du serveur Socket.IO');
+        });
+
+        socket.on('error', (error) => {
+            console.error('❌ Erreur Socket.IO:', error);
+        });
+
     } catch (error) {
-        console.error('Erreur lors de la connexion:', error);
+        console.error('❌ Erreur lors de la connexion:', error);
     }
 }
 
@@ -125,27 +133,29 @@ document.getElementById('message-form').addEventListener('submit', (e) => {
     
     if (content) {
         const messageData = {
+            receiver_id: receiverId,
+            message: content
+        };
+
+        if (socket && socket.connected) {
+            console.log('🚀 Envoi du message:', messageData);
+            socket.emit('sendMessage', messageData);
+        } else {
+            console.log('⏳ Message mis en file d\'attente:', messageData);
+            messageQueue.push(messageData);
+            // Tenter de reconnecter si déconnecté
+            if (!socket || !socket.connected) {
+                connectSocket();
+            }
+        }
+
+        // Afficher le message immédiatement côté client
+        displayMessage({
             type: 'message',
             senderId: currentUserId,
             receiverId: receiverId,
             content: content,
-            timestamp: new Date().toISOString()
-        };
-
-        if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify(messageData));
-        } else {
-            messageQueue.push(messageData);
-            // Tenter de reconnecter si déconnecté
-            if (!ws || ws.readyState === WebSocket.CLOSED) {
-                connectWebSocket();
-            }
-        }
-
-        // Afficher le message immédiatement
-        displayMessage({
-            ...messageData,
-            id: Date.now() // ID temporaire
+            timestamp: new Date()
         });
 
         input.value = '';
@@ -155,6 +165,6 @@ document.getElementById('message-form').addEventListener('submit', (e) => {
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', () => {
-    connectWebSocket();
+    connectSocket();
     loadExistingMessages();
 }); 
