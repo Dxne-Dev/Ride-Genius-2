@@ -50,6 +50,9 @@
 <!-- Subscription JS (utilise jQuery) -->
 <script src="assets/js/subscription.js" defer></script>
 
+<!-- Theme Toggle JS -->
+<script src="assets/js/theme-toggle.js" defer></script>
+
 <!-- Favicon -->
 <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
 </body>

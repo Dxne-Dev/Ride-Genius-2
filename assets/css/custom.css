@@ -2,8 +2,276 @@
 body {
     background-color: #f8f9fa;
     color: #343a40;
+    transition: background-color 2s, color 2s;
 }
 
+/* Global transitions for all elements */
+* {
+    transition: background-color 2s, color 2s, border-color 2s, box-shadow 2s;
+}
+
+/* Dark Mode Styles */
+body.dark-mode,
+html.theme-dark body,
+html[data-theme="dark"] body {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+body.dark-mode .navbar,
+html.theme-dark .navbar,
+html[data-theme="dark"] .navbar {
+    background-color: #1f1f1f !important;
+}
+
+body.dark-mode .card, 
+body.dark-mode .list-group-item,
+body.dark-mode .dropdown-menu,
+html.theme-dark .card,
+html.theme-dark .list-group-item,
+html.theme-dark .dropdown-menu,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .list-group-item,
+html[data-theme="dark"] .dropdown-menu {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border-color: #333;
+}
+
+body.dark-mode .card.h-100.shadow-sm.glass-card,
+html.theme-dark .card.h-100.shadow-sm.glass-card,
+html[data-theme="dark"] .card.h-100.shadow-sm.glass-card {
+    background: rgba(28, 28, 28, 0.95);
+    border: 1px solid rgba(75, 75, 75, 0.3);
+}
+
+body.dark-mode .modal-content,
+html.theme-dark .modal-content,
+html[data-theme="dark"] .modal-content {
+    background-color: #1f1f1f;
+    color: #ffffff;
+}
+
+body.dark-mode .table,
+html.theme-dark .table,
+html[data-theme="dark"] .table {
+    color: #ffffff;
+}
+
+body.dark-mode .form-control, 
+body.dark-mode .form-select,
+html.theme-dark .form-control,
+html.theme-dark .form-select,
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select {
+    background-color: #333;
+    color: #ffffff;
+    border-color: #444;
+}
+
+body.dark-mode .form-control::placeholder,
+html.theme-dark .form-control::placeholder,
+html[data-theme="dark"] .form-control::placeholder {
+    color: #aaa;
+}
+
+body.dark-mode .alert-success,
+html.theme-dark .alert-success,
+html[data-theme="dark"] .alert-success {
+    background-color: #264c38;
+    color: #d1fae5;
+    border-color: #064e3b;
+}
+
+body.dark-mode .alert-danger,
+html.theme-dark .alert-danger,
+html[data-theme="dark"] .alert-danger {
+    background-color: #4c2626;
+    color: #fad1d1;
+    border-color: #4e0606;
+}
+
+body.dark-mode .alert-warning,
+html.theme-dark .alert-warning,
+html[data-theme="dark"] .alert-warning {
+    background-color: #4c4426;
+    color: #faf3d1;
+    border-color: #4e3306;
+}
+
+body.dark-mode .alert-info,
+html.theme-dark .alert-info,
+html[data-theme="dark"] .alert-info {
+    background-color: #26384c;
+    color: #d1e7fa;
+    border-color: #06334e;
+}
+
+body.dark-mode .dropdown-item,
+html.theme-dark .dropdown-item,
+html[data-theme="dark"] .dropdown-item {
+    color: #ffffff;
+}
+
+body.dark-mode .dropdown-item:hover,
+html.theme-dark .dropdown-item:hover,
+html[data-theme="dark"] .dropdown-item:hover {
+    background-color: #333;
+}
+
+/* Additional Dark Mode Styles */
+body.dark-mode footer,
+html.theme-dark footer,
+html[data-theme="dark"] footer {
+    background-color: #111 !important;
+}
+
+body.dark-mode .bg-light,
+html.theme-dark .bg-light,
+html[data-theme="dark"] .bg-light {
+    background-color: #1f1f1f !important;
+}
+
+body.dark-mode .border,
+html.theme-dark .border,
+html[data-theme="dark"] .border {
+    border-color: #333 !important;
+}
+
+body.dark-mode .text-dark,
+html.theme-dark .text-dark,
+html[data-theme="dark"] .text-dark {
+    color: #ffffff !important;
+}
+
+body.dark-mode .text-secondary,
+html.theme-dark .text-secondary,
+html[data-theme="dark"] .text-secondary {
+    color: #adb5bd !important;
+}
+
+/* Updated gradient for buttons in dark mode */
+body.dark-mode .btn-primary,
+html.theme-dark .btn-primary,
+html[data-theme="dark"] .btn-primary {
+    background: linear-gradient(45deg, #2c3e50, #4a69bd);
+    border: none;
+}
+
+body.dark-mode .btn-primary:hover,
+html.theme-dark .btn-primary:hover,
+html[data-theme="dark"] .btn-primary:hover {
+    background: linear-gradient(45deg, #1a2530, #3a5a9d);
+}
+
+body.dark-mode .btn-outline-primary,
+html.theme-dark .btn-outline-primary,
+html[data-theme="dark"] .btn-outline-primary {
+    color: #4a69bd;
+    border-color: #4a69bd;
+}
+
+body.dark-mode .btn-outline-primary:hover,
+html.theme-dark .btn-outline-primary:hover,
+html[data-theme="dark"] .btn-outline-primary:hover {
+    background-color: #2c3e50;
+    color: #fff;
+}
+
+body.dark-mode a,
+html.theme-dark a,
+html[data-theme="dark"] a {
+    color: #4a69bd;
+}
+
+body.dark-mode a:hover,
+html.theme-dark a:hover,
+html[data-theme="dark"] a:hover {
+    color: #6a89cd;
+}
+
+body.dark-mode .card-header, 
+body.dark-mode .card-footer,
+html.theme-dark .card-header,
+html.theme-dark .card-footer,
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-footer {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: #333;
+}
+
+body.dark-mode .badge.bg-secondary,
+html.theme-dark .badge.bg-secondary,
+html[data-theme="dark"] .badge.bg-secondary {
+    background-color: #495057 !important;
+}
+
+/* Theme Toggle Switch */
+.theme-switch {
+    position: relative;
+    width: 50px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0;
+    height: 26px;
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    width: 50px;
+    height: 26px;
+    background-color: #67748e;
+    border-radius: 100px;
+    position: relative;
+    transition: background-color 0.2s;
+    padding: 0 4px;
+}
+
+.switch-label .fa-sun {
+    color: #f1c40f;
+    font-size: 14px;
+    z-index: 1;
+}
+
+.switch-label .fa-moon {
+    color: #f8f9fa;
+    font-size: 14px;
+    z-index: 1;
+}
+
+.switch-toggle {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    transition: 0.2s;
+    background: #fff;
+    box-shadow: 0 0 2px 0 rgba(10, 10, 10, 0.29);
+    z-index: 2;
+}
+
+.theme-switch input:checked + .switch-label {
+    background-color: #374151;
+}
+
+.theme-switch input:checked + .switch-label .switch-toggle {
+    left: calc(100% - 23px);
+}
+
+.theme-switch input:focus + .switch-label {
+    box-shadow: 0 0 1px #2196F3;
+}
 
 /* Gradient de couleur principal */
 .bg-carpu-gradient {
@@ -925,4 +1193,36 @@ footer a:hover {
 .notification.success {
     background: #4caf50;
     color: white;
+}
+
+/* Theme Notification */
+.theme-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: transform 0.5s, opacity 0.5s;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.theme-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+body.dark-mode .theme-notification,
+html.theme-dark .theme-notification,
+html[data-theme="dark"] .theme-notification {
+    background-color: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }

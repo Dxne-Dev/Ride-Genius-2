@@ -57,6 +57,19 @@
             </ul>
 
             <ul class="navbar-nav">
+                <!-- Theme Toggle -->
+                <li class="nav-item d-flex align-items-center me-2">
+                    <label class="theme-switch mb-0" for="theme-toggle" title="Changer le thème">
+                        <input type="checkbox" id="theme-toggle">
+                        <span class="switch-label">
+                            <i class="fas fa-sun"></i>
+                            <i class="fas fa-moon"></i>
+                            <span class="switch-toggle"></span>
+                        </span>
+                    </label>
+                </li>
+                <!-- End Theme Toggle -->
+                
                 <?php if(isset($_SESSION['user_id'])): ?>
                     <li class="nav-item">
                         <a class="nav-link" href="index.php?page=messages">
@@ -88,6 +101,9 @@
         </div>
     </div>
 </nav>
+
+<!-- Theme Toggle Script -->
+<script src="assets/js/theme.js"></script>
 
 <?php if(isset($_SESSION['error'])): ?>
     <div class="container mt-3">
