@@ -61,11 +61,14 @@ try {
                 $content = $content;
                 $type = 'text';
 
-                $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
+                // Obtenir ou créer la conversation d'abord
+                $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                
+                // Créer le message avec le conversation_id
+                $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type, $conversationId);
 
                 if ($messageId) {
-                    // Mettre à jour ou créer la conversation
-                    $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                    // Mettre à jour le timestamp du dernier message
                     $conversationModel->updateLastMessageTime($conversationId);
 
                     echo json_encode([
@@ -114,11 +117,14 @@ try {
                         $content = $content;
                         $type = $type;
 
-                        $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
+                        // Obtenir ou créer la conversation d'abord
+                        $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                        
+                        // Créer le message avec le conversation_id
+                        $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type, $conversationId);
 
                         if ($messageId) {
-                            // Mettre à jour ou créer la conversation
-                            $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                            // Mettre à jour le timestamp du dernier message
                             $conversationModel->updateLastMessageTime($conversationId);
 
                             $response['files'][] = [

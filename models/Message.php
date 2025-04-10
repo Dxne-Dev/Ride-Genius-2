@@ -7,7 +7,7 @@ class Message {
         $this->conn = $db;
     }
 
-    public function create($sender_id, $receiver_id, $content, $type = 'text') {
+    public function create($sender_id, $receiver_id, $content, $type = 'text', $conversation_id = null) {
         try {
             if (!$this->conn) {
                 error_log("Error: Database connection is null in Message::create");
@@ -15,8 +15,8 @@ class Message {
             }
 
             $query = "INSERT INTO " . $this->table . " 
-                    (sender_id, receiver_id, content, type, is_read, created_at) 
-                    VALUES (:sender_id, :receiver_id, :content, :type, 0, NOW())";
+                    (sender_id, receiver_id, content, type, is_read, created_at, conversation_id) 
+                    VALUES (:sender_id, :receiver_id, :content, :type, 0, NOW(), :conversation_id)";
 
             $stmt = $this->conn->prepare($query);
 
@@ -31,6 +31,7 @@ class Message {
             $stmt->bindParam(':receiver_id', $receiver_id, PDO::PARAM_INT);
             $stmt->bindParam(':content', $content, PDO::PARAM_STR);
             $stmt->bindParam(':type', $type, PDO::PARAM_STR);
+            $stmt->bindParam(':conversation_id', $conversation_id, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
                 $message_id = $this->conn->lastInsertId();
