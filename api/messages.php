@@ -6,8 +6,9 @@ require_once '../models/User.php';
 
 header('Content-Type: application/json');
 
-// Vérification de l'authentification
-if (!isset($_SESSION['user_id'])) {
+// Vérification de l'authentification - accepte soit POST soit session
+$user_id = $_POST['sender_id'] ?? $_SESSION['user_id'] ?? null;
+if (!$user_id) {
     echo json_encode([
         'status' => 'error',
         'message' => 'Non authentifié'
@@ -24,7 +25,7 @@ try {
     // Traitement des requêtes GET
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (isset($_GET['receiver_id'])) {
-            $messages = $messageModel->getConversation($_SESSION['user_id'], $_GET['receiver_id']);
+            $messages = $messageModel->getConversation($user_id, $_GET['receiver_id']);
             echo json_encode([
                 'status' => 'success',
                 'messages' => $messages
@@ -52,12 +53,13 @@ try {
                     throw new Exception('Paramètres manquants');
                 }
 
-                $messageId = $messageModel->create([
-                    'sender_id' => $_SESSION['user_id'],
-                    'receiver_id' => $receiver_id,
-                    'content' => $content,
-                    'type' => 'text'
-                ]);
+                // Décomposer les données en arguments individuels
+                $sender_id = $user_id;
+                $receiver_id = $receiver_id;
+                $content = $content;
+                $type = 'text';
+
+                $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
 
                 if ($messageId) {
                     echo json_encode([
@@ -100,12 +102,13 @@ try {
                         $url = '/uploads/messages/' . $newFileName;
                         $content = json_encode(['url' => $url, 'type' => $type]);
                         
-                        $messageId = $messageModel->create([
-                            'sender_id' => $_SESSION['user_id'],
-                            'receiver_id' => $receiver_id,
-                            'content' => $content,
-                            'type' => $type
-                        ]);
+                        // Décomposer les données en arguments individuels
+                        $sender_id = $user_id;
+                        $receiver_id = $receiver_id;
+                        $content = $content;
+                        $type = $type;
+
+                        $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
 
                         if ($messageId) {
                             $response['files'][] = [
@@ -128,7 +131,7 @@ try {
                     throw new Exception('Paramètres manquants');
                 }
 
-                $result = $messageModel->addReaction($message_id, $_SESSION['user_id'], $reaction);
+                $result = $messageModel->addReaction($message_id, $user_id, $reaction);
                 echo json_encode([
                     'status' => 'success',
                     'message' => 'Réaction ajoutée'
@@ -142,7 +145,7 @@ try {
                     throw new Exception('ID utilisateur manquant');
                 }
 
-                $result = $messageModel->markAsRead($_SESSION['user_id'], $other_user_id);
+                $result = $messageModel->markAsRead($user_id, $other_user_id);
                 echo json_encode([
                     'status' => 'success',
                     'message' => 'Messages marqués comme lus'

@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const axios = require('axios');
 
 // Initialiser l'application Express
 const app = express();
@@ -49,7 +50,7 @@ io.on('connection', (socket) => {
     });
 
     // Écouter les messages envoyés par le client
-    socket.on('sendMessage', (data) => {
+    socket.on('sendMessage', async (data) => {
         console.log('📨 Message reçu du client:', {
             senderId: socket.userId,
             receiverId: data.receiver_id,
@@ -78,6 +79,23 @@ io.on('connection', (socket) => {
         const receiverSocketId = connectedUsers.get(data.receiver_id);
         if (receiverSocketId) {
             io.to(receiverSocketId).emit('receiveMessage', message);
+        }
+
+        // Sauvegarder le message dans la base de données via l'API PHP
+        try {
+            const response = await axios.post(
+                'http://localhost/Ride-Genius/Ride-Genius-2/api/messages.php',
+                new URLSearchParams({
+                    action: 'sendMessage',
+                    sender_id: socket.userId,
+                    receiver_id: data.receiver_id,
+                    message: data.message
+                }),
+                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            console.log('📥 Message sauvegardé via API:', response.data);
+        } catch (error) {
+            console.error('❌ Erreur lors de l\'enregistrement du message :', error.response?.data || error.message);
         }
 
         // Confirmer la réception au sender
