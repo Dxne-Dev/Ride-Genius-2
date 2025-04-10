@@ -51,4 +51,40 @@ class Conversation {
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$conversation_id]);
     }
+
+    /**
+     * Récupère toutes les conversations d'un utilisateur
+     * @param int $user_id ID de l'utilisateur
+     * @return array Liste des conversations avec les informations de l'autre utilisateur
+     */
+    public function getUserConversations($user_id) {
+        $query = "SELECT c.*, 
+                        CASE 
+                            WHEN c.user1_id = :user_id THEN c.user2_id 
+                            ELSE c.user1_id 
+                        END as other_user_id,
+                        u.first_name,
+                        u.last_name,
+                        u.email,
+                        u.profile_image,
+                        (SELECT message FROM messages 
+                         WHERE conversation_id = c.id
+                         ORDER BY created_at DESC LIMIT 1) as last_message,
+                        (SELECT COUNT(*) FROM messages 
+                         WHERE conversation_id = c.id
+                         AND receiver_id = :user_id 
+                         AND read_at IS NULL) as unread_count
+                 FROM " . $this->table_name . " c
+                 JOIN users u ON u.id = CASE 
+                     WHEN c.user1_id = :user_id THEN c.user2_id 
+                     ELSE c.user1_id 
+                 END
+                 WHERE c.user1_id = :user_id OR c.user2_id = :user_id
+                 ORDER BY c.last_message_at DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([':user_id' => $user_id]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 } 

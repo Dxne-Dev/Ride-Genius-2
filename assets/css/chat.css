@@ -99,6 +99,15 @@ body {
 
 .conversation-item.active {
     background-color: #e7f3ff;
+    border-left: 3px solid #0084ff;
+}
+
+.conversation-item.active .user-details h4 {
+    color: #0084ff;
+}
+
+.conversation-item.active .last-message {
+    color: #1a1a1a;
 }
 
 .avatar {

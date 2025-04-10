@@ -207,7 +207,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     wsReconnectAttempts = 0;
                     wsConnected = true;
                     
-                    // Authentifier l'utilisateur
+                    // Ré-authentifier l'utilisateur
                     socket.emit('auth', {
                         userId: currentUserId
                     });
@@ -256,9 +256,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                 }
 
             } catch (error) {
-                console.error('❌ Erreur lors de l\'initialisation de Socket.IO:', error);
-                wsConnected = false;
-                showNotification('Impossible de se connecter au chat', 'error');
+                console.error('Erreur lors de l\'initialisation de WebSocket:', error);
             }
         }
 
@@ -497,6 +495,75 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     }
                 });
             }
+
+        // Gestion de l'état des conversations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Récupérer l'ID de la conversation active depuis le localStorage
+            const activeConversationId = localStorage.getItem('activeConversationId');
+            console.log('Active Conversation ID:', activeConversationId);
+            
+            if (activeConversationId) {
+                // Récupérer l'élément de la conversation active
+                const activeConversation = document.querySelector(`.conversation-item[data-user-id="${activeConversationId}"]`);
+                
+                if (activeConversation) {
+                    console.log('Active Conversation Found:', activeConversation);
+                    // Appliquer la classe active
+                    activeConversation.classList.add('active');
+                    
+                    // Récupérer les informations de l'utilisateur
+                    const userName = activeConversation.querySelector('.user-details h4').textContent;
+                    const userImage = activeConversation.querySelector('.avatar').src;
+                    
+                    // Mettre à jour l'interface du chat
+                    updateChatInterface({
+                        id: activeConversationId,
+                        first_name: userName.split(' ')[0],
+                        last_name: userName.split(' ')[1] || '',
+                        profile_image: userImage
+                    });
+                    
+                    // Charger les messages de la conversation
+                    loadMessages(activeConversationId);
+                } else {
+                    console.log('No Active Conversation Found');
+                }
+            }
+            
+            // Gérer le clic sur une conversation
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const userId = this.getAttribute('data-user-id');
+                    console.log('Conversation Clicked:', userId);
+                    
+                    // Sauvegarder l'ID de la conversation active
+                    localStorage.setItem('activeConversationId', userId);
+                    
+                    // Retirer la classe active de toutes les conversations
+                    document.querySelectorAll('.conversation-item').forEach(conv => {
+                        conv.classList.remove('active');
+                    });
+                    
+                    // Ajouter la classe active à la conversation sélectionnée
+                    this.classList.add('active');
+                    
+                    // Récupérer les informations de l'utilisateur
+                    const userName = this.querySelector('.user-details h4').textContent;
+                    const userImage = this.querySelector('.avatar').src;
+                    
+                    // Mettre à jour l'interface du chat
+                    updateChatInterface({
+                        id: userId,
+                        first_name: userName.split(' ')[0],
+                        last_name: userName.split(' ')[1] || '',
+                        profile_image: userImage
+                    });
+                    
+                    // Charger les messages de la conversation
+                    loadMessages(userId);
+                });
+            });
+        });
     </script>
 </body>
 </html>

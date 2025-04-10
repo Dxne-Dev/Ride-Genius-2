@@ -1,6 +1,7 @@
 <?php
 require_once 'models/User.php';
 require_once 'models/Message.php';
+require_once 'models/Conversation.php';
 
 class MessageController {
     private $db;
@@ -232,43 +233,19 @@ class MessageController {
     // Récupération des conversations d'un utilisateur
     public function getConversations($user_id) {
         try {
-            $sql = "SELECT c.*, 
-                    CASE 
-                        WHEN c.user1_id = :user_id THEN c.user2_id 
-                        ELSE c.user1_id 
-                    END as other_user_id,
-                    u.first_name,
-                    u.last_name,
-                    u.email,
-                    (SELECT message FROM messages 
-                     WHERE (sender_id = c.user1_id AND receiver_id = c.user2_id)
-                     OR (sender_id = c.user2_id AND receiver_id = c.user1_id)
-                     ORDER BY created_at DESC LIMIT 1) as last_message,
-                    (SELECT COUNT(*) FROM messages 
-                     WHERE receiver_id = :user_id 
-                     AND sender_id = CASE 
-                        WHEN c.user1_id = :user_id THEN c.user2_id 
-                        ELSE c.user1_id 
-                     END
-                     AND read_at IS NULL) as unread_count
-                    FROM conversations c
-                    JOIN users u ON u.id = CASE 
-                        WHEN c.user1_id = :user_id THEN c.user2_id 
-                        ELSE c.user1_id 
-                    END
-                    WHERE c.user1_id = :user_id OR c.user2_id = :user_id
-                    ORDER BY c.last_message_at DESC";
-            
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([':user_id' => $user_id]);
+            $conversationModel = new Conversation($this->db);
+            $conversations = $conversationModel->getUserConversations($user_id);
 
             return [
                 'success' => true,
-                'conversations' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+                'conversations' => $conversations
             ];
         } catch (Exception $e) {
             error_log("Erreur lors de la récupération des conversations: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Erreur lors de la récupération des conversations'];
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des conversations'
+            ];
         }
     }
 
@@ -349,6 +326,25 @@ class MessageController {
                 'message' => "Une erreur est survenue lors de la création de la conversation"
             ];
         }
+    }
+
+    /**
+     * Affiche la page de conversation avec les données nécessaires
+     * @param int $user_id ID de l'utilisateur connecté
+     */
+    public function showConversationPage($user_id) {
+        // Vérifier l'authentification
+        $this->authGuard();
+        
+        // Récupérer les conversations de l'utilisateur
+        $conversationsResult = $this->getConversations($user_id);
+        $conversations = $conversationsResult['success'] ? $conversationsResult['conversations'] : [];
+        
+        // Récupérer les informations de l'utilisateur connecté
+        $currentUser = $this->user->findById($user_id);
+        
+        // Passer les données à la vue
+        require_once 'views/messages/chat.php';
     }
 }
 ?>
