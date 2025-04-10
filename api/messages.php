@@ -3,6 +3,7 @@ session_start();
 require_once '../config/Database.php';
 require_once '../models/Message.php';
 require_once '../models/User.php';
+require_once '../models/Conversation.php';
 
 header('Content-Type: application/json');
 
@@ -21,6 +22,7 @@ try {
     $db = $database->getConnection();
     $messageModel = new Message($db);
     $userModel = new User($db);
+    $conversationModel = new Conversation($db);
 
     // Traitement des requêtes GET
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -62,6 +64,10 @@ try {
                 $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
 
                 if ($messageId) {
+                    // Mettre à jour ou créer la conversation
+                    $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                    $conversationModel->updateLastMessageTime($conversationId);
+
                     echo json_encode([
                         'status' => 'success',
                         'message' => 'Message envoyé',
@@ -111,6 +117,10 @@ try {
                         $messageId = $messageModel->create($sender_id, $receiver_id, $content, $type);
 
                         if ($messageId) {
+                            // Mettre à jour ou créer la conversation
+                            $conversationId = $conversationModel->getOrCreateConversationId($sender_id, $receiver_id);
+                            $conversationModel->updateLastMessageTime($conversationId);
+
                             $response['files'][] = [
                                 'url' => $url,
                                 'type' => $type,
