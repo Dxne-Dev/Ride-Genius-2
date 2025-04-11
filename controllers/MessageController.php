@@ -236,15 +236,29 @@ class MessageController {
             $conversationModel = new Conversation($this->db);
             $conversations = $conversationModel->getUserConversations($user_id);
 
+            // Forcer un format cohérent pour toutes les conversations
+            $formattedConversations = array_map(function($conv) {
+                return [
+                    'other_user_id' => $conv['other_user_id'] ?? 0,
+                    'first_name' => $conv['first_name'] ?? 'Utilisateur',
+                    'last_name' => $conv['last_name'] ?? '',
+                    'last_message' => mb_strimwidth($conv['last_message'] ?? 'Nouveau chat', 0, 30, '...'),
+                    'profile_image' => $conv['profile_image'] ?? 'assets/images/default-avatar.png',
+                    'last_message_at' => $conv['last_message_at'] ?? null,
+                    'unread_count' => (int)($conv['unread_count'] ?? 0)
+                ];
+            }, $conversations);
+
             return [
                 'success' => true,
-                'conversations' => $conversations
+                'conversations' => $formattedConversations
             ];
         } catch (Exception $e) {
             error_log("Erreur lors de la récupération des conversations: " . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Erreur lors de la récupération des conversations'
+                'message' => 'Erreur lors de la récupération des conversations',
+                'error' => $e->getMessage()
             ];
         }
     }

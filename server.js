@@ -90,11 +90,10 @@ io.on('connection', (socket) => {
         // Sauvegarder le message dans la base de données via l'API PHP
         try {
             const response = await axios.post(
-                'http://localhost/Ride-Genius/Ride-Genius-2/api/messages.php',
+                'http://localhost/Ride-Genius/Ride-Genius-2/message_api.php',
                 new URLSearchParams({
                     action: 'sendMessage',
-                    sender_id: socket.userId,
-                    receiver_id: data.receiver_id,
+                    user_id: socket.userId,
                     message: data.message
                 }),
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
@@ -102,7 +101,7 @@ io.on('connection', (socket) => {
             console.log('📥 Message sauvegardé via API:', response.data);
             
             // Envoyer le message avec l'ID de la BD
-            if (response.data.status === 'success' && response.data.message_id) {
+            if (response.data.success && response.data.message_id) {
                 message.id = response.data.message_id;
                 socket.emit('messageSent', {
                     success: true,

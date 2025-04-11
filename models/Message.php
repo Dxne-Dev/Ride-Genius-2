@@ -270,4 +270,38 @@ class Message {
             return false;
         }
     }
+
+    public function attachFile($messageId, $filePath, $fileType, $fileName, $fileSize) {
+        try {
+            $query = "INSERT INTO message_attachments 
+                    (message_id, file_name, file_type, file_size, file_path) 
+                    VALUES (:message_id, :file_name, :file_type, :file_size, :file_path)";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':message_id', $messageId);
+            $stmt->bindParam(':file_name', $fileName);
+            $stmt->bindParam(':file_type', $fileType);
+            $stmt->bindParam(':file_size', $fileSize);
+            $stmt->bindParam(':file_path', $filePath);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error attaching file to message: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getMessageFiles($messageId) {
+        try {
+            $query = "SELECT * FROM message_attachments WHERE message_id = :message_id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':message_id', $messageId);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error getting message files: " . $e->getMessage());
+            return [];
+        }
+    }
 } 

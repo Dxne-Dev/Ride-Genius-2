@@ -1,6 +1,13 @@
 <?php
 // Vérification de la session
+session_start();
 if (!isset($_SESSION['user_id'])) {
+    // Si accès via API, retourner une erreur JSON
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+        header('Content-Type: application/json');
+        die(json_encode(["error" => "Session invalide"]));
+    }
+    // Sinon, rediriger vers la page de connexion
     header('Location: index.php?page=login');
     exit;
 }
@@ -16,6 +23,19 @@ if (!$currentUser) {
 // Récupération des conversations via le contrôleur
 $conversationsResult = $this->getConversations($_SESSION['user_id']);
 $conversations = $conversationsResult['success'] ? $conversationsResult['conversations'] : [];
+
+// Sécurisation des données pour JavaScript
+$safeConversations = array_map(function($conv) {
+    return [
+        'other_user_id' => (int)($conv['other_user_id'] ?? 0),
+        'first_name' => htmlspecialchars($conv['first_name'] ?? 'Utilisateur'),
+        'last_name' => htmlspecialchars($conv['last_name'] ?? ''),
+        'last_message' => htmlspecialchars(mb_strimwidth($conv['last_message'] ?? 'Nouveau chat', 0, 30, '...')),
+        'profile_image' => htmlspecialchars($conv['profile_image'] ?? 'assets/images/default-avatar.png'),
+        'last_message_at' => $conv['last_message_at'] ?? null,
+        'unread_count' => (int)($conv['unread_count'] ?? 0)
+    ];
+}, $conversations);
 ?>
 
 <!DOCTYPE html>
@@ -31,6 +51,12 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    
+    <!-- Injecter les données PHP dans le HTML pour JavaScript -->
+    <script>
+        const PHP_CONVERSATIONS = <?php echo json_encode($safeConversations); ?>;
+        const currentUserId = <?php echo json_encode($_SESSION['user_id']); ?>;
+    </script>
 </head>
 <body>
     <div class="chat-container">
@@ -102,19 +128,19 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             </div>
             
             <div class="chat-input">
-                <form id="messageForm" class="message-form">
+                <form id="messageForm" class="message-form" enctype="multipart/form-data">
                     <div class="message-attachments" id="messageAttachments">
                         <!-- Les fichiers attachés seront affichés ici -->
                     </div>
                     <div class="input-group">
                         <button type="button" class="attach-btn" id="attachButton">
                             <i class="fas fa-paperclip"></i>
-                    </button>
+                        </button>
                         <input type="text" id="messageInput" placeholder="Écrivez votre message..." autocomplete="off">
-                        <input type="file" id="fileInput" style="display: none" multiple>
-                    <button type="submit">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                        <input type="file" id="fileInput" name="files[]" style="display: none" multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt">
+                        <button type="submit" id="sendButton">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -164,6 +190,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
     <script src="assets/js/chat-file-handler.js"></script>
     <script src="assets/js/chat-user-search.js"></script>
+    <script src="assets/js/chat.js"></script>
     <script>
         // Configuration
         const SOCKET_SERVER_URL = 'http://localhost:3000';
@@ -180,11 +207,6 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
         console.log('ID utilisateur connecté:', currentUserId); // Log pour debug
 
         // Initialisation des gestionnaires
-        const fileHandler = new ChatFileHandler({
-            socket: socket,
-            maxFileSize: 10 * 1024 * 1024 // 10MB
-        });
-
         const userSearch = new ChatUserSearch({
             onUserSelect: (user) => {
                 startConversation(user);
@@ -251,11 +273,6 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     console.log('✅ Message envoyé avec succès:', response);
                 });
 
-                // Mettre à jour la référence du socket dans le gestionnaire de fichiers
-                if (fileHandler) {
-                    fileHandler.socket = socket;
-                }
-
             } catch (error) {
                 console.error('Erreur lors de l\'initialisation de WebSocket:', error);
             }
@@ -280,11 +297,19 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
+                            // Recharger les conversations après création
+                            loadConversations();
                             // Mettre à jour l'interface sans recharger
                             updateChatInterface(user);
                             // Ajouter la conversation à la liste
                             addConversationToList(user);
-                            showNotification('Conversation créée avec succès', 'success');
+                            
+                            // Afficher un message différent selon que la conversation est nouvelle ou existante
+                            if (response.is_new_conversation) {
+                                showNotification('Conversation créée avec succès', 'success');
+                            } else {
+                                showNotification('Conversation existante récupérée', 'info');
+                            }
                         } else {
                             showNotification(response.message || 'Erreur lors de la création de la conversation', 'error');
                         }
@@ -298,6 +323,9 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
         // Mettre à jour l'interface du chat
         function updateChatInterface(user) {
+            console.log('Mise à jour de l\'interface du chat pour l\'utilisateur:', user);
+            
+            // Mettre à jour la variable globale
             selectedUserId = user.id;
             
             // Mettre à jour les informations de l'utilisateur en haut
@@ -310,6 +338,14 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             // Activer la zone de saisie
             $('#messageInput').prop('disabled', false);
             $('#messageForm').show();
+
+            // Marquer cette conversation comme active
+            $('.conversation-item').removeClass('active');
+            $(`.conversation-item[data-user-id="${user.id}"]`).addClass('active');
+
+            // Sauvegarder dans le localStorage
+            localStorage.setItem('activeConversationId', user.id);
+            console.log('ID de conversation active sauvegardé:', user.id);
         }
 
         // Ajouter une conversation à la liste
@@ -358,7 +394,7 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
 
             // Préparer les données du message
             const messageData = {
-                receiver_id: selectedUserId,
+                user_id: selectedUserId,
                 message: messageContent
             };
 
@@ -460,41 +496,44 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             }
         }
 
-        // Initialisation
-        $(document).ready(function() {
-            initWebSocket();
+        // Initialisation après le chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page chargée, initialisation du chat...');
             
-            // Gérer le clic sur une conversation existante
-            $('.conversation-item').on('click', function() {
-                const userId = $(this).data('user-id');
-                const userName = $(this).find('.user-details h4').text();
-                const userImage = $(this).find('.avatar').attr('src');
-                
-                updateChatInterface({
-                    id: userId,
-                    first_name: userName.split(' ')[0],
-                    last_name: userName.split(' ')[1] || '',
-                    profile_image: userImage
-                });
-                
-                // Charger les messages existants
-                loadMessages(userId);
+            // Vérifier que les éléments existent
+            const messageForm = document.getElementById('messageForm');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            
+            console.log('Éléments du formulaire:', {
+                messageForm: !!messageForm,
+                messageInput: !!messageInput,
+                sendButton: !!sendButton
             });
+            
+            // Démarrer l'actualisation périodique des conversations
+            startConversationsRefresh();
+            
+            // Initialiser le chat
+            initWebSocket();
         });
 
         // Charger les messages d'une conversation
         function loadMessages(userId) {
             console.log('Chargement des messages pour la conversation avec l\'utilisateur:', userId);
-            $.ajax({
-                url: 'message_api.php',
+            // Stocker l'ID de l'utilisateur sélectionné
+            selectedUserId = userId;
+            
+                $.ajax({
+                    url: 'message_api.php',
                 method: 'GET',
                 data: {
                     action: 'getMessages',
                     user_id: userId
                 },
                 dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
+                    success: function(response) {
+                        if (response.success) {
                         console.log('Messages récupérés avec succès:', response.messages);
                         $('#chatMessages').empty();
                         response.messages.forEach(message => {
@@ -511,61 +550,210 @@ $conversations = $conversationsResult['success'] ? $conversationsResult['convers
             });
         }
 
+        // Initialisation et gestion de l'état des conversations
         document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM chargé, initialisation de l\'application de chat');
+            
+            // Test de vérification des conversations
+            setTimeout(() => {
+                const testId = document.querySelector('.conversation-item')?.getAttribute('data-user-id');
+                if (testId) {
+                    console.log('✅ Test - ID de conversation détecté:', testId);
+                } else {
+                    console.warn('⚠️ Test - Aucun .conversation-item détecté');
+                }
+            }, 1000);
+            
+            // Initialiser Socket.IO
             initWebSocket();
 
-            // Appliquer les clics et l'état initial
+            // Vérifier si nous avons une conversation active en mémoire
+            const activeConversationId = localStorage.getItem('activeConversationId');
+            console.log('ID de conversation active récupéré du localStorage:', activeConversationId);
+            
+            // Fonction pour appliquer les événements de clic aux conversations
             function bindConversationClickEvents() {
+                console.log('Attribution des événements de clic aux conversations');
                 document.querySelectorAll('.conversation-item').forEach(item => {
                     item.addEventListener('click', function () {
                         const userId = this.getAttribute('data-user-id');
+                        console.log('💾 Sauvegarde dans localStorage:', userId);
+                        
+                        // Sauvegarder l'ID de l'utilisateur sélectionné
                         localStorage.setItem('activeConversationId', userId);
-
-                        // Marquer comme actif
+                        
+                        // Marquer cette conversation comme active
                         document.querySelectorAll('.conversation-item').forEach(conv => {
                             conv.classList.remove('active');
                         });
                         this.classList.add('active');
-
+                        
                         // Récupération des infos
                         const userName = this.querySelector('.user-details h4').textContent;
                         const userImage = this.querySelector('.avatar').src;
-
+                        console.log('Infos utilisateur récupérées:', userName, userImage);
+                        
+                        // Mettre à jour l'interface
                         updateChatInterface({
                             id: userId,
                             first_name: userName.split(' ')[0],
                             last_name: userName.split(' ')[1] || '',
                             profile_image: userImage
                         });
-
+                        
+                        // Charger les messages
                         loadMessages(userId);
                     });
                 });
             }
-
-            // Rétablir la conversation active
-            const activeConversationId = localStorage.getItem('activeConversationId');
+            
+            // Si nous avons une conversation active
             if (activeConversationId) {
+                console.log('Tentative de restauration de la conversation active:', activeConversationId);
+                
+                // Trouver l'élément correspondant
                 const activeItem = document.querySelector(`.conversation-item[data-user-id="${activeConversationId}"]`);
+                
                 if (activeItem) {
-                    activeItem.classList.add('active');
+                    console.log('Élément de conversation active trouvé dans le DOM');
+                    
+                    // Récupérer les infos de l'utilisateur
                     const name = activeItem.querySelector('.user-details h4').textContent;
                     const img = activeItem.querySelector('.avatar').src;
-
-                    updateChatInterface({
-                        id: activeConversationId,
-                        first_name: name.split(' ')[0],
-                        last_name: name.split(' ')[1] || '',
-                        profile_image: img
+                    console.log('Infos de la conversation active récupérées:', name, img);
+                    
+                    // Simuler un clic sur cet élément après un court délai
+                    setTimeout(() => {
+                        console.log('Activation de la conversation...');
+                        // Mettre à jour l'interface
+                        updateChatInterface({
+                            id: activeConversationId,
+                            first_name: name.split(' ')[0],
+                            last_name: name.split(' ')[1] || '',
+                            profile_image: img
+                        });
+                        
+                        // Charger les messages
+                        loadMessages(activeConversationId);
+                    }, 100);
+                } else {
+                    console.log('Conversation active non trouvée dans le DOM, tentative de récupération via API');
+                    
+                    // Si l'élément n'existe pas, essayer de récupérer les données via l'API
+                    $.ajax({
+                        url: 'message_api.php',
+                        method: 'GET',
+                        data: {
+                            action: 'getUserInfo',
+                            user_id: activeConversationId
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                console.log('Infos utilisateur récupérées via API:', response.user);
+                                
+                                // Mettre à jour l'interface
+                                updateChatInterface({
+                                    id: response.user.id,
+                                    first_name: response.user.first_name,
+                                    last_name: response.user.last_name,
+                                    profile_image: response.user.profile_image || 'assets/images/default-avatar.png'
+                                });
+                                
+                                // Charger les messages
+                                loadMessages(response.user.id);
+                            } else {
+                                console.error('Erreur lors de la récupération des infos utilisateur:', response.message);
+                                localStorage.removeItem('activeConversationId');
+                            }
+                        },
+                        error: function() {
+                            console.error('Erreur AJAX lors de la récupération des infos utilisateur');
+                            localStorage.removeItem('activeConversationId');
+                        }
                     });
-
-                    loadMessages(activeConversationId);
                 }
+            } else {
+                console.log('Aucune conversation active en mémoire');
             }
-
-            // Activer les clics
+            
+            // Attacher les événements de clic
             bindConversationClickEvents();
         });
+
+        // Charger les conversations
+        function loadConversations() {
+            console.log('Chargement des conversations...');
+            $.ajax({
+                url: 'message_api.php',
+                method: 'POST',
+                data: {
+                    action: 'getConversations'
+                },
+                dataType: 'json',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function(response) {
+                    if (response.success) {
+                        console.log('Conversations chargées avec succès:', response.conversations);
+                        
+                        // Vérifier s'il y a de nouvelles conversations
+                        const currentCount = $('.conversation-item').length;
+                        const newCount = response.conversations.length;
+                        
+                        if (newCount > currentCount && currentCount > 0) {
+                            // Notifier l'utilisateur des nouvelles conversations
+                            showNotification(`${newCount - currentCount} nouvelle(s) conversation(s) disponible(s)`, 'info');
+                            playNotificationSound();
+                        }
+                        
+                        $('.conversations-list').empty();
+                        response.conversations.forEach(conv => {
+                            const conversationHtml = `
+                                <div class="conversation-item" data-user-id="${conv.other_user_id}">
+                                    <div class="user-info">
+                                        <img src="${conv.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar" class="avatar">
+                                        <div class="user-details">
+                                            <h4>${conv.first_name} ${conv.last_name}</h4>
+                                            <p class="last-message">
+                                                ${conv.last_message ? conv.last_message : 'Démarrez une conversation'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>`;
+                            $('.conversations-list').append(conversationHtml);
+                        });
+                        
+                        // Réattacher les événements après chargement
+                        bindConversationClickEvents();
+                        
+                        // Restaurer la conversation active si disponible
+                        const activeConversationId = localStorage.getItem('activeConversationId');
+                        if (activeConversationId) {
+                            const activeItem = document.querySelector(`.conversation-item[data-user-id="${activeConversationId}"]`);
+                            if (activeItem) {
+                                activeItem.classList.add('active');
+                            }
+                        }
+                    } else {
+                        console.error('Erreur lors du chargement des conversations:', response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erreur AJAX lors du chargement des conversations:', error);
+                }
+            });
+        }
+        
+        // Actualiser périodiquement les conversations
+        function startConversationsRefresh() {
+            // Charger immédiatement
+            loadConversations();
+            
+            // Puis actualiser toutes les 30 secondes
+            setInterval(loadConversations, 30000);
+        }
     </script>
 </body>
 </html>

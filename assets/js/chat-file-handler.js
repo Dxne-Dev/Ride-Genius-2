@@ -53,26 +53,25 @@ class ChatFileHandler {
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileData = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    content: e.target.result.split(',')[1]
-                };
-                this.attachedFiles.push(fileData);
-                this.displayAttachment(fileData);
-            };
-            reader.readAsDataURL(file);
+            // Vérifier le type de fichier
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+            if (!allowedTypes.includes(file.type)) {
+                this.showNotification(`Type de fichier non supporté: ${file.type}`, 'error');
+                return;
+            }
+
+            this.attachedFiles.push(file);
+            this.displayAttachment(file);
         });
     }
 
     displayAttachment(file) {
         const isImage = file.type.startsWith('image/');
+        const isVideo = file.type.startsWith('video/');
         const attachmentHtml = `
             <div class="attachment-item" data-name="${file.name}">
-                ${isImage ? `<img src="data:${file.type};base64,${file.content}" alt="${file.name}">` : ''}
+                ${isImage ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}">` : ''}
+                ${isVideo ? `<video src="${URL.createObjectURL(file)}" controls></video>` : ''}
                 <span class="attachment-name">${file.name}</span>
                 <span class="attachment-size">${this.formatFileSize(file.size)}</span>
                 <button type="button" class="remove-attachment">
@@ -92,31 +91,44 @@ class ChatFileHandler {
     }
 
     async sendFiles(receiverId, message = '') {
-        const sendPromises = this.attachedFiles.map(file => {
-            return new Promise((resolve, reject) => {
-                this.socket.emit('uploadFile', {
-                    type: 'uploadFile',
-                    receiver_id: receiverId,
-                    file_name: file.name,
-                    file_type: file.type,
-                    file_content: file.content,
-                    message: message
-                }, response => {
-                    if (response.success) {
-                        resolve(response);
-                    } else {
-                        reject(new Error(response.message || 'Erreur lors de l\'envoi du fichier'));
-                    }
-                });
-            });
+        if (this.attachedFiles.length === 0) return true;
+
+        const formData = new FormData();
+        formData.append('action', 'sendMessage');
+        formData.append('receiver_id', receiverId);
+        formData.append('message', message);
+        
+        this.attachedFiles.forEach((file, index) => {
+            formData.append(`files[${index}]`, file);
         });
 
         try {
-            await Promise.all(sendPromises);
-            this.clearAttachments();
-            return true;
+            const response = await fetch('message_api.php', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Émettre l'événement de message via le socket
+                if (this.socket && this.socket.connected) {
+                    this.socket.emit('sendMessage', {
+                        receiver_id: receiverId,
+                        message: message,
+                        files: result.files || []
+                    });
+                }
+                
+                this.clearAttachments();
+                return true;
+            } else {
+                this.showNotification(result.message || 'Erreur lors de l\'envoi des fichiers', 'error');
+                return false;
+            }
         } catch (error) {
-            this.showNotification(error.message, 'error');
+            console.error('Erreur lors de l\'envoi des fichiers:', error);
+            this.showNotification('Erreur lors de l\'envoi des fichiers', 'error');
             return false;
         }
     }
@@ -134,13 +146,17 @@ class ChatFileHandler {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    showNotification(message, type) {
-        // Utiliser la fonction de notification existante ou créer une nouvelle
-        if (window.showNotification) {
-            window.showNotification(message, type);
-        } else {
-            console.log(`${type}: ${message}`);
-        }
+    showNotification(message, type = 'info') {
+        // Utiliser SweetAlert2 pour les notifications
+        Swal.fire({
+            icon: type,
+            title: type.charAt(0).toUpperCase() + type.slice(1),
+            text: message,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000
+        });
     }
 }
 
