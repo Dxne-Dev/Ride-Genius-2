@@ -65,8 +65,11 @@ io.on('connection', (socket) => {
         const message = {
             type: 'message',
             senderId: socket.userId,
+            sender_id: socket.userId, // Ajouter aussi le format alternatif pour compatibilité
             receiverId: data.receiver_id,
+            receiver_id: data.receiver_id, // Ajouter aussi le format alternatif pour compatibilité
             content: data.message,
+            message: data.message, // Ajouter aussi le format alternatif pour compatibilité
             file_path: data.file_path || null,
             file_type: data.file_type || 'text',
             timestamp: new Date()
@@ -78,7 +81,10 @@ io.on('connection', (socket) => {
         // Envoyer le message au destinataire
         const receiverSocketId = connectedUsers.get(data.receiver_id);
         if (receiverSocketId) {
+            console.log(`📤 Envoi du message à l'utilisateur ${data.receiver_id} (socket: ${receiverSocketId})`);
             io.to(receiverSocketId).emit('receiveMessage', message);
+        } else {
+            console.log(`⚠️ Destinataire ${data.receiver_id} non connecté, message non délivré en temps réel`);
         }
 
         // Sauvegarder le message dans la base de données via l'API PHP
@@ -94,15 +100,23 @@ io.on('connection', (socket) => {
                 { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
             );
             console.log('📥 Message sauvegardé via API:', response.data);
+            
+            // Envoyer le message avec l'ID de la BD
+            if (response.data.status === 'success' && response.data.message_id) {
+                message.id = response.data.message_id;
+                socket.emit('messageSent', {
+                    success: true,
+                    message: message
+                });
+            }
         } catch (error) {
             console.error('❌ Erreur lors de l\'enregistrement du message :', error.response?.data || error.message);
+            // Envoyer quand même une confirmation
+            socket.emit('messageSent', {
+                success: true,
+                message: message
+            });
         }
-
-        // Confirmer la réception au sender
-        socket.emit('messageSent', {
-            success: true,
-            message: message
-        });
     });
 
     // Gérer les appels
