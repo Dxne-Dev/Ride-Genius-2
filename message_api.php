@@ -31,8 +31,14 @@ try {
             $conversation_id = $input['conversation_id'] ?? $_GET['conversation_id'] ?? null;
             $page = $input['page'] ?? $_GET['page'] ?? 1;
             $limit = $input['limit'] ?? $_GET['limit'] ?? 20;
-            if (!$conversation_id) throw new Exception('ID de conversation requis');
-            $result = $controller->getMessages($user_id, $conversation_id, $page, $limit);
+            
+            if (!$conversation_id) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'ID de conversation requis']);
+                exit;
+            }
+            
+            $result = $controller->getMessages($conversation_id, $page, $limit);
             break;
         case 'sendMessage':
             $conversation_id = $input['conversation_id'] ?? $_POST['conversation_id'] ?? null;

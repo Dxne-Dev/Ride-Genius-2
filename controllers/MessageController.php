@@ -74,25 +74,54 @@ class MessageController {
         }
     }
 
-    public function getMessages($user_id, $conversation_id, $page, $limit) {
+    public function getMessages($conversation_id, $page, $limit) {
         try {
+            error_log("Début getMessages - conversation_id: $conversation_id");
+            
+            if (!isset($_SESSION['user_id'])) {
+                error_log("Erreur: Utilisateur non connecté");
+                return ['success' => false, 'message' => 'Utilisateur non connecté'];
+            }
+            $user_id = $_SESSION['user_id'];
+            error_log("User ID: $user_id");
+
+            $sql_check = "SELECT id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)";
+            $stmt = $this->db->prepare($sql_check);
+            $stmt->execute([$conversation_id, $user_id, $user_id]);
+            if (!$stmt->fetch()) {
+                error_log("Erreur: Conversation introuvable ou accès refusé");
+                return ['success' => false, 'message' => 'Conversation introuvable ou accès refusé'];
+            }
+
+            // Convertir les paramètres en entiers
+            $page = (int)$page;
+            $limit = (int)$limit;
             $offset = ($page - 1) * $limit;
+            
             $sql = "
                 SELECT m.id, m.sender_id, m.content, m.created_at, m.is_read,
-                       (SELECT GROUP_CONCAT(r.reaction) FROM reactions r WHERE r.message_id = m.id) AS reactions
+                       (SELECT GROUP_CONCAT(mr.reaction) FROM message_reactions mr WHERE mr.message_id = m.id) AS reactions
                 FROM messages m
-                WHERE m.conversation_id = ?
+                WHERE m.conversation_id = :conversation_id
                 ORDER BY m.created_at DESC
-                LIMIT ? OFFSET ?
+                LIMIT :limit OFFSET :offset
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$conversation_id, $limit, $offset]);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->bindValue(':conversation_id', $conversation_id, PDO::PARAM_INT);
+            $stmt->execute();
             $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Si aucun message n'est trouvé, retourner un message approprié
+            if (empty($messages)) {
+                return ['success' => true, 'messages' => [], 'attachments' => [], 'message' => 'Aucun message pour l\'instant'];
+            }
+
             $sql_attachments = "
-                SELECT a.id, a.file_path, a.file_type
-                FROM attachments a
-                JOIN messages m ON m.id = a.message_id
+                SELECT ma.id, ma.file_path, ma.file_type
+                FROM message_attachments ma
+                JOIN messages m ON m.id = ma.message_id
                 WHERE m.conversation_id = ?
             ";
             $stmt = $this->db->prepare($sql_attachments);
@@ -102,21 +131,34 @@ class MessageController {
             return ['success' => true, 'messages' => $messages, 'attachments' => $attachments];
         } catch (PDOException $e) {
             error_log("Erreur getMessages: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => 'Erreur lors de la récupération des messages'];
         }
     }
 
     public function sendMessage($user_id, $conversation_id, $content, $attachments) {
         try {
-            $sql = "INSERT INTO messages (conversation_id, sender_id, content, created_at) VALUES (?, ?, ?, NOW())";
+            // Récupérer l'autre utilisateur de la conversation
+            $sql_conv = "SELECT user1_id, user2_id FROM conversations WHERE id = ?";
+            $stmt = $this->db->prepare($sql_conv);
+            $stmt->execute([$conversation_id]);
+            $conv = $stmt->fetch(PDO::FETCH_ASSOC);
+            $receiver_id = ($conv['user1_id'] == $user_id) ? $conv['user2_id'] : $conv['user1_id'];
+
+            $sql = "INSERT INTO messages (conversation_id, sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?, NOW())";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$conversation_id, $user_id, $content]);
+            $stmt->execute([$conversation_id, $user_id, $receiver_id, $content]);
             $message_id = $this->db->lastInsertId();
 
             foreach ($attachments as $attachment) {
-                $sql = "INSERT INTO attachments (message_id, file_path, file_type, file_name) VALUES (?, ?, ?, ?)";
+                $sql = "INSERT INTO message_attachments (message_id, file_path, file_type, file_name, file_size) VALUES (?, ?, ?, ?, ?)";
                 $stmt = $this->db->prepare($sql);
-                $stmt->execute([$message_id, $attachment['file_path'], $attachment['file_type'], $attachment['file_name']]);
+                $stmt->execute([
+                    $message_id, 
+                    $attachment['file_path'], 
+                    $attachment['file_type'], 
+                    $attachment['file_name'],
+                    $attachment['file_size']
+                ]);
             }
 
             return ['success' => true, 'message_id' => $message_id, 'attachments' => $attachments];
@@ -148,7 +190,7 @@ class MessageController {
 
     public function createConversation($user_id, $other_user_id) {
         try {
-            $sql = "SELECT id FROM conversations WHERE (user_id = ? AND other_user_id = ?) OR (user_id = ? AND other_user_id = ?)";
+            $sql = "SELECT id FROM conversations WHERE (user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
             $existing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -157,7 +199,7 @@ class MessageController {
                 return ['success' => true, 'conversation_id' => $existing['id'], 'is_new_conversation' => false];
             }
 
-            $sql = "INSERT INTO conversations (user_id, other_user_id, created_at) VALUES (?, ?, NOW())";
+            $sql = "INSERT INTO conversations (user1_id, user2_id, last_message_at) VALUES (?, ?, NOW())";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$user_id, $other_user_id]);
             $conversation_id = $this->db->lastInsertId();
@@ -171,7 +213,7 @@ class MessageController {
 
     public function checkPermissions($user_id, $conversation_id) {
         try {
-            $sql = "SELECT user_id, other_user_id FROM conversations WHERE id = ?";
+            $sql = "SELECT user1_id, user2_id FROM conversations WHERE id = ?";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$conversation_id]);
             $conv = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -180,7 +222,7 @@ class MessageController {
                 return ['success' => false, 'message' => 'Conversation introuvable'];
             }
 
-            $can_read = $can_write = in_array($user_id, [$conv['user_id'], $conv['other_user_id']]);
+            $can_read = $can_write = in_array($user_id, [$conv['user1_id'], $conv['user2_id']]);
             return ['success' => true, 'permissions' => ['can_read' => $can_read, 'can_write' => $can_write]];
         } catch (PDOException $e) {
             error_log("Erreur checkPermissions: " . $e->getMessage());
@@ -190,7 +232,7 @@ class MessageController {
 
     public function addReaction($user_id, $message_id, $reaction) {
         try {
-            $sql = "INSERT INTO reactions (message_id, user_id, reaction, created_at) VALUES (?, ?, ?, NOW())";
+            $sql = "INSERT INTO message_reactions (message_id, user_id, reaction, created_at) VALUES (?, ?, ?, NOW())";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$message_id, $user_id, $reaction]);
             return ['success' => true];
@@ -202,10 +244,18 @@ class MessageController {
 
     public function startCall($user_id, $conversation_id, $call_type) {
         try {
-            $sql = "INSERT INTO calls (conversation_id, caller_id, call_type, start_time) VALUES (?, ?, ?, NOW())";
+            // Récupérer l'autre utilisateur de la conversation
+            $sql_conv = "SELECT user1_id, user2_id FROM conversations WHERE id = ?";
+            $stmt = $this->db->prepare($sql_conv);
+            $stmt->execute([$conversation_id]);
+            $conv = $stmt->fetch(PDO::FETCH_ASSOC);
+            $receiver_id = ($conv['user1_id'] == $user_id) ? $conv['user2_id'] : $conv['user1_id'];
+
+            $sql = "INSERT INTO message_calls (caller_id, receiver_id, status, type, started_at) VALUES (?, ?, 'missed', ?, NOW())";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$conversation_id, $user_id, $call_type]);
+            $stmt->execute([$user_id, $receiver_id, $call_type]);
             $call_id = $this->db->lastInsertId();
+
             return ['success' => true, 'call_id' => $call_id];
         } catch (PDOException $e) {
             error_log("Erreur startCall: " . $e->getMessage());
@@ -213,14 +263,50 @@ class MessageController {
         }
     }
 
-    public function endCall($call_id) {
+    public function updateCallStatus($call_id, $status) {
         try {
-            $sql = "UPDATE calls SET end_time = NOW() WHERE id = ?";
+            $sql = "UPDATE message_calls SET status = ?, ended_at = NOW() WHERE id = ?";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$call_id]);
+            $stmt->execute([$status, $call_id]);
             return ['success' => true];
         } catch (PDOException $e) {
-            error_log("Erreur endCall: " . $e->getMessage());
+            error_log("Erreur updateCallStatus: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function addMessagePermission($user_id, $can_message_user_id) {
+        try {
+            $sql = "INSERT INTO message_permissions (user_id, can_message_user_id, created_at) VALUES (?, ?, NOW())";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$user_id, $can_message_user_id]);
+            return ['success' => true];
+        } catch (PDOException $e) {
+            error_log("Erreur addMessagePermission: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function checkMessagePermission($user_id, $other_user_id) {
+        try {
+            $sql = "SELECT id FROM message_permissions WHERE (user_id = ? AND can_message_user_id = ?) OR (user_id = ? AND can_message_user_id = ?)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$user_id, $other_user_id, $other_user_id, $user_id]);
+            return ['success' => true, 'has_permission' => $stmt->fetch() !== false];
+        } catch (PDOException $e) {
+            error_log("Erreur checkMessagePermission: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function removeReaction($user_id, $message_id) {
+        try {
+            $sql = "DELETE FROM message_reactions WHERE message_id = ? AND user_id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$message_id, $user_id]);
+            return ['success' => true];
+        } catch (PDOException $e) {
+            error_log("Erreur removeReaction: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
@@ -228,11 +314,11 @@ class MessageController {
     public function getAttachment($user_id, $attachment_id) {
         try {
             $sql = "
-                SELECT a.file_path, a.file_type, a.file_name
-                FROM attachments a
-                JOIN messages m ON m.id = a.message_id
+                SELECT ma.file_path, ma.file_type, ma.file_name, ma.file_size
+                FROM message_attachments ma
+                JOIN messages m ON m.id = ma.message_id
                 JOIN conversations c ON c.id = m.conversation_id
-                WHERE a.id = ? AND (c.user_id = ? OR c.other_user_id = ?)
+                WHERE ma.id = ? AND (c.user1_id = ? OR c.user2_id = ?)
             ";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$attachment_id, $user_id, $user_id]);

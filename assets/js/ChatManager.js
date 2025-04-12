@@ -160,23 +160,38 @@ class ChatManager {
     }
 
     async selectConversation(userId, conversationId) {
-        this.selectedUserId = userId;
-        this.selectedConversationId = conversationId;
-        localStorage.setItem('activeConversationId', conversationId);
-        this.messagePage = 1;
-        this.messages = [];
-        const userInfo = document.querySelector('.selected-user-info .user-info');
-        const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
-        if (convItem && userInfo) {
-            const name = convItem.querySelector('h4')?.textContent || 'Utilisateur';
-            const img = convItem.querySelector('.avatar')?.src || 'assets/images/default-avatar.png';
-            userInfo.querySelector('img').src = img;
-            userInfo.querySelector('h3').textContent = name;
+        try {
+            this.selectedUserId = userId;
+            this.selectedConversationId = conversationId;
+            localStorage.setItem('activeConversationId', conversationId);
+            this.messagePage = 1;
+            this.messages = [];
+            
+            // Mettre à jour l'interface utilisateur
+            const userInfo = document.querySelector('.selected-user-info .user-info');
+            const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
+            if (convItem && userInfo) {
+                const name = convItem.querySelector('h4')?.textContent || 'Utilisateur';
+                const img = convItem.querySelector('.avatar')?.src || 'assets/images/default-avatar.png';
+                userInfo.querySelector('img').src = img;
+                userInfo.querySelector('h3').textContent = name;
+            }
+            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+            convItem?.classList.add('active');
+
+            // Vérifier les permissions avant de charger les messages
+            const permissionsResponse = await this.checkPermissions();
+            if (!permissionsResponse?.success) {
+                this.showNotification('Impossible de vérifier les permissions', 'error');
+                return;
+            }
+
+            // Charger les messages
+            await this.loadMessages();
+        } catch (error) {
+            console.error('Erreur selectConversation:', error);
+            this.showNotification('Erreur lors de la sélection de la conversation', 'error');
         }
-        document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
-        convItem?.classList.add('active');
-        await this.checkPermissions();
-        await this.loadMessages();
     }
 
     async checkPermissions() {
@@ -190,31 +205,61 @@ class ChatManager {
                 if (chatMessages) chatMessages.style.display = can_read ? 'block' : 'none';
                 if (!can_read) this.showNotification('Vous n\'avez pas la permission de lire cette conversation', 'warning');
             }
+            return response;
         } catch (error) {
             console.error('Erreur checkPermissions:', error);
+            return { success: false, message: 'Erreur lors de la vérification des permissions' };
         }
     }
 
     async loadMessages() {
-        if (!this.selectedConversationId) return;
+        if (!this.selectedConversationId) {
+            this.showNotification('Aucune conversation sélectionnée', 'warning');
+            return;
+        }
+
         const container = document.getElementById('chatMessages');
-        if (!container) return;
-        container.innerHTML = '<div class="loading">Chargement...</div>';
+        if (!container) {
+            console.error('Élément chatMessages non trouvé');
+            return;
+        }
+
         try {
-            const response = await this.api.apiRequest('GET', `?action=getMessages&conversation_id=${this.selectedConversationId}&page=${this.messagePage}&limit=${this.messagesPerPage}`);
+            container.innerHTML = '<div class="loading">Chargement...</div>';
+            
+            // Construire l'URL avec les paramètres corrects
+            const params = new URLSearchParams({
+                action: 'getMessages',
+                conversation_id: this.selectedConversationId,
+                page: this.messagePage,
+                limit: this.messagesPerPage
+            });
+            
+            const response = await this.api.apiRequest('GET', `?${params.toString()}`);
+            
             if (response.success) {
                 this.messages = response.messages.reverse();
                 container.innerHTML = '';
-                this.messages.forEach(msg => this.displayMessage(msg));
-                this.addToMediaGrid(response.attachments || []);
-                this.scrollToBottom();
+                
+                if (this.messages.length === 0) {
+                    container.innerHTML = '<div class="no-messages">Aucun message pour l\'instant</div>';
+                } else {
+                    this.messages.forEach(msg => this.displayMessage(msg));
+                    this.addToMediaGrid(response.attachments || []);
+                    this.scrollToBottom();
+                }
             } else {
-                throw new Error(response.message || 'Erreur API');
+                if (response.message === 'Conversation introuvable') {
+                    this.showNotification('Cette conversation n\'existe plus', 'error');
+                    window.location.reload();
+                } else {
+                    throw new Error(response.message || 'Erreur lors de la récupération des messages');
+                }
             }
         } catch (error) {
             console.error('Erreur loadMessages:', error);
             this.showNotification('Erreur de chargement des messages', 'error');
-            container.innerHTML = '<div class="no-messages">Aucun message</div>';
+            container.innerHTML = '<div class="no-messages">Erreur lors de la récupération des messages</div>';
         }
     }
 
