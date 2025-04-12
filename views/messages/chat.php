@@ -59,7 +59,7 @@
             </div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input">
-                <form id="messageForm" class="message-form" enctype="multipart/form-data">
+                <form id="messageForm" class="message-form" onsubmit="return false;">
                     <div class="message-attachments" id="messageAttachments"></div>
                     <div class="input-group">
                         <button type="button" class="attach-btn" id="attachButton"><i class="fas fa-paperclip"></i></button>

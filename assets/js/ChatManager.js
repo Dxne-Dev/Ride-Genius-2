@@ -10,6 +10,7 @@ class ChatManager {
         this.messagePage = 1;
         this.messagesPerPage = 20;
         this.isOnline = navigator.onLine;
+        console.log('ChatManager initialisé avec userId:', userId);
         this.init();
     }
 
@@ -19,6 +20,7 @@ class ChatManager {
             window.location.href = 'index.php?page=login';
             return;
         }
+        console.log('Initialisation de ChatManager');
         this.setupEventListeners();
         this.setupNetworkStatus();
         this.connectSocket();
@@ -54,37 +56,46 @@ class ChatManager {
     }
 
     setupEventListeners() {
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('messageForm');
-            const searchInput = document.getElementById('searchUsers');
-            const fileInput = document.getElementById('fileInput');
-            const attachButton = document.getElementById('attachButton');
-            const audioCallBtn = document.getElementById('audioCallBtn');
-            const videoCallBtn = document.getElementById('videoCallBtn');
-            const chatMessages = document.getElementById('chatMessages');
-            const swipeIndicator = document.querySelector('.swipe-indicator');
-            const reactionMenu = document.getElementById('reactionMenu');
+        console.log('Configuration des écouteurs d\'événements');
+        const form = document.getElementById('messageForm');
+        console.log('Formulaire trouvé:', form);
+        
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                console.log('Événement submit déclenché');
+                this.handleSubmit(e);
+            });
+        } else {
+            console.error('Formulaire non trouvé!');
+        }
 
-            if (form) form.addEventListener('submit', (e) => this.handleSubmit(e));
-            if (searchInput) searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
-            if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
-            if (attachButton) attachButton.addEventListener('click', () => fileInput?.click());
-            if (audioCallBtn) audioCallBtn.addEventListener('click', () => this.startCall('audio'));
-            if (videoCallBtn) videoCallBtn.addEventListener('click', () => this.startCall('video'));
-            if (chatMessages) {
-                chatMessages.addEventListener('scroll', () => this.handleScroll());
-                chatMessages.addEventListener('contextmenu', (e) => this.showReactionMenu(e));
-            }
-            if (swipeIndicator && window.innerWidth <= 768) {
-                swipeIndicator.style.display = 'block';
-                swipeIndicator.addEventListener('click', () => this.toggleSidebar());
-            }
-            if (reactionMenu) {
-                reactionMenu.querySelectorAll('.reaction-item').forEach(item => {
-                    item.addEventListener('click', () => this.addReaction(item.dataset.emoji));
-                });
-            }
-        });
+        const searchInput = document.getElementById('searchUsers');
+        const fileInput = document.getElementById('fileInput');
+        const attachButton = document.getElementById('attachButton');
+        const audioCallBtn = document.getElementById('audioCallBtn');
+        const videoCallBtn = document.getElementById('videoCallBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const swipeIndicator = document.querySelector('.swipe-indicator');
+        const reactionMenu = document.getElementById('reactionMenu');
+
+        if (searchInput) searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
+        if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        if (attachButton) attachButton.addEventListener('click', () => fileInput?.click());
+        if (audioCallBtn) audioCallBtn.addEventListener('click', () => this.startCall('audio'));
+        if (videoCallBtn) videoCallBtn.addEventListener('click', () => this.startCall('video'));
+        if (chatMessages) {
+            chatMessages.addEventListener('scroll', () => this.handleScroll());
+            chatMessages.addEventListener('contextmenu', (e) => this.showReactionMenu(e));
+        }
+        if (swipeIndicator && window.innerWidth <= 768) {
+            swipeIndicator.style.display = 'block';
+            swipeIndicator.addEventListener('click', () => this.toggleSidebar());
+        }
+        if (reactionMenu) {
+            reactionMenu.querySelectorAll('.reaction-item').forEach(item => {
+                item.addEventListener('click', () => this.addReaction(item.dataset.emoji));
+            });
+        }
     }
 
     setupNetworkStatus() {
@@ -355,33 +366,93 @@ class ChatManager {
     }
 
     async handleSubmit(e) {
+        console.log('Début handleSubmit');
         e.preventDefault();
-        const input = document.getElementById('messageInput');
+        e.stopPropagation();
+        
+        const form = e.target;
+        console.log('Formulaire:', form);
+        
+        const input = form.querySelector('#messageInput');
+        console.log('Input:', input);
+        
         const content = input?.value.trim() || '';
-        if (!content && !this.attachedFiles.length) return;
-        const messageData = { conversation_id: this.selectedConversationId, content };
+        console.log('Contenu:', content);
+        
+        if (!content && !this.attachedFiles.length) {
+            console.log('Message vide et aucun fichier attaché');
+            return;
+        }
+        
+        const messageData = { 
+            conversation_id: this.selectedConversationId, 
+            content 
+        };
+        console.log('Données du message:', messageData);
+        
         try {
             if (!this.isOnline) {
+                console.log('Hors ligne, stockage du message');
                 this.storeOfflineMessage(messageData);
                 this.showNotification('Vous êtes hors ligne, message en attente', 'warning');
                 return;
             }
+            
+            console.log('Envoi du message via API');
+            let response;
             if (this.attachedFiles.length) {
-                await this.sendFiles(messageData);
+                console.log('Envoi avec fichiers');
+                const formData = new FormData();
+                formData.append('action', 'sendMessage');
+                formData.append('conversation_id', messageData.conversation_id);
+                formData.append('content', messageData.content);
+                this.attachedFiles.forEach((file, i) => formData.append(`files[${i}]`, file));
+                
+                response = await this.api.apiRequest('POST', '', formData);
             } else {
-                const response = await this.api.socketRequest('sendMessage', messageData);
-                if (response.success) {
-                    this.displayMessage({ ...messageData, id: response.message_id, sender_id: this.userId, created_at: new Date() });
-                } else {
-                    throw new Error(response.message || 'Erreur envoi message');
-                }
+                console.log('Envoi sans fichiers');
+                response = await this.api.apiRequest('POST', '', {
+                    action: 'sendMessage',
+                    ...messageData
+                });
             }
-            input.value = '';
-            this.attachedFiles = [];
-            this.updateAttachmentsPreview();
+            
+            console.log('Réponse API:', response);
+            
+            if (response.success) {
+                console.log('Message envoyé avec succès');
+                this.displayMessage({ 
+                    ...messageData, 
+                    id: response.message_id, 
+                    sender_id: this.userId, 
+                    created_at: new Date(),
+                    attachments: response.attachments 
+                });
+                
+                if (response.attachments) {
+                    this.addToMediaGrid(response.attachments);
+                }
+                
+                if (this.socket) {
+                    this.socket.emit('new_message', {
+                        conversation_id: this.selectedConversationId,
+                        message_id: response.message_id,
+                        sender_id: this.userId,
+                        content: content,
+                        attachments: response.attachments
+                    });
+                }
+                
+                input.value = '';
+                this.attachedFiles = [];
+                this.updateAttachmentsPreview();
+                this.loadConversations();
+            } else {
+                console.error('Erreur API:', response.message);
+                throw new Error(response.message || 'Erreur envoi message');
+            }
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
-            this.api.queueMessage(messageData);
             this.showNotification('Erreur d\'envoi du message', 'error');
         }
     }
@@ -415,21 +486,6 @@ class ChatManager {
                 <div class="attachment-preview">${file.name}</div>
             `).join('');
         }
-    }
-
-    async sendFiles(messageData) {
-        const formData = new FormData();
-        formData.append('action', 'sendMessage');
-        formData.append('conversation_id', messageData.conversation_id);
-        formData.append('content', messageData.content);
-        this.attachedFiles.forEach((file, i) => formData.append(`files[${i}]`, file));
-        const response = await this.api.apiRequest('POST', '', formData);
-        if (response.success) {
-            await this.api.socketRequest('sendMessage', { ...messageData, attachments: response.attachments });
-            this.addToMediaGrid(response.attachments);
-            return true;
-        }
-        throw new Error(response.message || 'Erreur envoi fichiers');
     }
 
     async handleSearch() {

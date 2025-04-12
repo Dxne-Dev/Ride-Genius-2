@@ -135,36 +135,59 @@ class MessageController {
         }
     }
 
-    public function sendMessage($user_id, $conversation_id, $content, $attachments) {
+    public function sendMessage($user_id, $conversation_id, $content, $attachments = []) {
         try {
-            // Récupérer l'autre utilisateur de la conversation
-            $sql_conv = "SELECT user1_id, user2_id FROM conversations WHERE id = ?";
-            $stmt = $this->db->prepare($sql_conv);
-            $stmt->execute([$conversation_id]);
-            $conv = $stmt->fetch(PDO::FETCH_ASSOC);
-            $receiver_id = ($conv['user1_id'] == $user_id) ? $conv['user2_id'] : $conv['user1_id'];
-
+            error_log("Début sendMessage - user_id: $user_id, conversation_id: $conversation_id");
+            
+            // Vérifier si l'utilisateur a accès à la conversation et récupérer l'autre utilisateur
+            $sql_check = "SELECT user1_id, user2_id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)";
+            $stmt = $this->db->prepare($sql_check);
+            $stmt->execute([$conversation_id, $user_id, $user_id]);
+            $conversation = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$conversation) {
+                error_log("Erreur: Conversation introuvable ou accès refusé");
+                return ['success' => false, 'message' => 'Conversation introuvable ou accès refusé'];
+            }
+            
+            // Déterminer qui est le destinataire
+            $receiver_id = ($conversation['user1_id'] == $user_id) ? $conversation['user2_id'] : $conversation['user1_id'];
+            
+            // Insérer le message avec le receiver_id
             $sql = "INSERT INTO messages (conversation_id, sender_id, receiver_id, content, created_at) VALUES (?, ?, ?, ?, NOW())";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$conversation_id, $user_id, $receiver_id, $content]);
             $message_id = $this->db->lastInsertId();
-
-            foreach ($attachments as $attachment) {
-                $sql = "INSERT INTO message_attachments (message_id, file_path, file_type, file_name, file_size) VALUES (?, ?, ?, ?, ?)";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([
-                    $message_id, 
-                    $attachment['file_path'], 
-                    $attachment['file_type'], 
-                    $attachment['file_name'],
-                    $attachment['file_size']
-                ]);
+            
+            // Gérer les pièces jointes si présentes
+            $attachments_data = [];
+            if (!empty($attachments)) {
+                foreach ($attachments as $attachment) {
+                    $sql = "INSERT INTO message_attachments (message_id, file_path, file_type) VALUES (?, ?, ?)";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute([$message_id, $attachment['path'], $attachment['type']]);
+                    $attachments_data[] = [
+                        'id' => $this->db->lastInsertId(),
+                        'file_path' => $attachment['path'],
+                        'file_type' => $attachment['type']
+                    ];
+                }
             }
-
-            return ['success' => true, 'message_id' => $message_id, 'attachments' => $attachments];
+            
+            // Mettre à jour la date du dernier message dans la conversation
+            $sql = "UPDATE conversations SET last_message_at = NOW() WHERE id = ?";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$conversation_id]);
+            
+            error_log("Message envoyé avec succès - message_id: $message_id");
+            return [
+                'success' => true, 
+                'message_id' => $message_id,
+                'attachments' => $attachments_data
+            ];
         } catch (PDOException $e) {
             error_log("Erreur sendMessage: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => 'Erreur lors de l\'envoi du message'];
         }
     }
 

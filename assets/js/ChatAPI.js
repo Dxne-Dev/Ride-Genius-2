@@ -27,19 +27,45 @@ class ChatAPI {
         this.socket.on('receiveReaction', onReaction);
     }
 
-    async apiRequest(method, url, body = null) {
-        const options = { method, credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } };
-        if (body instanceof FormData) options.body = body;
-        else if (body) {
-            options.headers['Content-Type'] = 'application/json';
-            options.body = JSON.stringify(body);
+    async apiRequest(method, endpoint, data = null) {
+        console.log('Début apiRequest:', { method, endpoint, data });
+        
+        const url = `${this.apiBaseUrl}${endpoint}`;
+        console.log('URL complète:', url);
+        
+        const options = {
+            method,
+            credentials: 'include'
+        };
+        
+        if (data) {
+            if (data instanceof FormData) {
+                options.body = data;
+            } else {
+                options.headers = {
+                    'Content-Type': 'application/json'
+                };
+                options.body = JSON.stringify(data);
+            }
         }
-        const response = await fetch(`${this.apiBaseUrl}${url}`, options);
-        if (response.status === 401) {
-            window.location.href = 'index.php?page=login';
-            throw new Error('Session expirée');
+        
+        console.log('Options de la requête:', options);
+        
+        try {
+            const response = await fetch(url, options);
+            console.log('Réponse reçue:', response);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('Résultat JSON:', result);
+            return result;
+        } catch (error) {
+            console.error('Erreur apiRequest:', error);
+            throw error;
         }
-        return response.json();
     }
 
     socketRequest(event, data) {
