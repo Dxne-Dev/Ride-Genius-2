@@ -11,6 +11,8 @@ require_once "models/Booking.php";
 require_once "models/Review.php";
 require_once "models/Wallet.php";
 require_once "models/Subscription.php";
+require_once 'models/Message.php';
+require_once 'models/Conversation.php';
 
 // Inclure les contrôleurs
 require_once "controllers/AuthController.php";
@@ -141,10 +143,10 @@ switch($page) {
     
     // Page de messagerie
     case 'messages':
-        require_once "controllers/MessageController.php";
+        require_once 'controllers/MessageController.php';
         $database = new Database();
         $db = $database->getConnection();
-        $message = new MessageController($db);
+        $message = new MessageController($db); // Ligne ~150
         $message->index();
         break;
         

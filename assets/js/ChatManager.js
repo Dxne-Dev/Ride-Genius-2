@@ -3,7 +3,7 @@ class ChatManager {
         this.userId = userId;
         this.selectedUserId = null;
         this.selectedConversationId = null;
-        this.api = new ChatAPI('/message_api.php', SOCKET_SERVER_URL);
+        this.api = new ChatAPI('/message_api.php', window.SOCKET_SERVER_URL);
         this.maxFileSize = 10 * 1024 * 1024;
         this.attachedFiles = [];
         this.messages = [];
@@ -39,14 +39,14 @@ class ChatManager {
                 this.updateNetworkStatus(false);
             },
             (message) => {
-                if (message.conversation_id == this.selectedConversationId) {
+                if (message.conversation_id === this.selectedConversationId) {
                     this.displayMessage(message);
                     this.addToMediaGrid(message.attachments || []);
                 }
                 this.loadConversations();
             },
             (reaction) => {
-                if (reaction.conversation_id == this.selectedConversationId) {
+                if (reaction.conversation_id === this.selectedConversationId) {
                     this.updateMessageReaction(reaction);
                 }
             }
@@ -68,7 +68,7 @@ class ChatManager {
             if (form) form.addEventListener('submit', (e) => this.handleSubmit(e));
             if (searchInput) searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
             if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
-            if (attachButton) attachButton.addEventListener('click', () => fileInput.click());
+            if (attachButton) attachButton.addEventListener('click', () => fileInput?.click());
             if (audioCallBtn) audioCallBtn.addEventListener('click', () => this.startCall('audio'));
             if (videoCallBtn) videoCallBtn.addEventListener('click', () => this.startCall('video'));
             if (chatMessages) {
@@ -101,7 +101,7 @@ class ChatManager {
 
     updateNetworkStatus(isOnline) {
         const indicator = document.querySelector('.offline-indicator');
-        indicator.style.display = isOnline ? 'none' : 'block';
+        if (indicator) indicator.style.display = isOnline ? 'none' : 'block';
     }
 
     async loadConversations() {
@@ -109,12 +109,20 @@ class ChatManager {
             const response = await this.api.apiRequest('GET', '?action=getConversations');
             if (response.success) {
                 this.renderConversations(response.conversations);
+                if (!response.conversations.length) {
+                    this.showNotification('Aucune conversation à charger pour le moment', 'info');
+                }
             } else {
                 throw new Error(response.message || 'Erreur API');
             }
         } catch (error) {
-            this.showNotification('Erreur de chargement des conversations', 'error');
+            console.error('Erreur chargement conversations:', error);
             this.renderConversations(this.getCachedConversations() || []);
+            if (!this.getCachedConversations().length) {
+                this.showNotification('Aucune conversation à charger pour le moment', 'info');
+            } else {
+                this.showNotification('Erreur de chargement des conversations', 'error');
+            }
         }
     }
 
@@ -123,21 +131,22 @@ class ChatManager {
         if (!list) return;
         list.innerHTML = '';
         if (!Array.isArray(conversations) || !conversations.length) {
-            list.innerHTML = '<div class="no-conversations">Aucune conversation</div>';
+            list.innerHTML = '<div class="no-conversations">Aucune conversation à charger pour le moment</div>';
             return;
         }
         localStorage.setItem('conversations', JSON.stringify(conversations));
         conversations.forEach(conv => {
             const item = document.createElement('div');
-            item.className = `conversation-item ${conv.other_user_id == this.selectedUserId ? 'active' : ''}`;
-            item.dataset.userId = conv.other_user_id;
+            const otherUserId = conv.user1_id === this.userId ? conv.user2_id : conv.user1_id;
+            item.className = `conversation-item ${otherUserId === this.selectedUserId ? 'active' : ''}`;
+            item.dataset.userId = otherUserId;
             item.dataset.conversationId = conv.id;
             item.innerHTML = `
                 <div class="user-info">
                     <img src="${conv.profile_image}" alt="Avatar" class="avatar">
                     <div class="user-details">
-                        <h4>${conv.first_name} ${conv.last_name}</h4>
-                        <p class="last-message">${conv.last_message.slice(0, 30)}${conv.last_message.length > 30 ? '...' : ''}</p>
+                        <h4>${conv.other_first_name} ${conv.other_last_name}</h4>
+                        <p class="last-message">${conv.last_message ? conv.last_message.slice(0, 30) + (conv.last_message.length > 30 ? '...' : '') : ''}</p>
                     </div>
                 </div>
                 <div class="conversation-meta">
@@ -145,7 +154,7 @@ class ChatManager {
                     ${conv.unread_count > 0 ? `<span class="unread-badge">${conv.unread_count}</span>` : ''}
                 </div>
             `;
-            item.addEventListener('click', () => this.selectConversation(conv.other_user_id, conv.id));
+            item.addEventListener('click', () => this.selectConversation(otherUserId, conv.id));
             list.appendChild(item);
         });
     }
@@ -158,9 +167,9 @@ class ChatManager {
         this.messages = [];
         const userInfo = document.querySelector('.selected-user-info .user-info');
         const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
-        if (convItem) {
-            const name = convItem.querySelector('h4').textContent;
-            const img = convItem.querySelector('.avatar').src;
+        if (convItem && userInfo) {
+            const name = convItem.querySelector('h4')?.textContent || 'Utilisateur';
+            const img = convItem.querySelector('.avatar')?.src || 'assets/images/default-avatar.png';
             userInfo.querySelector('img').src = img;
             userInfo.querySelector('h3').textContent = name;
         }
@@ -171,12 +180,18 @@ class ChatManager {
     }
 
     async checkPermissions() {
-        const response = await this.api.apiRequest('GET', `?action=checkPermissions&conversation_id=${this.selectedConversationId}`);
-        if (response.success) {
-            const { can_write, can_read } = response.permissions;
-            document.getElementById('messageInput').disabled = !can_write;
-            document.getElementById('chatMessages').style.display = can_read ? 'block' : 'none';
-            if (!can_read) this.showNotification('Vous n\'avez pas la permission de lire cette conversation', 'warning');
+        try {
+            const response = await this.api.apiRequest('GET', `?action=checkPermissions&conversation_id=${this.selectedConversationId}`);
+            if (response.success) {
+                const { can_write, can_read } = response.permissions;
+                const messageInput = document.getElementById('messageInput');
+                const chatMessages = document.getElementById('chatMessages');
+                if (messageInput) messageInput.disabled = !can_write;
+                if (chatMessages) chatMessages.style.display = can_read ? 'block' : 'none';
+                if (!can_read) this.showNotification('Vous n\'avez pas la permission de lire cette conversation', 'warning');
+            }
+        } catch (error) {
+            console.error('Erreur checkPermissions:', error);
         }
     }
 
@@ -194,9 +209,10 @@ class ChatManager {
                 this.addToMediaGrid(response.attachments || []);
                 this.scrollToBottom();
             } else {
-                throw new Error(response.message);
+                throw new Error(response.message || 'Erreur API');
             }
         } catch (error) {
+            console.error('Erreur loadMessages:', error);
             this.showNotification('Erreur de chargement des messages', 'error');
             container.innerHTML = '<div class="no-messages">Aucun message</div>';
         }
@@ -204,7 +220,7 @@ class ChatManager {
 
     handleScroll() {
         const container = document.getElementById('chatMessages');
-        if (container.scrollTop === 0 && this.messages.length >= this.messagesPerPage) {
+        if (container?.scrollTop === 0 && this.messages.length >= this.messagesPerPage) {
             this.messagePage++;
             this.loadMessages();
         }
@@ -213,7 +229,7 @@ class ChatManager {
     displayMessage(message) {
         const container = document.getElementById('chatMessages');
         if (!container || document.querySelector(`[data-message-id="${message.id}"]`)) return;
-        const isSent = message.sender_id == this.userId;
+        const isSent = message.sender_id === this.userId;
         const msgElement = document.createElement('div');
         msgElement.className = `message ${isSent ? 'sent' : 'received'}`;
         msgElement.dataset.messageId = message.id;
@@ -237,10 +253,12 @@ class ChatManager {
         if (!message) return;
         this.currentMessageId = message.dataset.messageId;
         const menu = document.getElementById('reactionMenu');
-        menu.style.display = 'block';
-        menu.style.top = `${e.clientY}px`;
-        menu.style.left = `${e.clientX}px`;
-        document.addEventListener('click', () => menu.style.display = 'none', { once: true });
+        if (menu) {
+            menu.style.display = 'block';
+            menu.style.top = `${e.clientY}px`;
+            menu.style.left = `${e.clientX}px`;
+            document.addEventListener('click', () => menu.style.display = 'none', { once: true });
+        }
     }
 
     async addReaction(emoji) {
@@ -259,6 +277,7 @@ class ChatManager {
                 });
             }
         } catch (error) {
+            console.error('Erreur addReaction:', error);
             this.showNotification('Erreur lors de l\'ajout de la réaction', 'error');
         }
     }
@@ -267,12 +286,13 @@ class ChatManager {
         const message = document.querySelector(`[data-message-id="${reaction.message_id}"]`);
         if (message) {
             const reactions = message.querySelector('.message-reactions');
-            reactions.innerHTML += `<span>${reaction.reaction}</span>`;
+            if (reactions) reactions.innerHTML += `<span>${reaction.reaction}</span>`;
         }
     }
 
     addToMediaGrid(attachments) {
         const grid = document.getElementById('mediaGrid');
+        if (!grid) return;
         attachments.forEach(att => {
             let element;
             switch (att.file_type) {
@@ -283,7 +303,7 @@ class ChatManager {
                     element = `<video src="/message_api.php?action=getAttachment&attachment_id=${att.id}" controls></video>`;
                     break;
                 default:
-                    element = `<a href="/message_api.php?action=getAttachment&attachment_id=${att.id}" target="_blank">${att.file_path.split('/').pop()}</a>`;
+                    element = `<a href="/message_api.php?action=getAttachment&attachment_id=${att.id}" target="_blank">${att.file_path?.split('/').pop() || 'Fichier'}</a>`;
             }
             grid.innerHTML += `<div class="media-item">${element}</div>`;
         });
@@ -292,7 +312,7 @@ class ChatManager {
     async handleSubmit(e) {
         e.preventDefault();
         const input = document.getElementById('messageInput');
-        const content = input.value.trim();
+        const content = input?.value.trim() || '';
         if (!content && !this.attachedFiles.length) return;
         const messageData = { conversation_id: this.selectedConversationId, content };
         try {
@@ -307,14 +327,17 @@ class ChatManager {
                 const response = await this.api.socketRequest('sendMessage', messageData);
                 if (response.success) {
                     this.displayMessage({ ...messageData, id: response.message_id, sender_id: this.userId, created_at: new Date() });
+                } else {
+                    throw new Error(response.message || 'Erreur envoi message');
                 }
             }
             input.value = '';
             this.attachedFiles = [];
             this.updateAttachmentsPreview();
         } catch (error) {
+            console.error('Erreur handleSubmit:', error);
             this.api.queueMessage(messageData);
-            this.showNotification('Erreur d\'envoi', 'error');
+            this.showNotification('Erreur d\'envoi du message', 'error');
         }
     }
 
@@ -332,19 +355,21 @@ class ChatManager {
     }
 
     handleFileUpload(e) {
-        const files = Array.from(e.target.files);
+        const files = Array.from(e.target.files || []);
         this.attachedFiles = files.filter(file => file.size <= this.maxFileSize);
         if (this.attachedFiles.length !== files.length) {
-            this.showNotification('Certains fichiers dépassent la taille maximale', 'warning');
+            this.showNotification('Certains fichiers dépassent la taille maximale (10 Mo)', 'warning');
         }
         this.updateAttachmentsPreview();
     }
 
     updateAttachmentsPreview() {
         const container = document.getElementById('messageAttachments');
-        container.innerHTML = this.attachedFiles.map(file => `
-            <div class="attachment-preview">${file.name}</div>
-        `).join('');
+        if (container) {
+            container.innerHTML = this.attachedFiles.map(file => `
+                <div class="attachment-preview">${file.name}</div>
+            `).join('');
+        }
     }
 
     async sendFiles(messageData) {
@@ -355,49 +380,67 @@ class ChatManager {
         this.attachedFiles.forEach((file, i) => formData.append(`files[${i}]`, file));
         const response = await this.api.apiRequest('POST', '', formData);
         if (response.success) {
-            this.api.socketRequest('sendMessage', { ...messageData, attachments: response.attachments });
+            await this.api.socketRequest('sendMessage', { ...messageData, attachments: response.attachments });
             this.addToMediaGrid(response.attachments);
+            return true;
         }
-        return response.success;
+        throw new Error(response.message || 'Erreur envoi fichiers');
     }
 
     async handleSearch() {
-        const query = document.getElementById('searchUsers').value.trim();
-        if (query.length < 2) return;
+        const query = document.getElementById('searchUsers')?.value.trim() || '';
+        if (query.length < 2) {
+            this.renderSearchResults([]);
+            return;
+        }
         try {
             const response = await this.api.apiRequest('GET', `?action=searchUsers&query=${encodeURIComponent(query)}`);
-            if (response.success) this.renderSearchResults(response.users);
-            else throw new Error(response.message);
+            if (response.success) {
+                this.renderSearchResults(response.users);
+            } else {
+                throw new Error(response.message || 'Erreur recherche');
+            }
         } catch (error) {
-            this.showNotification('Erreur de recherche', 'error');
+            console.error('Erreur handleSearch:', error);
+            this.showNotification('Erreur lors de la recherche', 'error');
+            this.renderSearchResults([]);
         }
     }
 
     renderSearchResults(users) {
         const results = document.querySelector('.search-results');
         if (!results) return;
-        results.innerHTML = users.map(user => `
+        results.innerHTML = users.length ? users.map(user => `
             <div class="search-result" data-user-id="${user.id}">
-                <img src="${user.profile_image}" alt="Avatar">
+                <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar">
                 <span>${user.first_name} ${user.last_name}</span>
             </div>
-        `).join('');
+        `).join('') : '<div class="no-results">Aucun utilisateur trouvé</div>';
         results.querySelectorAll('.search-result').forEach(el => {
-            el.addEventListener('click', () => this.startConversation(user));
+            el.addEventListener('click', () => this.startConversation({
+                id: el.dataset.userId,
+                first_name: el.querySelector('span')?.textContent.split(' ')[0] || '',
+                last_name: el.querySelector('span')?.textContent.split(' ')[1] || ''
+            }));
         });
     }
 
     async startConversation(user) {
-        const response = await this.api.apiRequest('POST', '', {
-            action: 'createConversation',
-            user_id: user.id
-        });
-        if (response.success) {
-            this.loadConversations();
-            this.selectConversation(user.id, response.conversation_id);
-            this.showNotification(response.is_new_conversation ? 'Conversation créée' : 'Conversation existante', 'success');
-        } else {
-            this.showNotification('Erreur lors de la création', 'error');
+        try {
+            const response = await this.api.apiRequest('POST', '', {
+                action: 'createConversation',
+                user_id: user.id
+            });
+            if (response.success) {
+                await this.loadConversations();
+                await this.selectConversation(user.id, response.conversation_id);
+                this.showNotification(response.is_new_conversation ? 'Conversation créée' : 'Conversation existante', 'success');
+            } else {
+                throw new Error(response.message || 'Erreur création conversation');
+            }
+        } catch (error) {
+            console.error('Erreur startConversation:', error);
+            this.showNotification('Erreur lors de la création de la conversation', 'error');
         }
     }
 
@@ -411,36 +454,44 @@ class ChatManager {
         const acceptBtn = document.getElementById('acceptCall');
         const declineBtn = document.getElementById('declineCall');
         const userInfo = document.querySelector('.selected-user-info .user-info');
-        const avatar = userInfo.querySelector('img').src;
-        const name = userInfo.querySelector('h3').textContent;
+        if (!modal || !status || !acceptBtn || !declineBtn || !userInfo) return;
 
+        const avatar = userInfo.querySelector('img')?.src || 'assets/images/default-avatar.png';
+        const name = userInfo.querySelector('h3')?.textContent || 'Utilisateur';
         document.getElementById('callAvatar').src = avatar;
         document.getElementById('callUserName').textContent = name;
         status.textContent = `Appel ${type} en cours...`;
         modal.style.display = 'block';
 
-        const response = await this.api.apiRequest('POST', '', {
-            action: 'startCall',
-            conversation_id: this.selectedConversationId,
-            call_type: type
-        });
-
-        if (response.success) {
-            acceptBtn.addEventListener('click', () => {
-                status.textContent = `Connecté en ${type}`;
-                if (type === 'video') {
-                    document.getElementById('remoteVideo').style.display = 'block';
-                    document.getElementById('localVideo').style.display = 'block';
-                }
-            }, { once: true });
+        try {
+            const response = await this.api.apiRequest('POST', '', {
+                action: 'startCall',
+                conversation_id: this.selectedConversationId,
+                call_type: type
+            });
+            if (response.success) {
+                acceptBtn.addEventListener('click', () => {
+                    status.textContent = `Connecté en ${type}`;
+                    if (type === 'video') {
+                        document.getElementById('remoteVideo').style.display = 'block';
+                        document.getElementById('localVideo').style.display = 'block';
+                    }
+                }, { once: true });
+            } else {
+                throw new Error(response.message || 'Erreur démarrage appel');
+            }
+        } catch (error) {
+            console.error('Erreur startCall:', error);
+            this.showNotification('Erreur lors du démarrage de l\'appel', 'error');
+            modal.style.display = 'none';
         }
 
         declineBtn.addEventListener('click', () => {
             modal.style.display = 'none';
             this.api.apiRequest('POST', '', {
                 action: 'endCall',
-                call_id: response.call_id
-            });
+                call_id: response?.call_id
+            }).catch(err => console.error('Erreur endCall:', err));
         }, { once: true });
     }
 
@@ -456,7 +507,7 @@ class ChatManager {
 
     toggleSidebar() {
         const sidebar = document.querySelector('.chat-sidebar');
-        sidebar.classList.toggle('active');
+        if (sidebar) sidebar.classList.toggle('active');
     }
 
     getCachedConversations() {
@@ -464,6 +515,7 @@ class ChatManager {
             const data = localStorage.getItem('conversations');
             return data ? JSON.parse(data) : [];
         } catch (error) {
+            console.error('Erreur getCachedConversations:', error);
             return [];
         }
     }
@@ -492,13 +544,13 @@ class ChatManager {
 
     playNotificationSound() {
         const audio = new Audio('/assets/sounds/notification.mp3');
-        audio.play().catch(() => console.log('Son non joué'));
+        audio.play().catch(err => console.log('Son non joué:', err));
     }
 }
 
 function debounce(func, wait) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(this, args), wait);
     };

@@ -1,6 +1,5 @@
 <?php
-// Pas besoin de redéfinir $currentUser, déjà fait dans MessageController
-// Vérification de session déjà gérée dans MessageController->index()
+//
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -8,15 +7,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Messages - Ride Genius</title>
-    <link rel="stylesheet" href="assets/css/custom.css">
-    <link rel="stylesheet" href="assets/css/chat.css">
+    <link rel="stylesheet" href="/assets/css/custom.css">
+    <link rel="stylesheet" href="/assets/css/chat.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-    <script src="assets/js/ChatAPI.js"></script>
-    <script src="assets/js/ChatManager.js"></script>
+    <script src="/assets/js/ChatAPI.js"></script>
+    <script src="/assets/js/ChatManager.js"></script>
     <style>
         @media (max-width: 768px) {
             .chat-sidebar { display: none; }
@@ -28,6 +27,7 @@
         .media-grid img, .media-grid video { max-width: 100px; cursor: pointer; }
         .media-grid a { display: block; margin: 5px 0; }
         .message-reactions { font-size: 14px; margin-top: 5px; }
+        .no-results { padding: 10px; color: #666; }
     </style>
 </head>
 <body>
@@ -48,7 +48,7 @@
             <div class="selected-user-info">
                 <div class="user-info">
                     <i class="fas fa-bars swipe-indicator" style="display: none;"></i>
-                    <img src="assets/images/default-avatar.png" alt="Avatar" class="avatar">
+                    <img src="/assets/images/default-avatar.png" alt="Avatar" class="avatar">
                     <h3>Sélectionnez une conversation</h3>
                 </div>
                 <div class="chat-actions">
@@ -88,7 +88,7 @@
     <div id="callModal" class="call-modal" style="display: none;">
         <div class="call-content">
             <div class="call-header">
-                <img src="" alt="Avatar" class="avatar" id="callAvatar">
+                <img src="/assets/images/default-avatar.png" alt="Avatar" class="avatar" id="callAvatar">
                 <h3 id="callUserName"></h3>
                 <p id="callStatus"></p>
             </div>
@@ -103,9 +103,8 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const currentUserId = <?php echo json_encode($_SESSION['user_id'] ?? null); ?>;
-            const SOCKET_SERVER_URL = 'http://localhost:3000';
+            window.SOCKET_SERVER_URL = 'http://localhost:3000';
             if (currentUserId) {
-                window.SOCKET_SERVER_URL = SOCKET_SERVER_URL;
                 const chat = new ChatManager(currentUserId);
             } else {
                 console.error('Utilisateur non connecté');
