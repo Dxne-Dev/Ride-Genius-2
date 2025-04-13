@@ -78,7 +78,20 @@ function check_api_auth() {
 }
 
 // Router pour l'API
+// Vérification si la clé 'action' est définie
+if (!isset($_GET['action'])) {
+    error_log("Clé 'action' manquante dans la requête");
+    echo json_encode([
+        "success" => false,
+        "message" => "Action manquante dans la requête"
+    ]);
+    exit();
+}
+
 $action = $_GET['action'] ?? '';
+
+// Ajout de logs pour déboguer l'action reçue
+error_log("Action API reçue : " . json_encode($_GET['action']));
 
 try {
     switch ($action) {
@@ -190,4 +203,4 @@ try {
         "success" => false,
         "message" => $e->getMessage()
     ]);
-} 
+}

@@ -219,11 +219,11 @@
             function isLoggedIn() {
                 return new Promise((resolve) => {
                     $.ajax({
-                        url: 'api/auth_api.php',
+                        url: 'api/subscription_api.php',
                         method: 'POST',
                         data: { action: 'checkAuth' },
                         success: function(response) {
-                            resolve(response.isLoggedIn);
+                            resolve(response.success);
                         },
                         error: function() {
                             resolve(false);
@@ -272,6 +272,13 @@
                                 'error', 
                                 'Erreur de souscription'
                             );
+                        }
+                        if (response.redirect === 'wallet') {
+                            showNotification('Redirection vers votre wallet...', 'info', 'Redirection');
+                            setTimeout(() => {
+                                window.location.href = 'http://ride-genius/index.php?page=wallet';
+                            }, 2000);
+                            return;
                         }
                     },
                     error: function(jqXHR, textStatus, errorThrown) {
@@ -331,4 +338,4 @@
     } else {
         loadJQuery(initializeSubscription);
     }
-})(); 
+})();
