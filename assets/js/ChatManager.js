@@ -200,6 +200,8 @@ class ChatManager {
             this.selectedUserId = userId;
             this.selectedConversationId = conversationId;
             localStorage.setItem('activeConversationId', conversationId);
+            
+            // Réinitialiser le numéro de page et les messages
             this.messagePage = 1;
             this.messages = [];
             
@@ -266,8 +268,6 @@ class ChatManager {
         }
 
         try {
-            container.innerHTML = '<div class="loading">Chargement...</div>';
-            
             // Construire l'URL avec les paramètres corrects
             const params = new URLSearchParams({
                 action: 'getMessages',
@@ -279,14 +279,31 @@ class ChatManager {
             const response = await this.api.apiRequest('GET', `?${params.toString()}`);
             
             if (response.success) {
-                this.messages = response.messages.reverse();
-                container.innerHTML = '';
+                // Si c'est la première page, vider le conteneur et réinitialiser les messages
+                if (this.messagePage === 1) {
+                    container.innerHTML = '';
+                    this.messages = [];
+                }
+
+                // Les messages sont dans l'ordre DESC (plus récents en premier)
+                const newMessages = response.messages;
                 
-                if (this.messages.length === 0) {
-                    container.innerHTML = '<div class="no-messages">Aucun message pour l\'instant</div>';
-                } else {
-                    this.messages.forEach(msg => this.displayMessage(msg));
-                    this.addToMediaGrid(response.attachments || []);
+                // Ajouter les nouveaux messages au début du tableau
+                this.messages = [...newMessages, ...this.messages];
+                
+                // Trier les messages par ID croissant (du plus ancien au plus récent)
+                this.messages.sort((a, b) => a.id - b.id);
+                
+                // Vider le conteneur et réafficher tous les messages dans le bon ordre
+                container.innerHTML = '';
+                this.messages.forEach(msg => {
+                    this.displayMessage(msg);
+                });
+                
+                this.addToMediaGrid(response.attachments || []);
+                
+                // Si c'est la première page, faire défiler jusqu'au bas
+                if (this.messagePage === 1) {
                     this.scrollToBottom();
                 }
             } else {
@@ -317,7 +334,10 @@ class ChatManager {
 
     handleScroll() {
         const container = document.getElementById('chatMessages');
-        if (container?.scrollTop === 0 && this.messages.length >= this.messagesPerPage) {
+        if (!container) return;
+
+        // Si on est en haut du conteneur et qu'il y a plus de messages à charger
+        if (container.scrollTop === 0 && this.messages.length >= this.messagesPerPage) {
             this.messagePage++;
             this.loadMessages();
         }
@@ -325,8 +345,8 @@ class ChatManager {
 
     displayMessage(message) {
         const container = document.getElementById('chatMessages');
-        if (!container || document.querySelector(`[data-message-id="${message.id}"]`)) return;
-        
+        if (!container) return;
+
         // Vérifier si le message est envoyé par l'utilisateur actuel
         const isSent = parseInt(message.sender_id) === parseInt(this.userId);
         
@@ -360,8 +380,10 @@ class ChatManager {
         // Ajouter le message au conteneur
         container.appendChild(msgElement);
         
-        // Faire défiler jusqu'au dernier message
-        this.scrollToBottom();
+        // Faire défiler jusqu'au dernier message uniquement pour les nouveaux messages
+        if (this.messagePage === 1) {
+            this.scrollToBottom();
+        }
         
         // Jouer le son de notification uniquement pour les messages reçus
         if (!isSent) {
@@ -670,6 +692,11 @@ class ChatManager {
         if (activeId) {
             const convItem = document.querySelector(`.conversation-item[data-conversation-id="${activeId}"]`);
             if (convItem) {
+                // Vérifier si la conversation est déjà chargée
+                if (this.selectedConversationId === activeId) {
+                    console.log('Conversation déjà chargée:', activeId);
+                    return;
+                }
                 this.selectConversation(convItem.dataset.userId, activeId);
             }
         }
