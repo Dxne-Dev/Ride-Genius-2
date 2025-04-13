@@ -198,6 +198,8 @@ class AuthController {
                     $_SESSION['user_id'] = $user_data['id'];
                     $_SESSION['api_token'] = $token;
                     $_SESSION['user_role'] = $user_data['role']; // Stocker le rôle de l'utilisateur
+                    $_SESSION['first_name'] = $user_data['first_name'];
+                    $_SESSION['last_name'] = $user_data['last_name'];
 
                     if ($this->isAjaxRequest()) {
                         $this->sendJsonResponse([

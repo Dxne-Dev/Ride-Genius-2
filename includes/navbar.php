@@ -74,9 +74,10 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php if(isset($_SESSION['user_name'])): ?>
-    <span><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
-<?php endif; ?>
+                            <i class="fas fa-user me-1"></i>
+                            <?php if(isset($_SESSION['first_name']) && isset($_SESSION['last_name'])): ?>
+                                <span><?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></span>
+                            <?php endif; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="index.php?page=profile"><i class="fas fa-user-circle me-1"></i>Mon profil</a></li>
