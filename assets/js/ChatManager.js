@@ -30,12 +30,8 @@ class ChatManager {
     }
 
     connectSocket() {
-        console.log('Initialisation de la connexion socket');
         this.api.connectSocket(
-            { 
-                userId: this.userId,
-                token: window.USER_TOKEN // Le token doit être défini dans le HTML
-            },
+            { userId: this.userId, token: window.USER_TOKEN },
             () => {
                 console.log('Socket connecté avec succès');
                 this.showNotification('Connecté au chat', 'success');
@@ -48,18 +44,24 @@ class ChatManager {
             },
             (message) => {
                 console.log('Message reçu via socket:', message);
-                // Ne pas afficher les messages qu'on vient d'envoyer nous-mêmes
+                
+                // Ne pas traiter les messages qu'on vient d'envoyer nous-mêmes
                 if (message.sender_id !== this.userId) {
-                    if (message.conversation_id === this.selectedConversationId) {
-                        this.displayMessage(message);
-                        // Marquer comme lu immédiatement si la conversation est ouverte
-                        this.markMessagesAsRead(this.selectedConversationId);
-                    } else {
-                        // Mettre à jour le compteur de messages non lus
-                        this.updateUnreadCount(message.conversation_id);
+                    // Vérifier si le message n'est pas déjà affiché
+                    const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+                    if (!existingMessage) {
+                        // Si c'est la conversation active, afficher le message et le marquer comme lu
+                        if (message.conversation_id === this.selectedConversationId) {
+                            this.displayMessage(message);
+                            this.markMessagesAsRead(this.selectedConversationId);
+                        } else {
+                            // Sinon, mettre à jour le compteur de messages non lus
+                            this.updateUnreadCount(message.conversation_id);
+                        }
                     }
                 }
-                // Rafraîchir la liste des conversations dans tous les cas
+                
+                // Rafraîchir la liste des conversations pour mettre à jour le dernier message
                 this.loadConversations();
             }
         );
@@ -347,6 +349,18 @@ class ChatManager {
         const container = document.getElementById('chatMessages');
         if (!container) return;
 
+        // Vérifier si le message existe déjà dans le DOM
+        const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+        if (existingMessage) {
+            // Si c'est un message temporaire et qu'on reçoit le vrai message, le remplacer
+            if (existingMessage.dataset.messageId.startsWith('temp_') && !message.id.startsWith('temp_')) {
+                existingMessage.remove();
+            } else {
+                console.log('Message déjà affiché:', message.id);
+                return; // Message déjà affiché
+            }
+        }
+
         // Vérifier si le message est envoyé par l'utilisateur actuel
         const isSent = parseInt(message.sender_id) === parseInt(this.userId);
         
@@ -470,6 +484,7 @@ class ChatManager {
         const input = document.getElementById('messageInput');
         const content = input?.value.trim();
         
+        // Vérifications initiales
         if (!content && !this.attachedFiles.length) {
             this.showNotification('Veuillez entrer un message ou joindre un fichier', 'warning');
             return;
@@ -480,7 +495,7 @@ class ChatManager {
             return;
         }
 
-        // Vérifier si un envoi est déjà en cours
+        // Vérification pour éviter les envois multiples
         if (this.isSubmitting) {
             this.showNotification('Un message est déjà en cours d\'envoi', 'warning');
             return;
@@ -488,19 +503,22 @@ class ChatManager {
 
         this.isSubmitting = true;
 
-        const tempMessage = {
-            id: 'temp_' + Date.now(),
-            sender_id: this.userId,
-            content,
-            created_at: new Date().toISOString(),
-            conversation_id: this.selectedConversationId,
-            attachments: this.attachedFiles
-        };
-
-        this.displayMessage(tempMessage);
-        input.value = '';
-
         try {
+            // Créer un message temporaire pour l'affichage immédiat
+            const tempMessage = {
+                id: 'temp_' + Date.now(),
+                sender_id: this.userId,
+                content,
+                created_at: new Date().toISOString(),
+                conversation_id: this.selectedConversationId,
+                attachments: this.attachedFiles
+            };
+
+            // Afficher le message temporaire
+            this.displayMessage(tempMessage);
+            input.value = '';
+
+            // Envoyer le message via l'API REST
             const response = await this.api.apiRequest('POST', '', {
                 action: 'sendMessage',
                 conversation_id: this.selectedConversationId,
@@ -509,29 +527,21 @@ class ChatManager {
             });
 
             if (response.success) {
-                // Émettre le message via WebSocket
-                this.api.emitMessage({
-                    id: response.message_id,
-                    sender_id: this.userId,
-                    content,
-                    created_at: new Date().toISOString(),
-                    conversation_id: this.selectedConversationId,
-                    attachments: response.attachments || []
-                });
-                
+                // Le message sera reçu via WebSocket et affiché automatiquement
+                // On peut vider les fichiers joints
                 this.attachedFiles = [];
-                this.updateAttachmentsPreview();
+                this.updateAttachmentsDisplay();
             } else {
+                // En cas d'erreur, retirer le message temporaire
+                const tempElement = document.querySelector(`[data-message-id="${tempMessage.id}"]`);
+                if (tempElement) {
+                    tempElement.remove();
+                }
                 throw new Error(response.message || 'Erreur lors de l\'envoi du message');
             }
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
             this.showNotification(error.message || 'Erreur lors de l\'envoi du message', 'error');
-            // Supprimer le message temporaire en cas d'erreur
-            const tempMessageElement = document.querySelector(`[data-message-id="${tempMessage.id}"]`);
-            if (tempMessageElement) {
-                tempMessageElement.remove();
-            }
         } finally {
             this.isSubmitting = false;
         }
