@@ -62,6 +62,7 @@ switch($page) {
     case 'admin-rides':
     case 'messages':
     case 'wallet':
+    case 'logout':
         // Pages de profil
         if ($page == 'profile') {
             $user = new UserController();
@@ -133,6 +134,11 @@ switch($page) {
         // Page de wallet
         if ($page == 'wallet') {
             include "views/wallet/wallet.php";
+        }
+        // Page de déconnexion
+        if ($page == 'logout') {
+            $auth = new AuthController();
+            $auth->logout();
         }
         break;
         

@@ -29,41 +29,39 @@
                     <a class="nav-link" href="index.php?page=search-rides"><i class="fas fa-search me-1"></i>Rechercher</a>
                 </li>
 
-                <?php if(isset($_SESSION['user_id'])): ?>
-                    <?php if($_SESSION['user_role'] === 'conducteur'): ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-steering-wheel me-1"></i>Conducteur
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="index.php?page=create-ride">Proposer un trajet</a></li>
-                                <li><a class="dropdown-item" href="index.php?page=my-rides">Mes trajets</a></li>
-                            </ul>
-                        </li>
-                    <?php endif; ?>
-
+                <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'conducteur'): ?>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-calendar-alt me-1"></i>Mes réservations
+                            <i class="fas fa-steering-wheel me-1"></i>Conducteur
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="index.php?page=my-bookings">Voir mes réservations</a></li>
-                            <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=create-ride">Proposer un trajet</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=my-rides">Mes trajets</a></li>
                         </ul>
                     </li>
+                <?php endif; ?>
 
-                    <?php if($_SESSION['user_role'] === 'admin'): ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user-shield me-1"></i>Administration
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="index.php?page=admin-dashboard">Tableau de bord</a></li>
-                                <li><a class="dropdown-item" href="index.php?page=admin-users">Utilisateurs</a></li>
-                                <li><a class="dropdown-item" href="index.php?page=admin-rides">Trajets</a></li>
-                            </ul>
-                        </li>
-                    <?php endif; ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-calendar-alt me-1"></i>Mes réservations
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="index.php?page=my-bookings">Voir mes réservations</a></li>
+                        <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
+                    </ul>
+                </li>
+
+                <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-shield me-1"></i>Administration
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="index.php?page=admin-dashboard">Tableau de bord</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=admin-users">Utilisateurs</a></li>
+                            <li><a class="dropdown-item" href="index.php?page=admin-rides">Trajets</a></li>
+                        </ul>
+                    </li>
                 <?php endif; ?>
             </ul>
 
@@ -76,7 +74,9 @@
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo $_SESSION['user_name']; ?>
+                            <i class="fas fa-user me-1"></i><?php if(isset($_SESSION['user_name'])): ?>
+    <span><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+<?php endif; ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="index.php?page=profile"><i class="fas fa-user-circle me-1"></i>Mon profil</a></li>

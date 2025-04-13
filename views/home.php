@@ -1,6 +1,13 @@
 <?php include 'includes/header.php'; ?>
 <?php include 'includes/navbar.php'; ?>
 
+<?php
+// Vérification de l'existence de la clé 'user_role' dans $_SESSION
+if (!isset($_SESSION['user_role'])) {
+    $_SESSION['user_role'] = null; // Définir une valeur par défaut si elle n'existe pas
+}
+?>
+
 <head>
     <!-- Floating Notifications -->
     <link rel="stylesheet" href="assets/css/floating-notifications.css">
@@ -136,7 +143,7 @@
     </div>
 
     <!-- Subscription Section -->
-    <?php if(isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur'): ?>
+    <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'conducteur'): ?>
     <div class="container subscription-section">
         <h2 class="text-center mb-5">Nos formules d'abonnement</h2>
         <div class="row g-4">
@@ -441,7 +448,7 @@
                     <a href="index.php?page=login" class="btn btn-outline-secondary btn-lg px-4">Se connecter</a>
                 <?php else: ?>
                     <a href="index.php?page=search-rides" class="btn btn-primary btn-lg px-4 me-sm-3">Rechercher un trajet</a>
-                    <?php if($_SESSION['user_role'] === 'conducteur'): ?>
+                    <?php if(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'conducteur'): ?>
                         <a href="index.php?page=create-ride" class="btn btn-outline-secondary btn-lg px-4">Proposer un trajet</a>
                     <?php endif; ?>
                 <?php endif; ?>
@@ -450,7 +457,7 @@
     </div>
 </div>
 
-<?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+<?php if (isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
     <div class="container py-5">
         <div class="row mb-4">
             <div class="col-12">
