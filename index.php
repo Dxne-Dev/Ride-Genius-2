@@ -36,7 +36,20 @@ switch($page) {
     case 'verify-email':
     case 'resend-verification':
         $auth = new AuthController();
-        $auth->$page();
+        // Mapper les pages aux méthodes correspondantes
+        $methodMap = [
+            'verify-email' => 'verifyEmail',
+            'resend-verification' => 'resendVerification',
+            'register' => 'register',
+            'login' => 'login'
+        ];
+
+        if (isset($methodMap[$page])) {
+            $method = $methodMap[$page];
+            $auth->$method();
+        } else {
+            throw new Exception("Page non trouvée : $page");
+        }
         break;
     
     // Pages protégées
