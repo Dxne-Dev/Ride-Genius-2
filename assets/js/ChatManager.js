@@ -534,7 +534,7 @@ class ChatManager {
     async handleSearch() {
         const query = document.getElementById('searchUsers')?.value.trim() || '';
         if (query.length < 2) {
-            this.renderSearchResults([]);
+            this.clearSearchResults();
             return;
         }
         try {
@@ -547,7 +547,7 @@ class ChatManager {
         } catch (error) {
             console.error('Erreur handleSearch:', error);
             this.showNotification('Erreur lors de la recherche', 'error');
-            this.renderSearchResults([]);
+            this.clearSearchResults();
         }
     }
 
@@ -555,18 +555,29 @@ class ChatManager {
         const results = document.querySelector('.search-results');
         if (!results) return;
         results.innerHTML = users.length ? users.map(user => `
-            <div class="search-result" data-user-id="${user.id}">
-                <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar">
-                <span>${user.first_name} ${user.last_name}</span>
+            <div class="search-result-item" data-user-id="${user.id}">
+                <img src="${user.profile_image || 'assets/images/default-avatar.png'}" alt="Avatar" class="avatar">
+                <div class="user-info">
+                    <div class="user-name">${user.first_name} ${user.last_name}</div>
+                </div>
             </div>
         `).join('') : '<div class="no-results">Aucun utilisateur trouvé</div>';
-        results.querySelectorAll('.search-result').forEach(el => {
+        results.classList.add('show');
+        results.querySelectorAll('.search-result-item').forEach(el => {
             el.addEventListener('click', () => this.startConversation({
                 id: el.dataset.userId,
-                first_name: el.querySelector('span')?.textContent.split(' ')[0] || '',
-                last_name: el.querySelector('span')?.textContent.split(' ')[1] || ''
+                first_name: el.querySelector('.user-name')?.textContent.split(' ')[0] || '',
+                last_name: el.querySelector('.user-name')?.textContent.split(' ')[1] || ''
             }));
         });
+    }
+
+    clearSearchResults() {
+        const results = document.querySelector('.search-results');
+        if (results) {
+            results.innerHTML = '';
+            results.classList.remove('show');
+        }
     }
 
     async startConversation(user) {
