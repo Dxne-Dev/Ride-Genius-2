@@ -88,7 +88,22 @@ class ChatManager {
         const swipeIndicator = document.querySelector('.swipe-indicator');
         const reactionMenu = document.getElementById('reactionMenu');
 
-        if (searchInput) searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce(() => this.handleSearch(), 300));
+            
+            // Ajouter un gestionnaire d'événements pour fermer les résultats lors d'un clic en dehors
+            document.addEventListener('click', (e) => {
+                const searchBox = document.querySelector('.search-box');
+                const searchResults = document.querySelector('.search-results');
+                
+                if (searchBox && searchResults && 
+                    !searchBox.contains(e.target) && 
+                    !searchResults.contains(e.target)) {
+                    this.clearSearchResults();
+                }
+            });
+        }
+        
         if (fileInput) fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
         if (attachButton) attachButton.addEventListener('click', () => fileInput?.click());
         if (audioCallBtn) audioCallBtn.addEventListener('click', () => this.startCall('audio'));
