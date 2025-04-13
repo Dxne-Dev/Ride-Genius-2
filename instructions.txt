@@ -1,5 +1,2 @@
-🔧 Modifications à faire pour la recepetion en temps réel:
-Zone	Changement	Pourquoi
-handleSubmit()	Utilisation de this.api.emitMessage(...)	✅ Envoie le message via WebSocket
-addReaction()	Utilisation de this.api.socketRequest(...)	✅ Émet la réaction en temps réel
-connectSocket()	Corrigé pour correspondre aux bons événements WebSocket	✅ Pour réceptionner les messages correctement
+🔧 Modifications à faire pour la notification qui se déclenche uniquement lorsqu'un nouveau message est recu 
+VERFIER TOUT LES CAS OU LE SON DE NOTIFICATION EST DECLENCHER PUIS LES DESACTIVER OU SUPPRIME RPOUR CONSERVER UNIQUEMENT LE DECLENCHEMENT JUSTE A LA RECEPETION DES NOUVEAU MESSAGES

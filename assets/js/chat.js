@@ -247,8 +247,8 @@ function displayMessage(messageData) {
     messagesContainer.appendChild(messageElement);
     scrollToBottom();
 
-    // Jouer le son de notification pour les messages reçus
-    if (!isSent) {
+    // Jouer le son de notification uniquement pour les nouveaux messages reçus
+    if (!isSent && !document.querySelector(`[data-message-id="${messageData.id}"]`)) {
         playNotificationSound();
     }
 }

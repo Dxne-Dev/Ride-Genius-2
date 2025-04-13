@@ -316,7 +316,8 @@ class ChatManager {
                 // Vider le conteneur et réafficher tous les messages dans le bon ordre
                 container.innerHTML = '';
                 this.messages.forEach(msg => {
-                    this.displayMessage(msg);
+                    // Ne pas jouer le son lors du chargement initial des messages
+                    this.displayMessage(msg, true);
                 });
                 
                 this.addToMediaGrid(response.attachments || []);
@@ -362,47 +363,48 @@ class ChatManager {
         }
     }
 
-    displayMessage(message) {
+    displayMessage(message, isInitialLoad = false) {
         const container = document.getElementById('chatMessages');
-        if (!container) return;
-
-        // Vérifier si le message existe déjà dans le DOM
-        const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
-        if (existingMessage) {
-            // Si c'est un message temporaire et qu'on reçoit le vrai message, le remplacer
-            if (existingMessage.dataset.messageId.startsWith('temp_') && !message.id.startsWith('temp_')) {
-                existingMessage.remove();
-            } else {
-                console.log('Message déjà affiché:', message.id);
-                return; // Message déjà affiché
-            }
+        if (!container) {
+            console.error('Container de messages non trouvé');
+            return;
         }
 
-        // Vérifier si le message est envoyé par l'utilisateur actuel
-        const isSent = parseInt(message.sender_id) === parseInt(this.userId);
+        // Vérifier si le message n'est pas déjà affiché
+        const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+        if (existingMessage) {
+            return;
+        }
+
+        const isSent = message.sender_id === this.userId;
         
         // Créer l'élément du message
         const msgElement = document.createElement('div');
         msgElement.className = `message ${isSent ? 'sent' : 'received'}`;
-        msgElement.dataset.messageId = message.id;
+        msgElement.setAttribute('data-message-id', message.id);
         
         // Créer le contenu du message
         const contentElement = document.createElement('div');
         contentElement.className = 'message-content';
         contentElement.textContent = message.content;
         
-        // Créer les métadonnées du message (heure, etc.)
+        // Créer les métadonnées du message
         const metaElement = document.createElement('div');
         metaElement.className = 'message-meta';
         
+        // Ajouter l'heure du message
         const timeElement = document.createElement('span');
         timeElement.className = 'message-time';
-        timeElement.textContent = new Date(message.created_at).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-        
+        timeElement.textContent = new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         metaElement.appendChild(timeElement);
+        
+        // Ajouter l'état de lecture si c'est un message envoyé
+        if (isSent) {
+            const readStatus = document.createElement('span');
+            readStatus.className = 'message-status';
+            readStatus.innerHTML = message.is_read ? '✓✓' : '✓';
+            metaElement.appendChild(readStatus);
+        }
         
         // Assembler le message
         msgElement.appendChild(contentElement);
@@ -416,8 +418,8 @@ class ChatManager {
             this.scrollToBottom();
         }
         
-        // Jouer le son de notification uniquement pour les messages reçus
-        if (!isSent) {
+        // Jouer le son de notification uniquement pour les nouveaux messages reçus et non lors du chargement initial
+        if (!isSent && !existingMessage && !isInitialLoad) {
             this.playNotificationSound();
         }
         
