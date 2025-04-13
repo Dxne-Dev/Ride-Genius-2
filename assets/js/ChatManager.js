@@ -45,24 +45,41 @@ class ChatManager {
             (message) => {
                 console.log('Message reçu via socket:', message);
                 
-                // Ne pas traiter les messages qu'on vient d'envoyer nous-mêmes
-                if (message.sender_id !== this.userId) {
-                    // Vérifier si le message n'est pas déjà affiché
-                    const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
-                    if (!existingMessage) {
-                        // Si c'est la conversation active, afficher le message et le marquer comme lu
-                        if (message.conversation_id === this.selectedConversationId) {
-                            this.displayMessage(message);
+                // Vérifier si le message n'est pas déjà affiché
+                const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
+                if (!existingMessage) {
+                    // Si c'est la conversation active, afficher le message
+                    if (message.conversation_id === this.selectedConversationId) {
+                        this.displayMessage(message);
+                        // Marquer comme lu uniquement si c'est un message reçu
+                        if (message.sender_id !== this.userId) {
                             this.markMessagesAsRead(this.selectedConversationId);
-                        } else {
-                            // Sinon, mettre à jour le compteur de messages non lus
-                            this.updateUnreadCount(message.conversation_id);
                         }
+                    } else {
+                        // Mettre à jour le compteur de messages non lus
+                        this.updateUnreadCount(message.conversation_id);
                     }
                 }
                 
                 // Rafraîchir la liste des conversations pour mettre à jour le dernier message
                 this.loadConversations();
+            },
+            (reaction) => {
+                console.log('Réaction reçue via socket:', reaction);
+                // Mettre à jour l'interface utilisateur avec la réaction
+                const messageElement = document.querySelector(`[data-message-id="${reaction.message_id}"]`);
+                if (messageElement) {
+                    const reactionsContainer = messageElement.querySelector('.message-reactions') || 
+                        document.createElement('div');
+                    reactionsContainer.className = 'message-reactions';
+                    
+                    const reactionElement = document.createElement('span');
+                    reactionElement.className = 'reaction';
+                    reactionElement.textContent = reaction.reaction;
+                    
+                    reactionsContainer.appendChild(reactionElement);
+                    messageElement.appendChild(reactionsContainer);
+                }
             }
         );
     }
@@ -431,20 +448,29 @@ class ChatManager {
         }
     }
 
-    async addReaction(emoji) {
+    async addReaction(messageId, reaction) {
         try {
-            const response = await this.api.apiRequest('POST', '', {
-                action: 'addReaction',
-                message_id: this.currentMessageId,
-                reaction: emoji
+            // Envoyer la réaction via WebSocket
+            this.api.socketRequest('addReaction', {
+                message_id: messageId,
+                reaction: reaction,
+                conversation_id: this.selectedConversationId,
+                user_id: this.userId
             });
-            if (response.success) {
-                this.api.socketRequest('sendReaction', {
-                    message_id: this.currentMessageId,
-                    reaction: emoji,
-                    conversation_id: this.selectedConversationId,
-                    user_id: this.userId
-                });
+
+            // Mettre à jour l'interface utilisateur
+            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+            if (messageElement) {
+                const reactionsContainer = messageElement.querySelector('.message-reactions') || 
+                    document.createElement('div');
+                reactionsContainer.className = 'message-reactions';
+                
+                const reactionElement = document.createElement('span');
+                reactionElement.className = 'reaction';
+                reactionElement.textContent = reaction;
+                
+                reactionsContainer.appendChild(reactionElement);
+                messageElement.appendChild(reactionsContainer);
             }
         } catch (error) {
             console.error('Erreur addReaction:', error);
@@ -518,29 +544,26 @@ class ChatManager {
             this.displayMessage(tempMessage);
             input.value = '';
 
-            // Envoyer le message via l'API REST
-            const response = await this.api.apiRequest('POST', '', {
-                action: 'sendMessage',
-                conversation_id: this.selectedConversationId,
+            // Envoyer le message via WebSocket uniquement
+            this.api.emitMessage({
+                id: 'temp_' + Date.now(),
+                sender_id: this.userId,
                 content,
+                created_at: new Date().toISOString(),
+                conversation_id: this.selectedConversationId,
                 attachments: this.attachedFiles
             });
 
-            if (response.success) {
-                // Le message sera reçu via WebSocket et affiché automatiquement
-                // On peut vider les fichiers joints
-                this.attachedFiles = [];
-                this.updateAttachmentsDisplay();
-            } else {
-                // En cas d'erreur, retirer le message temporaire
-                const tempElement = document.querySelector(`[data-message-id="${tempMessage.id}"]`);
-                if (tempElement) {
-                    tempElement.remove();
-                }
-                throw new Error(response.message || 'Erreur lors de l\'envoi du message');
-            }
+            // Vider les fichiers joints
+            this.attachedFiles = [];
+            this.updateAttachmentsDisplay();
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
+            // En cas d'erreur, retirer le message temporaire
+            const tempElement = document.querySelector(`[data-message-id="${tempMessage.id}"]`);
+            if (tempElement) {
+                tempElement.remove();
+            }
             this.showNotification(error.message || 'Erreur lors de l\'envoi du message', 'error');
         } finally {
             this.isSubmitting = false;

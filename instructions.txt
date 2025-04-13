@@ -1,15 +1,5 @@
-LES REQUETES 
-
-action=getConversation&conversation_id=15&token=9204927a589682e87d2e6e99bca28fa7641b31b053bda5a5f231326b2fed897f&sender_id=41
-
-
-ET 
-
-action=getMessages&conversation_id=15&page=1&limit=20&token=9204927a589682e87d2e6e99bca28fa7641b31b053bda5a5f231326b2fed897f&sender_id=41
-
-
-SONT APPELES AU RAFFRAISSEMENT DE LA PAGE LORSQU'ON CLIQUE SUR UNE CONVERSATION 
-
-NE SONT ILS PAS REDONDANTS A UN CERTAINS NIVEAU ?? 
-
-
+🔧 Modifications à faire pour la recepetion en temps réel:
+Zone	Changement	Pourquoi
+handleSubmit()	Utilisation de this.api.emitMessage(...)	✅ Envoie le message via WebSocket
+addReaction()	Utilisation de this.api.socketRequest(...)	✅ Émet la réaction en temps réel
+connectSocket()	Corrigé pour correspondre aux bons événements WebSocket	✅ Pour réceptionner les messages correctement
