@@ -15,8 +15,9 @@ class ChatManager {
     }
 
     init() {
-        if (!this.userId) {
-            this.showNotification('Utilisateur non identifié', 'error');
+        if (!this.userId || !window.USER_TOKEN) {
+            console.error('Utilisateur non identifié ou token manquant');
+            this.showNotification('Session expirée. Veuillez vous reconnecter.', 'error');
             window.location.href = 'index.php?page=login';
             return;
         }
@@ -29,28 +30,37 @@ class ChatManager {
     }
 
     connectSocket() {
+        console.log('Initialisation de la connexion socket');
         this.api.connectSocket(
-            { userId: this.userId },
-            () => {
-                this.showNotification('Connecté au chat', 'success');
-                this.updateNetworkStatus(true);
-                this.flushOfflineMessages();
+            { 
+                userId: this.userId,
+                token: window.USER_TOKEN // Le token doit être défini dans le HTML
             },
             () => {
+                console.log('Socket connecté avec succès');
+                this.showNotification('Connecté au chat', 'success');
+                this.updateNetworkStatus(true);
+            },
+            () => {
+                console.log('Socket déconnecté');
                 this.showNotification('Déconnecté du chat', 'warning');
                 this.updateNetworkStatus(false);
             },
             (message) => {
-                if (message.conversation_id === this.selectedConversationId) {
-                    this.displayMessage(message);
-                    this.addToMediaGrid(message.attachments || []);
+                console.log('Message reçu via socket:', message);
+                // Ne pas afficher les messages qu'on vient d'envoyer nous-mêmes
+                if (message.sender_id !== this.userId) {
+                    if (message.conversation_id === this.selectedConversationId) {
+                        this.displayMessage(message);
+                        // Marquer comme lu immédiatement si la conversation est ouverte
+                        this.markMessagesAsRead(this.selectedConversationId);
+                    } else {
+                        // Mettre à jour le compteur de messages non lus
+                        this.updateUnreadCount(message.conversation_id);
+                    }
                 }
+                // Rafraîchir la liste des conversations dans tous les cas
                 this.loadConversations();
-            },
-            (reaction) => {
-                if (reaction.conversation_id === this.selectedConversationId) {
-                    this.updateMessageReaction(reaction);
-                }
             }
         );
     }
@@ -179,26 +189,31 @@ class ChatManager {
             this.messages = [];
             
             // Mettre à jour l'interface utilisateur
-            const userInfo = document.querySelector('.selected-user-info .user-info');
-            const convItem = document.querySelector(`.conversation-item[data-user-id="${userId}"]`);
-            if (convItem && userInfo) {
-                const name = convItem.querySelector('h4')?.textContent || 'Utilisateur';
-                const img = convItem.querySelector('.avatar')?.src || 'assets/images/default-avatar.png';
-                userInfo.querySelector('img').src = img;
-                userInfo.querySelector('h3').textContent = name;
-            }
             document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
-            convItem?.classList.add('active');
+            const selectedConv = document.querySelector(`.conversation-item[data-conversation-id="${conversationId}"]`);
+            if (selectedConv) {
+                selectedConv.classList.add('active');
+                const userInfo = document.querySelector('.selected-user-info .user-info');
+                if (userInfo) {
+                    const name = selectedConv.querySelector('h4')?.textContent || 'Utilisateur';
+                    const img = selectedConv.querySelector('.avatar')?.src || 'assets/images/default-avatar.png';
+                    userInfo.querySelector('img').src = img;
+                    userInfo.querySelector('h3').textContent = name;
+                }
+            }
 
-            // Vérifier les permissions avant de charger les messages
-            const permissionsResponse = await this.checkPermissions();
-            if (!permissionsResponse?.success) {
-                this.showNotification('Impossible de vérifier les permissions', 'error');
-                return;
+            // Charger les détails de la conversation
+            const conversationResponse = await this.api.apiRequest('GET', `?action=getConversation&conversation_id=${conversationId}`);
+            if (!conversationResponse.success) {
+                throw new Error(conversationResponse.message || 'Erreur lors de la récupération de la conversation');
             }
 
             // Charger les messages
             await this.loadMessages();
+            
+            // Marquer les messages comme lus
+            await this.markMessagesAsRead(conversationId);
+            
         } catch (error) {
             console.error('Erreur selectConversation:', error);
             this.showNotification('Erreur lors de la sélection de la conversation', 'error');
@@ -260,6 +275,12 @@ class ChatManager {
                     this.scrollToBottom();
                 }
             } else {
+                if (response.message === 'Token d\'authentification manquant' || response.message === 'Token invalide ou expiré') {
+                    console.error('Erreur d\'authentification:', response.message);
+                    this.showNotification('Session expirée. Veuillez vous reconnecter.', 'error');
+                    window.location.href = 'index.php?page=login';
+                    return;
+                }
                 if (response.message === 'Conversation introuvable') {
                     this.showNotification('Cette conversation n\'existe plus', 'error');
                     window.location.reload();
@@ -269,6 +290,11 @@ class ChatManager {
             }
         } catch (error) {
             console.error('Erreur loadMessages:', error);
+            if (error.message.includes('Token') || error.message.includes('authentification')) {
+                this.showNotification('Session expirée. Veuillez vous reconnecter.', 'error');
+                window.location.href = 'index.php?page=login';
+                return;
+            }
             this.showNotification('Erreur de chargement des messages', 'error');
             container.innerHTML = '<div class="no-messages">Erreur lors de la récupération des messages</div>';
         }
@@ -285,18 +311,55 @@ class ChatManager {
     displayMessage(message) {
         const container = document.getElementById('chatMessages');
         if (!container || document.querySelector(`[data-message-id="${message.id}"]`)) return;
-        const isSent = message.sender_id === this.userId;
+        
+        // Vérifier si le message est envoyé par l'utilisateur actuel
+        const isSent = parseInt(message.sender_id) === parseInt(this.userId);
+        
+        // Créer l'élément du message
         const msgElement = document.createElement('div');
         msgElement.className = `message ${isSent ? 'sent' : 'received'}`;
         msgElement.dataset.messageId = message.id;
-        msgElement.innerHTML = `
-            <div class="message-content">${message.content}</div>
-            <span class="message-time">${new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            <div class="message-reactions">${this.renderReactions(message.reactions || [])}</div>
-        `;
+        
+        // Créer le contenu du message
+        const contentElement = document.createElement('div');
+        contentElement.className = 'message-content';
+        contentElement.textContent = message.content;
+        
+        // Créer les métadonnées du message (heure, etc.)
+        const metaElement = document.createElement('div');
+        metaElement.className = 'message-meta';
+        
+        const timeElement = document.createElement('span');
+        timeElement.className = 'message-time';
+        timeElement.textContent = new Date(message.created_at).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        metaElement.appendChild(timeElement);
+        
+        // Assembler le message
+        msgElement.appendChild(contentElement);
+        msgElement.appendChild(metaElement);
+        
+        // Ajouter le message au conteneur
         container.appendChild(msgElement);
+        
+        // Faire défiler jusqu'au dernier message
         this.scrollToBottom();
-        if (!isSent) this.playNotificationSound();
+        
+        // Jouer le son de notification uniquement pour les messages reçus
+        if (!isSent) {
+            this.playNotificationSound();
+        }
+        
+        console.log('Message affiché:', {
+            id: message.id,
+            isSent,
+            content: message.content,
+            sender_id: message.sender_id,
+            userId: this.userId
+        });
     }
 
     renderReactions(reactions) {
@@ -366,94 +429,74 @@ class ChatManager {
     }
 
     async handleSubmit(e) {
-        console.log('Début handleSubmit');
         e.preventDefault();
-        e.stopPropagation();
-        
-        const form = e.target;
-        console.log('Formulaire:', form);
-        
-        const input = form.querySelector('#messageInput');
-        console.log('Input:', input);
-        
-        const content = input?.value.trim() || '';
-        console.log('Contenu:', content);
+        const input = document.getElementById('messageInput');
+        const content = input?.value.trim();
         
         if (!content && !this.attachedFiles.length) {
-            console.log('Message vide et aucun fichier attaché');
+            this.showNotification('Veuillez entrer un message ou joindre un fichier', 'warning');
             return;
         }
-        
-        const messageData = { 
-            conversation_id: this.selectedConversationId, 
-            content 
+
+        if (!this.selectedConversationId) {
+            this.showNotification('Aucune conversation sélectionnée', 'error');
+            return;
+        }
+
+        // Vérifier si un envoi est déjà en cours
+        if (this.isSubmitting) {
+            this.showNotification('Un message est déjà en cours d\'envoi', 'warning');
+            return;
+        }
+
+        this.isSubmitting = true;
+
+        const tempMessage = {
+            id: 'temp_' + Date.now(),
+            sender_id: this.userId,
+            content,
+            created_at: new Date().toISOString(),
+            conversation_id: this.selectedConversationId,
+            attachments: this.attachedFiles
         };
-        console.log('Données du message:', messageData);
-        
+
+        this.displayMessage(tempMessage);
+        input.value = '';
+
         try {
-            if (!this.isOnline) {
-                console.log('Hors ligne, stockage du message');
-                this.storeOfflineMessage(messageData);
-                this.showNotification('Vous êtes hors ligne, message en attente', 'warning');
-                return;
-            }
-            
-            console.log('Envoi du message via API');
-            let response;
-            if (this.attachedFiles.length) {
-                console.log('Envoi avec fichiers');
-                const formData = new FormData();
-                formData.append('action', 'sendMessage');
-                formData.append('conversation_id', messageData.conversation_id);
-                formData.append('content', messageData.content);
-                this.attachedFiles.forEach((file, i) => formData.append(`files[${i}]`, file));
-                
-                response = await this.api.apiRequest('POST', '', formData);
-            } else {
-                console.log('Envoi sans fichiers');
-                response = await this.api.apiRequest('POST', '', {
-                    action: 'sendMessage',
-                    ...messageData
-                });
-            }
-            
-            console.log('Réponse API:', response);
-            
+            const response = await this.api.apiRequest('POST', '', {
+                action: 'sendMessage',
+                conversation_id: this.selectedConversationId,
+                content,
+                attachments: this.attachedFiles
+            });
+
             if (response.success) {
-                console.log('Message envoyé avec succès');
-                this.displayMessage({ 
-                    ...messageData, 
-                    id: response.message_id, 
-                    sender_id: this.userId, 
-                    created_at: new Date(),
-                    attachments: response.attachments 
+                // Émettre le message via WebSocket
+                this.api.emitMessage({
+                    id: response.message_id,
+                    sender_id: this.userId,
+                    content,
+                    created_at: new Date().toISOString(),
+                    conversation_id: this.selectedConversationId,
+                    attachments: response.attachments || []
                 });
                 
-                if (response.attachments) {
-                    this.addToMediaGrid(response.attachments);
-                }
-                
-                if (this.socket) {
-                    this.socket.emit('new_message', {
-                        conversation_id: this.selectedConversationId,
-                        message_id: response.message_id,
-                        sender_id: this.userId,
-                        content: content,
-                        attachments: response.attachments
-                    });
-                }
-                
-                input.value = '';
                 this.attachedFiles = [];
                 this.updateAttachmentsPreview();
-                this.loadConversations();
             } else {
-                console.error('Erreur API:', response.message);
-                throw new Error(response.message || 'Erreur envoi message');
+                throw new Error(response.message || 'Erreur lors de l\'envoi du message');
             }
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
-            this.showNotification('Erreur d\'envoi du message', 'error');
+            this.showNotification(error.message || 'Erreur lors de l\'envoi du message', 'error');
+            // Supprimer le message temporaire en cas d'erreur
+            const tempMessageElement = document.querySelector(`[data-message-id="${tempMessage.id}"]`);
+            if (tempMessageElement) {
+                tempMessageElement.remove();
+            }
+        } finally {
+            this.isSubmitting = false;
         }
     }
 
@@ -640,6 +683,45 @@ class ChatManager {
             });
         } catch (error) {
             console.error('Erreur SweetAlert2:', error);
+        }
+    }
+
+    async markMessagesAsRead(conversationId) {
+        try {
+            const response = await this.api.apiRequest('POST', '', {
+                action: 'markMessagesAsRead',
+                conversation_id: conversationId
+            });
+            
+            if (response.success) {
+                console.log('Messages marqués comme lus');
+                // Mettre à jour le compteur de messages non lus dans l'interface
+                const conversationItem = document.querySelector(`.conversation-item[data-conversation-id="${conversationId}"]`);
+                if (conversationItem) {
+                    const unreadBadge = conversationItem.querySelector('.unread-badge');
+                    if (unreadBadge) {
+                        unreadBadge.style.display = 'none';
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Erreur lors du marquage des messages comme lus:', error);
+            // Ne pas afficher de notification à l'utilisateur pour cette erreur non critique
+        }
+    }
+
+    updateUnreadCount(conversationId) {
+        const conversationElement = document.querySelector(`.conversation-item[data-conversation-id="${conversationId}"]`);
+        if (conversationElement) {
+            let badge = conversationElement.querySelector('.unread-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.className = 'unread-badge';
+                conversationElement.querySelector('.conversation-meta').appendChild(badge);
+            }
+            const currentCount = parseInt(badge.textContent || '0');
+            badge.textContent = currentCount + 1;
+            badge.style.display = 'block';
         }
     }
 

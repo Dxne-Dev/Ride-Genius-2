@@ -76,11 +76,10 @@ class Message {
 
     public function markAsRead($user_id, $conversation_id) {
         $query = "UPDATE {$this->table_name} 
-                  SET read_at = NOW() 
+                  SET is_read = 1 
                   WHERE conversation_id = :conversation_id 
                   AND receiver_id = :user_id 
-                  AND read_at IS NULL 
-                  AND deleted_at IS NULL";
+                  AND is_read = 0";
         $stmt = $this->conn->prepare($query);
         $stmt->execute([':conversation_id' => $conversation_id, ':user_id' => $user_id]);
     }

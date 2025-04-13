@@ -9,6 +9,20 @@ class AuthController {
         $this->user = new User($this->db);
     }
 
+    // Fonction utilitaire pour détecter si c'est une requête AJAX
+    private function isAjaxRequest() {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+    }
+
+    // Fonction utilitaire pour envoyer une réponse JSON
+    private function sendJsonResponse($data, $status = 200) {
+        http_response_code($status);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit();
+    }
+
     // Envoyer l'email de vérification
     private function sendVerificationEmail($email, $code) {
         require_once 'vendor/autoload.php';
@@ -158,50 +172,72 @@ class AuthController {
     
     // Connexion
     public function login() {
-        // Vérifier si l'utilisateur est déjà connecté
-        if(isset($_SESSION['user_id'])) {
-            header("Location: index.php");
-            exit();
-        }
-        
-        // Traitement du formulaire
-        if($_SERVER["REQUEST_METHOD"] == "POST") {
-            $errors = [];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = $_POST['email'] ?? '';
+            $password = $_POST['password'] ?? '';
             
-            if(empty($_POST['email']) || empty($_POST['password'])) {
-                $errors[] = "Veuillez remplir tous les champs";
-            } else {
-                $email = $_POST['email'];
-                $password = $_POST['password'];
-                
-                $user_data = $this->user->login($email, $password);
-                
-                if($user_data) {
-                    // Vérifier si l'email est vérifié
-                    if(!$this->user->isEmailVerified($email)) {
-                        $errors[] = "Veuillez vérifier votre email avant de vous connecter.";
-                    } else {
-                        $_SESSION['user_id'] = $user_data['id'];
-                        $_SESSION['user_name'] = $user_data['first_name'] . ' ' . $user_data['last_name'];
-                        $_SESSION['user_role'] = $user_data['role'];
-                        
-                        $_SESSION['success'] = "Connexion réussie !";
-                        
-                        // Redirection selon le rôle
-                        if($user_data['role'] === 'admin') {
-                            header("Location: index.php?page=admin-dashboard");
-                        } else {
-                            header("Location: index.php");
-                        }
-                        exit();
-                    }
-                } else {
-                    $errors[] = "Email ou mot de passe incorrect";
+            if (empty($email) || empty($password)) {
+                if ($this->isAjaxRequest()) {
+                    $this->sendJsonResponse([
+                        'success' => false,
+                        'message' => "Veuillez remplir tous les champs"
+                    ], 400);
                 }
+                $_SESSION['error'] = "Veuillez remplir tous les champs";
+                include "views/auth/login.php";
+                return;
+            }
+
+            $user_data = $this->user->login($email, $password);
+            
+            if ($user_data) {
+                try {
+                    require_once __DIR__ . '/../auth.php';
+                    $token = generate_token($user_data['id']);
+                    
+                    $_SESSION['user_id'] = $user_data['id'];
+                    $_SESSION['api_token'] = $token;
+
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse([
+                            'success' => true,
+                            'message' => "Connexion réussie",
+                            'token' => $token,
+                            'user_id' => $user_data['id']
+                        ]);
+                    }
+                    
+                    $_SESSION['success'] = "Connexion réussie";
+                    header("Location: index.php");
+                    exit;
+                } catch (Exception $e) {
+                    error_log("Erreur génération token: " . $e->getMessage());
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse([
+                            'success' => false,
+                            'message' => "Erreur lors de la connexion. Veuillez réessayer."
+                        ], 500);
+                    }
+                    $_SESSION['error'] = "Erreur lors de la connexion. Veuillez réessayer.";
+                }
+            } else {
+                if ($this->isAjaxRequest()) {
+                    $this->sendJsonResponse([
+                        'success' => false,
+                        'message' => "Email ou mot de passe incorrect"
+                    ], 401);
+                }
+                $_SESSION['error'] = "Email ou mot de passe incorrect";
             }
         }
         
-        // Afficher la vue
+        if ($this->isAjaxRequest()) {
+            $this->sendJsonResponse([
+                'success' => false,
+                'message' => "Méthode non autorisée"
+            ], 405);
+        }
+        
         include "views/auth/login.php";
     }
 
@@ -261,11 +297,33 @@ class AuthController {
     
     // Déconnexion
     public function logout() {
-        // Détruire la session
+        if (isset($_SESSION['user_id'])) {
+            try {
+                $stmt = $this->db->prepare("DELETE FROM api_tokens WHERE user_id = ?");
+                $stmt->execute([$_SESSION['user_id']]);
+                
+                if ($this->isAjaxRequest()) {
+                    $this->sendJsonResponse([
+                        'success' => true,
+                        'message' => "Déconnexion réussie"
+                    ]);
+                }
+            } catch (PDOException $e) {
+                error_log("Erreur suppression token: " . $e->getMessage());
+                if ($this->isAjaxRequest()) {
+                    $this->sendJsonResponse([
+                        'success' => false,
+                        'message' => "Erreur lors de la déconnexion"
+                    ], 500);
+                }
+            }
+        }
+
         session_destroy();
         
-        // Rediriger vers la page de connexion
-        header("Location: index.php?page=login");
-        exit();
+        if (!$this->isAjaxRequest()) {
+            header("Location: index.php?page=login");
+            exit;
+        }
     }
 }

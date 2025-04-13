@@ -8,55 +8,113 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 const connectedUsers = new Map();
 
+// Fonction pour faire les requêtes API avec le token
+async function makeApiRequest(method, endpoint, data = {}, token) {
+    try {
+        const config = {
+            method,
+            url: `http://ride-genius/message_api.php${endpoint}`,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+
+        if (method === 'get') {
+            config.params = { ...data, token };
+        } else {
+            config.data = { ...data, token };
+        }
+
+        const response = await axios(config);
+        return response.data;
+    } catch (error) {
+        console.error('Erreur API:', error.response?.data || error.message);
+        throw error;
+    }
+}
+
 io.on('connection', (socket) => {
     console.log('Nouvelle connexion:', socket.id);
 
-    socket.on('auth', (data) => {
-        if (!data.userId) {
-            socket.emit('error', { message: 'ID utilisateur requis' });
-            return;
-        }
-        socket.userId = data.userId;
-        connectedUsers.set(data.userId.toString(), socket.id);
-        console.log('Utilisateur authentifié:', data.userId);
-    });
-
-    socket.on('sendMessage', async (data, callback) => {
-        if (!data.conversation_id || !data.content) {
-            callback({ success: false, message: 'Données manquantes' });
+    socket.on('auth', async (data, callback) => {
+        if (!data.userId || !data.token) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Données d\'authentification manquantes' });
+            }
             return;
         }
 
         try {
-            const response = await axios.post('http://ride-genius/message_api.php', {
+            // Vérifier le token avec l'API
+            const response = await makeApiRequest('get', '?action=verifyToken', { 
+                user_id: data.userId 
+            }, data.token);
+
+            if (response.success) {
+                socket.userId = data.userId;
+                socket.token = data.token;
+                connectedUsers.set(data.userId.toString(), socket.id);
+                console.log('Utilisateur authentifié:', data.userId);
+                
+                if (typeof callback === 'function') {
+                    callback({ success: true });
+                }
+            } else {
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: 'Token invalide' });
+                }
+            }
+        } catch (error) {
+            console.error('Erreur d\'authentification:', error);
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur d\'authentification' });
+            }
+        }
+    });
+
+    socket.on('sendMessage', async (data, callback) => {
+        if (!socket.token || !socket.userId) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Non authentifié' });
+            }
+            return;
+        }
+
+        if (!data.conversation_id || !data.content) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Données manquantes' });
+            }
+            return;
+        }
+
+        try {
+            const response = await makeApiRequest('post', '', {
                 action: 'sendMessage',
                 sender_id: socket.userId,
                 conversation_id: data.conversation_id,
                 content: data.content,
                 attachments: data.attachments || []
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, socket.token);
 
-            if (response.data.success) {
+            if (response.success) {
                 const message = {
-                    id: response.data.message_id,
+                    id: response.message_id,
                     conversation_id: data.conversation_id,
                     sender_id: socket.userId,
                     content: data.content,
                     created_at: new Date().toISOString(),
-                    attachments: response.data.attachments || []
+                    attachments: response.attachments || []
                 };
 
                 // Récupérer la conversation pour trouver le destinataire
-                const convResponse = await axios.get('http://ride-genius/message_api.php', {
-                    params: {
-                        action: 'getConversation',
-                        conversation_id: data.conversation_id,
-                        sender_id: socket.userId
-                    }
-                });
+                const convResponse = await makeApiRequest('get', '?action=getConversation', {
+                    conversation_id: data.conversation_id,
+                    sender_id: socket.userId
+                }, socket.token);
 
-                if (convResponse.data.success) {
-                    const conv = convResponse.data.conversation;
+                if (convResponse.success) {
+                    const conv = convResponse.conversation;
                     const receiverId = conv.user1_id == socket.userId ? conv.user2_id : conv.user1_id;
                     const receiverSocket = connectedUsers.get(receiverId.toString());
                     if (receiverSocket) {
@@ -64,19 +122,34 @@ io.on('connection', (socket) => {
                     }
                 }
 
-                callback({ success: true, message_id: message.id });
+                if (typeof callback === 'function') {
+                    callback({ success: true, message_id: message.id });
+                }
             } else {
-                callback({ success: false, message: response.data.message });
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: response.message });
+                }
             }
         } catch (error) {
             console.error('Erreur d\'envoi:', error);
-            callback({ success: false, message: 'Erreur serveur' });
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur serveur' });
+            }
         }
     });
 
     socket.on('sendReaction', async (data, callback) => {
+        if (!socket.token || !socket.userId) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Non authentifié' });
+            }
+            return;
+        }
+
         if (!data.message_id || !data.reaction || !data.conversation_id) {
-            callback({ success: false, message: 'Données manquantes' });
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Données manquantes' });
+            }
             return;
         }
 
@@ -88,24 +161,21 @@ io.on('connection', (socket) => {
                 user_id: socket.userId
             };
 
-            const response = await axios.post('http://ride-genius/message_api.php', {
+            const response = await makeApiRequest('post', '', {
                 action: 'addReaction',
                 message_id: data.message_id,
                 reaction: data.reaction,
                 sender_id: socket.userId
-            }, { headers: { 'Content-Type': 'application/json' } });
+            }, socket.token);
 
-            if (response.data.success) {
-                const convResponse = await axios.get('http://ride-genius/message_api.php', {
-                    params: {
-                        action: 'getConversation',
-                        conversation_id: data.conversation_id,
-                        sender_id: socket.userId
-                    }
-                });
+            if (response.success) {
+                const convResponse = await makeApiRequest('get', '?action=getConversation', {
+                    conversation_id: data.conversation_id,
+                    sender_id: socket.userId
+                }, socket.token);
 
-                if (convResponse.data.success) {
-                    const conv = convResponse.data.conversation;
+                if (convResponse.success) {
+                    const conv = convResponse.conversation;
                     const receiverId = conv.user1_id == socket.userId ? conv.user2_id : conv.user1_id;
                     const receiverSocket = connectedUsers.get(receiverId.toString());
                     if (receiverSocket) {
@@ -113,13 +183,19 @@ io.on('connection', (socket) => {
                     }
                 }
 
-                callback({ success: true });
+                if (typeof callback === 'function') {
+                    callback({ success: true });
+                }
             } else {
-                callback({ success: false, message: response.data.message });
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: response.message });
+                }
             }
         } catch (error) {
             console.error('Erreur de réaction:', error);
-            callback({ success: false, message: 'Erreur serveur' });
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur serveur' });
+            }
         }
     });
 

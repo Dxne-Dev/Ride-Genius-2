@@ -14,7 +14,7 @@ class Conversation {
                          COALESCE(u.profile_image, 'assets/images/default-avatar.png') as profile_image,
                          COALESCE(m.content, 'Démarrez une conversation') as last_message,
                          c.last_message_at,
-                         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND receiver_id = :user_id AND read_at IS NULL) as unread_count
+                         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND receiver_id = :user_id AND is_read = 0) as unread_count
                   FROM {$this->table_name} c
                   JOIN users u ON u.id = CASE WHEN c.user1_id = :user_id THEN c.user2_id ELSE c.user1_id END
                   LEFT JOIN messages m ON m.id = (SELECT id FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1)

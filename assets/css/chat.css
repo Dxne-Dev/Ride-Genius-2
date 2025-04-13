@@ -279,28 +279,28 @@
 }
 
 .conversation-meta {
+    position: relative;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    padding: 4px 0;
-    min-width: 50px;
+    align-items: center;
+}
+
+.unread-badge {
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin-left: 8px;
+    padding: 0 4px;
 }
 
 .time {
     font-size: 12px;
     color: var(--text-muted);
-}
-
-.unread-badge {
-    background: var(--primary);
-    color: #ffffff;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 12px;
-    min-width: 18px;
-    text-align: center;
-    font-weight: 500;
 }
 
 /* Main Chat Area */
@@ -401,70 +401,83 @@
 }
 
 .message {
+    display: flex;
+    flex-direction: column;
     max-width: 70%;
     position: relative;
-    animation: fadeIn 0.3s ease;
+    margin-bottom: 10px;
+    clear: both;
 }
 
 .message.sent {
     align-self: flex-end;
+    margin-left: auto;
 }
 
 .message.received {
     align-self: flex-start;
+    margin-right: auto;
 }
 
 .message-content {
     padding: 12px 16px;
     border-radius: 18px;
-    line-height: 1.4;
+    word-wrap: break-word;
+    max-width: 100%;
+    position: relative;
 }
 
 .message.sent .message-content {
-    background: var(--primary);
-    color: #ffffff;
+    background-color: #0084ff;
+    color: white;
     border-bottom-right-radius: 4px;
+    margin-left: auto;
 }
 
 .message.received .message-content {
-    background: var(--bg-light);
-    color: var(--text-dark);
+    background-color: #e9ecef;
+    color: #212529;
     border-bottom-left-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-right: auto;
+}
+
+.message-meta {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+.message.sent .message-meta {
+    justify-content: flex-end;
+    margin-left: auto;
+}
+
+.message.received .message-meta {
+    justify-content: flex-start;
+    margin-right: auto;
 }
 
 .message-time {
-    font-size: 0.75rem;
-    margin-top: 4px;
     color: #6c757d;
-    display: block;
 }
 
 .message.sent .message-time {
-    text-align: right;
+    color: rgba(0, 0, 0, 0.5);
 }
 
-.message.sent::after {
-    content: "✓";
-    position: absolute;
-    right: 4px;
-    bottom: 4px;
-    font-size: 12px;
-    opacity: 0.8;
+/* Suppression des styles qui pourraient interférer */
+.message::before,
+.message::after {
+    display: none;
 }
 
-.message.sent.read::after {
-    content: "✓✓";
-    color: var(--primary);
-}
-
-.message.read .message-content::after {
-    content: "✓✓";
-    position: absolute;
-    right: 4px;
-    bottom: 4px;
-    font-size: 12px;
-    color: var(--primary);
+/* Ajout de clearfix pour éviter les problèmes de flottement */
+.message:after {
+    content: "";
+    display: table;
+    clear: both;
 }
 
 /* Message Reactions */
@@ -577,55 +590,35 @@
 
 /* Message Attachments */
 .message-attachments {
+    margin-top: 10px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-    max-height: 100px;
-    overflow-y: auto;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.attachment-item {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
-    background: var(--bg-light);
-    border-radius: 4px;
+.message-attachment {
+    max-width: 100%;
+    border-radius: 10px;
 }
 
-.attachment-item img {
-    width: 32px;
-    height: 32px;
-    object-fit: cover;
-    border-radius: 4px;
+.message-attachment img,
+.message-attachment video {
+    max-width: 300px;
+    border-radius: 10px;
 }
 
-.attachment-name {
-    font-size: 12px;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.message-attachment a {
+    display: inline-block;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    color: #212529;
+    text-decoration: none;
 }
 
-.attachment-size {
-    font-size: 11px;
-    color: var(--text-muted);
-}
-
-.remove-attachment {
-    padding: 2px;
-    background: none;
-    border: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.remove-attachment:hover {
-    color: var(--danger);
+.message.sent .message-attachment a {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
 }
 
 /* Media Attachments */

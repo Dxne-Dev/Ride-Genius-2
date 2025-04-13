@@ -351,10 +351,16 @@ class MessageController {
                 return ['success' => false, 'message' => 'Fichier introuvable ou accès refusé'];
             }
 
-            header('Content-Type: ' . $attachment['file_type']);
-            header('Content-Disposition: attachment; filename="' . $attachment['file_name'] . '"');
-            readfile($attachment['file_path']);
-            exit;
+            // Au lieu de servir le fichier directement, on retourne ses informations
+            return [
+                'success' => true,
+                'attachment' => [
+                    'file_path' => $attachment['file_path'],
+                    'file_type' => $attachment['file_type'],
+                    'file_name' => $attachment['file_name'],
+                    'file_size' => $attachment['file_size']
+                ]
+            ];
         } catch (PDOException $e) {
             error_log("Erreur getAttachment: " . $e->getMessage());
             return ['success' => false, 'message' => $e->getMessage()];
@@ -363,17 +369,48 @@ class MessageController {
 
     public function getConversation($user_id, $conversation_id) {
         try {
-            $sql = "
-                SELECT c.id, c.user_id, c.other_user_id,
-                       u1.first_name AS user1_first_name, u1.last_name AS user1_last_name,
-                       u2.first_name AS user2_first_name, u2.last_name AS user2_last_name
-                FROM conversations c
-                JOIN users u1 ON u1.id = c.user_id
-                JOIN users u2 ON u2.id = c.other_user_id
-                WHERE c.id = ? AND (c.user_id = ? OR c.other_user_id = ?)
-            ";
-            $stmt = $this->db->prepare($sql);
+            error_log("Début getConversation - user_id: $user_id, conversation_id: $conversation_id");
+            
+            // Vérifier si l'utilisateur a accès à la conversation
+            $sql_check = "SELECT id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)";
+            $stmt = $this->db->prepare($sql_check);
             $stmt->execute([$conversation_id, $user_id, $user_id]);
+            
+            if (!$stmt->fetch()) {
+                error_log("Erreur: Conversation introuvable ou accès refusé");
+                return ['success' => false, 'message' => 'Conversation introuvable ou accès refusé'];
+            }
+
+            // Récupérer les détails de la conversation
+            $sql = "
+                SELECT 
+                    c.id,
+                    c.user1_id,
+                    c.user2_id,
+                    CASE 
+                        WHEN c.user1_id = ? THEN u2.first_name 
+                        ELSE u1.first_name 
+                    END AS other_first_name,
+                    CASE 
+                        WHEN c.user1_id = ? THEN u2.last_name 
+                        ELSE u1.last_name 
+                    END AS other_last_name,
+                    'assets/images/default-avatar.png' AS profile_image,
+                    m.content AS last_message,
+                    m.created_at AS last_message_at
+                FROM conversations c
+                JOIN users u1 ON u1.id = c.user1_id
+                JOIN users u2 ON u2.id = c.user2_id
+                LEFT JOIN messages m ON m.id = (
+                    SELECT MAX(id) 
+                    FROM messages m2 
+                    WHERE m2.conversation_id = c.id
+                )
+                WHERE c.id = ?
+            ";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$user_id, $user_id, $conversation_id]);
             $conversation = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$conversation) {
@@ -383,7 +420,33 @@ class MessageController {
             return ['success' => true, 'conversation' => $conversation];
         } catch (PDOException $e) {
             error_log("Erreur getConversation: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => 'Erreur lors de la récupération de la conversation'];
+        }
+    }
+
+    public function markMessagesAsRead($user_id, $conversation_id) {
+        try {
+            // Vérifier si l'utilisateur a accès à la conversation
+            $sql_check = "SELECT id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)";
+            $stmt = $this->db->prepare($sql_check);
+            $stmt->execute([$conversation_id, $user_id, $user_id]);
+            
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'message' => 'Conversation introuvable ou accès refusé'];
+            }
+
+            // Marquer tous les messages non lus comme lus
+            $sql = "UPDATE messages SET is_read = 1 
+                   WHERE conversation_id = ? 
+                   AND sender_id != ? 
+                   AND is_read = 0";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$conversation_id, $user_id]);
+
+            return ['success' => true];
+        } catch (PDOException $e) {
+            error_log("Erreur markMessagesAsRead: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la mise à jour des messages'];
         }
     }
 }
