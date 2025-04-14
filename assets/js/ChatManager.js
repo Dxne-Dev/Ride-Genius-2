@@ -450,41 +450,61 @@ class ChatManager {
         }
     }
 
-    async addReaction(messageId, reaction) {
-        try {
-            // Envoyer la réaction via WebSocket
-            this.api.socketRequest('addReaction', {
-                message_id: messageId,
-                reaction: reaction,
-                conversation_id: this.selectedConversationId,
-                user_id: this.userId
-            });
-
-            // Mettre à jour l'interface utilisateur
-            const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
-            if (messageElement) {
-                const reactionsContainer = messageElement.querySelector('.message-reactions') || 
-                    document.createElement('div');
-                reactionsContainer.className = 'message-reactions';
-                
-                const reactionElement = document.createElement('span');
-                reactionElement.className = 'reaction';
-                reactionElement.textContent = reaction;
-                
-                reactionsContainer.appendChild(reactionElement);
-                messageElement.appendChild(reactionsContainer);
-            }
-        } catch (error) {
-            console.error('Erreur addReaction:', error);
-            this.showNotification('Erreur lors de l\'ajout de la réaction', 'error');
-        }
-    }
-
     updateMessageReaction(reaction) {
         const message = document.querySelector(`[data-message-id="${reaction.message_id}"]`);
         if (message) {
-            const reactions = message.querySelector('.message-reactions');
-            if (reactions) reactions.innerHTML += `<span>${reaction.reaction}</span>`;
+            let reactionsContainer = message.querySelector('.message-reactions');
+            
+            if (!reactionsContainer) {
+                reactionsContainer = document.createElement('div');
+                reactionsContainer.className = 'message-reactions';
+                message.appendChild(reactionsContainer);
+            }
+
+            // Vérifier si la réaction existe déjà
+            const existingReaction = reactionsContainer.querySelector(`.reaction[data-reaction="${reaction.reaction}"]`);
+            
+            if (existingReaction) {
+                // Si la réaction existe déjà, la supprimer
+                existingReaction.remove();
+            } else {
+                // Sinon, ajouter la nouvelle réaction
+                const reactionElement = document.createElement('span');
+                reactionElement.className = 'reaction';
+                reactionElement.setAttribute('data-reaction', reaction.reaction);
+                reactionElement.textContent = reaction.reaction;
+                reactionsContainer.appendChild(reactionElement);
+            }
+
+            // Si le conteneur est vide après la suppression, le retirer
+            if (reactionsContainer.children.length === 0) {
+                reactionsContainer.remove();
+            }
+        }
+    }
+
+    async addReaction(reaction) {
+        try {
+            if (!this.currentMessageId) {
+                console.error('Aucun message sélectionné pour la réaction');
+                return;
+            }
+
+            // Envoyer la réaction via WebSocket
+            this.api.socketRequest('sendReaction', {
+                message_id: this.currentMessageId,
+                reaction: reaction,
+                conversation_id: this.selectedConversationId
+            });
+
+            // Mettre à jour l'interface utilisateur localement
+            this.updateMessageReaction({
+                message_id: this.currentMessageId,
+                reaction: reaction
+            });
+        } catch (error) {
+            console.error('Erreur addReaction:', error);
+            this.showNotification('Erreur lors de l\'ajout de la réaction', 'error');
         }
     }
 

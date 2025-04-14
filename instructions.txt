@@ -1,2 +1,15 @@
-🔧 Modifications à faire pour la notification qui se déclenche uniquement lorsqu'un nouveau message est recu 
-VERFIER TOUT LES CAS OU LE SON DE NOTIFICATION EST DECLENCHER PUIS LES DESACTIVER OU SUPPRIME RPOUR CONSERVER UNIQUEMENT LE DECLENCHEMENT JUSTE A LA RECEPETION DES NOUVEAU MESSAGES
+🔧 Modifications à faire pour REACTIONS 
+VERFIER TOUT LES REACTIONS 
+PISTE DE MODIFICATIONS 
+Les modifications apportées devraient résoudre les problèmes suivants :
+Correction de la méthode addReaction pour utiliser le bon message_id stocké dans this.currentMessageId
+Correction du nom de l'événement WebSocket de addReaction à sendReaction pour correspondre au serveur
+Amélioration de la gestion des réactions reçues via WebSocket
+Pour tester ces modifications, vous pouvez :
+Cliquer avec le bouton droit sur un message pour afficher le menu des réactions
+Sélectionner une réaction
+Vérifier que la réaction apparaît bien sur le message
+Vérifier que la réaction est visible pour les autres utilisateurs de la conversation
+
+
+AVETTISSEMENT A RESPECTER: NE PAS CREER DES ERREURS ET TOUCHER AUX FONCTIONNALITEES DEJA FONCTIONNELLE 
