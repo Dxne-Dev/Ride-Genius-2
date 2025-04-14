@@ -103,16 +103,19 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const currentUserId = <?php echo json_encode($_SESSION['user_id'] ?? null); ?>;
-            window.SOCKET_SERVER_URL = 'http://localhost:3000';
-            window.USER_TOKEN = <?php echo json_encode($_SESSION['api_token'] ?? null); ?>;
-            window.USER_ID = currentUserId;
+            const userToken = <?php echo json_encode($_SESSION['api_token'] ?? null); ?>;
             
-            if (currentUserId && window.USER_TOKEN) {
-                const chat = new ChatManager(currentUserId);
-            } else {
+            if (!currentUserId || !userToken) {
                 console.error('Utilisateur non connecté ou token manquant');
                 window.location.href = 'index.php?page=login';
+                return;
             }
+
+            window.SOCKET_SERVER_URL = 'http://localhost:3000';
+            window.USER_TOKEN = userToken;
+            window.USER_ID = currentUserId;
+            
+            const chat = new ChatManager(currentUserId);
         });
     </script>
 </body>

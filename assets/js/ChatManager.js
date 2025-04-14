@@ -30,56 +30,56 @@ class ChatManager {
     }
 
     connectSocket() {
+        if (!this.userId || !window.USER_TOKEN) {
+            console.error('Utilisateur non identifié ou token manquant');
+            this.showNotification('Session expirée. Veuillez vous reconnecter.', 'error');
+            window.location.href = 'index.php?page=login';
+            return;
+        }
+
         this.api.connectSocket(
-            { userId: this.userId, token: window.USER_TOKEN },
-            () => {
-                console.log('Socket connecté avec succès');
-                this.showNotification('Connecté au chat', 'success');
-                this.updateNetworkStatus(true);
+            {
+                userId: this.userId,
+                token: window.USER_TOKEN
             },
             () => {
-                console.log('Socket déconnecté');
-                this.showNotification('Déconnecté du chat', 'warning');
-                this.updateNetworkStatus(false);
+                console.log('Socket connecté avec succès');
+                this.loadConversations();
+            },
+            () => {
+                console.error('Déconnexion du socket');
+                this.showNotification('Connexion perdue. Tentative de reconnexion...', 'warning');
             },
             (message) => {
                 console.log('Message reçu via socket:', message);
-                
-                // Vérifier si le message n'est pas déjà affiché
-                const existingMessage = document.querySelector(`[data-message-id="${message.id}"]`);
-                if (!existingMessage) {
-                    // Si c'est la conversation active, afficher le message
-                    if (message.conversation_id === this.selectedConversationId) {
-                        this.displayMessage(message);
-                        // Marquer comme lu uniquement si c'est un message reçu
-                        if (message.sender_id !== this.userId) {
-                            this.markMessagesAsRead(this.selectedConversationId);
-                        }
-                    } else {
-                        // Mettre à jour le compteur de messages non lus
-                        this.updateUnreadCount(message.conversation_id);
-                    }
-                }
-                
-                // Rafraîchir la liste des conversations pour mettre à jour le dernier message
-                this.loadConversations();
+                this.addMessage(message);
             },
             (reaction) => {
                 console.log('Réaction reçue via socket:', reaction);
-                // Mettre à jour l'interface utilisateur avec la réaction
-                const messageElement = document.querySelector(`[data-message-id="${reaction.message_id}"]`);
-                if (messageElement) {
-                    const reactionsContainer = messageElement.querySelector('.message-reactions') || 
-                        document.createElement('div');
-                    reactionsContainer.className = 'message-reactions';
-                    
-                    const reactionElement = document.createElement('span');
-                    reactionElement.className = 'reaction';
-                    reactionElement.textContent = reaction.reaction;
-                    
-                    reactionsContainer.appendChild(reactionElement);
-                    messageElement.appendChild(reactionsContainer);
+                this.updateMessageReaction(reaction);
+            },
+            (callData) => {
+                console.log('Appel entrant reçu:', callData);
+                if (callData && typeof callData === 'object') {
+                    this.handleIncomingCall(callData);
+                } else {
+                    console.error('Données d\'appel invalides:', callData);
                 }
+            },
+            (callAnswer) => {
+                console.log('Réponse à l\'appel reçue:', callAnswer);
+                if (callAnswer && callAnswer.answer === 'accepted') {
+                    document.getElementById('callStatus').textContent = 'Appel accepté';
+                } else {
+                    document.getElementById('callModal').style.display = 'none';
+                    this.stopRingtone();
+                }
+            },
+            (callEnd) => {
+                console.log('Appel terminé:', callEnd);
+                document.getElementById('callModal').style.display = 'none';
+                this.stopRingtone();
+                this.isCalling = false;
             }
         );
     }
@@ -693,9 +693,10 @@ class ChatManager {
 
     async startCall(type) {
         if (!this.selectedConversationId) {
-            this.showNotification('Sélectionnez une conversation', 'warning');
+            this.showNotification('Veuillez sélectionner une conversation', 'error');
             return;
         }
+
         const modal = document.getElementById('callModal');
         const status = document.getElementById('callStatus');
         const acceptBtn = document.getElementById('acceptCall');
@@ -711,18 +712,30 @@ class ChatManager {
         modal.style.display = 'block';
 
         try {
-            const response = await this.api.apiRequest('POST', '', {
-                action: 'startCall',
+            const response = await this.api.socketRequest('startCall', {
                 conversation_id: this.selectedConversationId,
                 call_type: type
             });
+
             if (response.success) {
+                this.isCalling = true;
+                this.ringtone.play();
+                
                 acceptBtn.addEventListener('click', () => {
+                    this.stopRingtone();
                     status.textContent = `Connecté en ${type}`;
                     if (type === 'video') {
                         document.getElementById('remoteVideo').style.display = 'block';
                         document.getElementById('localVideo').style.display = 'block';
                     }
+                }, { once: true });
+
+                declineBtn.addEventListener('click', () => {
+                    this.stopRingtone();
+                    modal.style.display = 'none';
+                    this.api.socketRequest('endCall', {
+                        call_id: response.call_id
+                    }).catch(err => console.error('Erreur endCall:', err));
                 }, { once: true });
             } else {
                 throw new Error(response.message || 'Erreur démarrage appel');
@@ -732,14 +745,88 @@ class ChatManager {
             this.showNotification('Erreur lors du démarrage de l\'appel', 'error');
             modal.style.display = 'none';
         }
+    }
 
-        declineBtn.addEventListener('click', () => {
-            modal.style.display = 'none';
-            this.api.apiRequest('POST', '', {
-                action: 'endCall',
-                call_id: response?.call_id
-            }).catch(err => console.error('Erreur endCall:', err));
-        }, { once: true });
+    handleIncomingCall(callData) {
+        if (!callData || typeof callData !== 'object') {
+            console.error('Données d\'appel invalides:', callData);
+            return;
+        }
+
+        if (!this.isCalling) {
+            this.isCalling = true;
+            const modal = document.getElementById('callModal');
+            const status = document.getElementById('callStatus');
+            const acceptBtn = document.getElementById('acceptCall');
+            const declineBtn = document.getElementById('declineCall');
+            
+            if (!modal || !status || !acceptBtn || !declineBtn) {
+                console.error('Éléments du modal d\'appel non trouvés');
+                this.isCalling = false;
+                return;
+            }
+
+            // Vérifier que les données nécessaires sont présentes
+            if (!callData.call_id || !callData.caller_id || !callData.conversation_id || !callData.type) {
+                console.error('Données d\'appel incomplètes:', callData);
+                this.isCalling = false;
+                return;
+            }
+
+            document.getElementById('callAvatar').src = callData.caller_avatar || 'assets/images/default-avatar.png';
+            document.getElementById('callUserName').textContent = callData.caller_name || 'Utilisateur';
+            status.textContent = `Appel ${callData.type} entrant...`;
+            modal.style.display = 'block';
+            
+            // Jouer la sonnerie
+            this.ringtone = new Audio('/assets/sounds/ringtone.mp3');
+            this.ringtone.loop = true;
+            this.ringtone.play().catch(err => console.error('Erreur lecture sonnerie:', err));
+
+            // Gestionnaire d'acceptation d'appel
+            acceptBtn.addEventListener('click', () => {
+                this.stopRingtone();
+                status.textContent = `Connecté en ${callData.type}`;
+                if (callData.type === 'video') {
+                    document.getElementById('remoteVideo').style.display = 'block';
+                    document.getElementById('localVideo').style.display = 'block';
+                }
+                this.api.socketRequest('answerCall', {
+                    call_id: callData.call_id,
+                    answer: 'accepted'
+                }).catch(err => {
+                    console.error('Erreur answerCall:', err);
+                    this.showNotification('Erreur lors de l\'acceptation de l\'appel', 'error');
+                });
+            }, { once: true });
+
+            // Gestionnaire de refus d'appel
+            declineBtn.addEventListener('click', () => {
+                this.stopRingtone();
+                modal.style.display = 'none';
+                this.isCalling = false;
+                this.api.socketRequest('answerCall', {
+                    call_id: callData.call_id,
+                    answer: 'rejected'
+                }).catch(err => {
+                    console.error('Erreur answerCall:', err);
+                    this.showNotification('Erreur lors du refus de l\'appel', 'error');
+                });
+            }, { once: true });
+
+            // Fermeture automatique après 30 secondes si pas de réponse
+            setTimeout(() => {
+                if (this.isCalling) {
+                    this.stopRingtone();
+                    modal.style.display = 'none';
+                    this.isCalling = false;
+                    this.api.socketRequest('answerCall', {
+                        call_id: callData.call_id,
+                        answer: 'missed'
+                    }).catch(err => console.error('Erreur answerCall:', err));
+                }
+            }, 30000);
+        }
     }
 
     restoreActiveConversation() {
@@ -836,6 +923,14 @@ class ChatManager {
     playNotificationSound() {
         const audio = new Audio('/assets/sounds/notification.mp3');
         audio.play().catch(err => console.log('Son non joué:', err));
+    }
+
+    stopRingtone() {
+        const audio = document.getElementById('ringtone');
+        if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+        }
     }
 }
 

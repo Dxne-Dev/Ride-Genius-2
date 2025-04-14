@@ -1,15 +1,6 @@
-🔧 Modifications à faire pour REACTIONS 
-VERFIER TOUT LES REACTIONS 
-PISTE DE MODIFICATIONS 
-Les modifications apportées devraient résoudre les problèmes suivants :
-Correction de la méthode addReaction pour utiliser le bon message_id stocké dans this.currentMessageId
-Correction du nom de l'événement WebSocket de addReaction à sendReaction pour correspondre au serveur
-Amélioration de la gestion des réactions reçues via WebSocket
-Pour tester ces modifications, vous pouvez :
-Cliquer avec le bouton droit sur un message pour afficher le menu des réactions
-Sélectionner une réaction
-Vérifier que la réaction apparaît bien sur le message
-Vérifier que la réaction est visible pour les autres utilisateurs de la conversation
-
-
+✅ Résumé des actions à faire
+Étape	Action	Fichier	État
+Auth complète	Ajouter token dans auth	ChatAPI.js, server.js	🔧 à faire
+Gestion appel entrant	Ajouter incomingCall	server.js, ChatAPI.js, ChatManager.js	🔧 à faire
+Protection contre undefined	Ajout
 AVETTISSEMENT A RESPECTER: NE PAS CREER DES ERREURS ET TOUCHER AUX FONCTIONNALITEES DEJA FONCTIONNELLE 

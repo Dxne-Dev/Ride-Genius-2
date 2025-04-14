@@ -20,12 +20,22 @@ class ChatAPI {
     connectSocket(userData, onConnect, onDisconnect, onMessage) {
         console.log('Tentative de connexion socket avec:', userData);
         
+        if (!userData || !userData.userId || !userData.token) {
+            console.error('Données d\'authentification manquantes');
+            onDisconnect();
+            return;
+        }
+
         try {
             this.socket = io(this.socketUrl, {
                 transports: ['websocket'],
                 reconnection: true,
                 reconnectionDelay: this.reconnectDelay,
-                reconnectionAttempts: this.maxReconnectAttempts
+                reconnectionAttempts: this.maxReconnectAttempts,
+                auth: {
+                    userId: userData.userId,
+                    token: userData.token
+                }
             });
 
             this.socket.on('connect', () => {
@@ -34,13 +44,14 @@ class ChatAPI {
                     userId: userData.userId,
                     token: userData.token
                 }, (response) => {
-                    if (response.success) {
+                    if (response && response.success) {
                         this.token = userData.token;
+                        this.userId = userData.userId;
                         this.reconnectAttempts = 0;
                         onConnect();
                         this.flushMessageQueue();
                     } else {
-                        console.error('Erreur d\'authentification:', response.message);
+                        console.error('Erreur d\'authentification:', response?.message || 'Réponse invalide');
                         onDisconnect();
                     }
                 });
@@ -77,6 +88,10 @@ class ChatAPI {
     async apiRequest(method, endpoint, data = null) {
         if (!this.token || !this.userId) {
             throw new Error('Token ou ID utilisateur manquant');
+        }
+
+        if (!this.token.match(/^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/)) {
+            throw new Error('Format de token invalide');
         }
 
         console.log('API Request:', { method, endpoint, data });

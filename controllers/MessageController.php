@@ -267,22 +267,38 @@ class MessageController {
 
     public function startCall($user_id, $conversation_id, $call_type) {
         try {
+            // Vérifier si l'utilisateur a accès à la conversation
+            $sql_check = "SELECT id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)";
+            $stmt = $this->db->prepare($sql_check);
+            $stmt->execute([$conversation_id, $user_id, $user_id]);
+            
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'message' => 'Conversation introuvable ou accès refusé'];
+            }
+
             // Récupérer l'autre utilisateur de la conversation
             $sql_conv = "SELECT user1_id, user2_id FROM conversations WHERE id = ?";
             $stmt = $this->db->prepare($sql_conv);
             $stmt->execute([$conversation_id]);
             $conv = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$conv) {
+                return ['success' => false, 'message' => 'Conversation introuvable'];
+            }
+
             $receiver_id = ($conv['user1_id'] == $user_id) ? $conv['user2_id'] : $conv['user1_id'];
 
-            $sql = "INSERT INTO message_calls (caller_id, receiver_id, status, type, started_at) VALUES (?, ?, 'missed', ?, NOW())";
+            // Insérer l'appel dans la base de données
+            $sql = "INSERT INTO message_calls (conversation_id, caller_id, receiver_id, call_type, status, created_at) 
+                    VALUES (?, ?, ?, ?, 'pending', NOW())";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$user_id, $receiver_id, $call_type]);
+            $stmt->execute([$conversation_id, $user_id, $receiver_id, $call_type]);
             $call_id = $this->db->lastInsertId();
 
             return ['success' => true, 'call_id' => $call_id];
         } catch (PDOException $e) {
             error_log("Erreur startCall: " . $e->getMessage());
-            return ['success' => false, 'message' => $e->getMessage()];
+            return ['success' => false, 'message' => 'Erreur lors du démarrage de l\'appel'];
         }
     }
 

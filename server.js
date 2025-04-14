@@ -205,6 +205,183 @@ io.on('connection', (socket) => {
             console.log('Utilisateur déconnecté:', socket.userId);
         }
     });
+
+    socket.on('startCall', async (data, callback) => {
+        if (!socket.token || !socket.userId) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Non authentifié' });
+            }
+            return;
+        }
+
+        if (!data.conversation_id || !data.call_type) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Données manquantes' });
+            }
+            return;
+        }
+
+        try {
+            // Vérifier si l'utilisateur est déjà en appel
+            const activeCall = Array.from(connectedUsers.entries()).find(([userId, socketId]) => {
+                const userSocket = io.sockets.sockets.get(socketId);
+                return userSocket?.isCalling;
+            });
+
+            if (activeCall) {
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: 'Un appel est déjà en cours' });
+                }
+                return;
+            }
+
+            const response = await makeApiRequest('post', '', {
+                action: 'startCall',
+                conversation_id: data.conversation_id,
+                call_type: data.call_type,
+                sender_id: socket.userId
+            }, socket.token);
+
+            if (response && response.success) {
+                // Récupérer la conversation pour trouver le destinataire
+                const convResponse = await makeApiRequest('get', '?action=getConversation', {
+                    conversation_id: data.conversation_id,
+                    sender_id: socket.userId
+                }, socket.token);
+
+                if (convResponse && convResponse.success) {
+                    const conv = convResponse.conversation;
+                    const receiverId = conv.user1_id == socket.userId ? conv.user2_id : conv.user1_id;
+                    const receiverSocket = connectedUsers.get(receiverId.toString());
+                    
+                    if (receiverSocket) {
+                        // Marquer l'appelant comme étant en appel
+                        socket.isCalling = true;
+                        
+                        // Envoyer la notification d'appel au destinataire
+                        io.to(receiverSocket).emit('incomingCall', {
+                            call_id: response.call_id,
+                            caller_id: socket.userId,
+                            conversation_id: data.conversation_id,
+                            type: data.call_type,
+                            caller_name: conv.user1_id == socket.userId ? conv.user2_name : conv.user1_name,
+                            caller_avatar: conv.user1_id == socket.userId ? conv.user2_avatar : conv.user1_avatar
+                        });
+                    }
+                }
+
+                if (typeof callback === 'function') {
+                    callback({ success: true, call_id: response.call_id });
+                }
+            } else {
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: response?.message || 'Erreur serveur' });
+                }
+            }
+        } catch (error) {
+            console.error('Erreur startCall:', error);
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur serveur' });
+            }
+        }
+    });
+
+    socket.on('answerCall', async (data, callback) => {
+        if (!socket.token || !socket.userId) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Non authentifié' });
+            }
+            return;
+        }
+
+        if (!data.call_id || !data.answer) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Données manquantes' });
+            }
+            return;
+        }
+
+        try {
+            const response = await makeApiRequest('post', '', {
+                action: 'answerCall',
+                call_id: data.call_id,
+                answer: data.answer,
+                user_id: socket.userId
+            }, socket.token);
+
+            if (response.success) {
+                // Notifier l'appelant de la réponse
+                const callerSocket = connectedUsers.get(response.caller_id.toString());
+                if (callerSocket) {
+                    io.to(callerSocket).emit('callAnswered', {
+                        call_id: data.call_id,
+                        answer: data.answer
+                    });
+                }
+
+                if (typeof callback === 'function') {
+                    callback({ success: true });
+                }
+            } else {
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: response.message });
+                }
+            }
+        } catch (error) {
+            console.error('Erreur answerCall:', error);
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur serveur' });
+            }
+        }
+    });
+
+    socket.on('endCall', async (data, callback) => {
+        if (!socket.token || !socket.userId) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Non authentifié' });
+            }
+            return;
+        }
+
+        if (!data.call_id) {
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'ID d\'appel manquant' });
+            }
+            return;
+        }
+
+        try {
+            const response = await makeApiRequest('post', '', {
+                action: 'endCall',
+                call_id: data.call_id,
+                user_id: socket.userId
+            }, socket.token);
+
+            if (response.success) {
+                // Notifier l'autre participant
+                const otherUserId = response.caller_id == socket.userId ? response.receiver_id : response.caller_id;
+                const otherSocket = connectedUsers.get(otherUserId.toString());
+                if (otherSocket) {
+                    io.to(otherSocket).emit('callEnded', {
+                        call_id: data.call_id
+                    });
+                }
+
+                if (typeof callback === 'function') {
+                    callback({ success: true });
+                }
+            } else {
+                if (typeof callback === 'function') {
+                    callback({ success: false, message: response.message });
+                }
+            }
+        } catch (error) {
+            console.error('Erreur endCall:', error);
+            if (typeof callback === 'function') {
+                callback({ success: false, message: 'Erreur serveur' });
+            }
+        }
+    });
 });
 
 server.listen(3000, () => console.log('Serveur WebSocket démarré sur le port 3000'));
