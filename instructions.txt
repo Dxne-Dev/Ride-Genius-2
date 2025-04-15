@@ -1,8 +1,5 @@
-✅ 1. Corriger l’erreur updateAttachmentsDisplay is not a function
-✅ 2. Corriger l’erreur tempMessage is not defined
+✅ À faire maintenant
 
-✅ Résumé des 2 corrections :
-
-Erreur originale	Solution recommandée
-updateAttachmentsDisplay is not a function	Remplacer par updateAttachmentsPreview()
-tempMessage is not defined	Déclarer let tempMessage = ... au tout début du bloc try {}
+Étape	Action
+1️⃣	Vérifie si tu as une fonction renderConversations()
+2️⃣	Assure-toi qu’elle est appelée après l’envoi ou la réception

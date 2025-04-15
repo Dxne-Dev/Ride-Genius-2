@@ -430,6 +430,11 @@ class ChatManager {
             sender_id: message.sender_id,
             userId: this.userId
         });
+
+        // Après avoir affiché le message, recharger les conversations
+        this.loadConversations().catch(error => {
+            console.error('Erreur lors du rechargement des conversations:', error);
+        });
     }
 
     renderReactions(reactions) {
@@ -579,6 +584,9 @@ class ChatManager {
             // Vider les fichiers joints
             this.attachedFiles = [];
             this.updateAttachmentsPreview();
+
+            // Recharger les conversations pour mettre à jour la liste
+            await this.loadConversations();
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
             // En cas d'erreur, retirer le message temporaire
