@@ -354,10 +354,11 @@ io.on('connection', (socket) => {
             const response = await makeApiRequest('post', '', {
                 action: 'endCall',
                 call_id: data.call_id,
-                user_id: socket.userId
+                sender_id: socket.userId
             }, socket.token);
 
             if (response.success) {
+                socket.isCalling = false; // Réinitialisation du statut d'appel
                 // Notifier l'autre participant
                 const otherUserId = response.caller_id == socket.userId ? response.receiver_id : response.caller_id;
                 const otherSocket = connectedUsers.get(otherUserId.toString());

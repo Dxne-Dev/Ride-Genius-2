@@ -17,7 +17,7 @@ class ChatAPI {
         });
     }
 
-    connectSocket(userData, onConnect, onDisconnect, onMessage) {
+    connectSocket(userData, onConnect, onDisconnect, onMessage, onReaction, onCall, onCallAnswer, onCallEnd) {
         console.log('Tentative de connexion socket avec:', userData);
         
         if (!userData || !userData.userId || !userData.token) {
@@ -67,6 +67,26 @@ class ChatAPI {
                 onMessage(message);
             });
 
+            this.socket.on('receiveReaction', (reaction) => {
+                console.log('Réaction reçue:', reaction);
+                onReaction(reaction);
+            });
+
+            this.socket.on('incomingCall', (callData) => {
+                console.log('Appel entrant:', callData);
+                onCall(callData);
+            });
+
+            this.socket.on('callAnswered', (answer) => {
+                console.log('Réponse à l\'appel:', answer);
+                onCallAnswer(answer);
+            });
+
+            this.socket.on('callEnded', (data) => {
+                console.log('Appel terminé:', data);
+                onCallEnd(data);
+            });
+
             this.socket.on('connect_error', (error) => {
                 console.error('Erreur connexion socket:', error);
                 this.reconnectAttempts++;
@@ -88,10 +108,6 @@ class ChatAPI {
     async apiRequest(method, endpoint, data = null) {
         if (!this.token || !this.userId) {
             throw new Error('Token ou ID utilisateur manquant');
-        }
-
-        if (!this.token.match(/^[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*$/)) {
-            throw new Error('Format de token invalide');
         }
 
         console.log('API Request:', { method, endpoint, data });

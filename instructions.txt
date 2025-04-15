@@ -1,6 +1,8 @@
-✅ Résumé des actions à faire
-Étape	Action	Fichier	État
-Auth complète	Ajouter token dans auth	ChatAPI.js, server.js	🔧 à faire
-Gestion appel entrant	Ajouter incomingCall	server.js, ChatAPI.js, ChatManager.js	🔧 à faire
-Protection contre undefined	Ajout
-AVETTISSEMENT A RESPECTER: NE PAS CREER DES ERREURS ET TOUCHER AUX FONCTIONNALITEES DEJA FONCTIONNELLE 
+✅ 1. Corriger l’erreur updateAttachmentsDisplay is not a function
+✅ 2. Corriger l’erreur tempMessage is not defined
+
+✅ Résumé des 2 corrections :
+
+Erreur originale	Solution recommandée
+updateAttachmentsDisplay is not a function	Remplacer par updateAttachmentsPreview()
+tempMessage is not defined	Déclarer let tempMessage = ... au tout début du bloc try {}

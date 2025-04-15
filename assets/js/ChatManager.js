@@ -52,7 +52,7 @@ class ChatManager {
             },
             (message) => {
                 console.log('Message reçu via socket:', message);
-                this.addMessage(message);
+                this.displayMessage(message);
             },
             (reaction) => {
                 console.log('Réaction reçue via socket:', reaction);
@@ -552,8 +552,8 @@ class ChatManager {
         this.isSubmitting = true;
 
         try {
-            // Créer un message temporaire pour l'affichage immédiat
-            const tempMessage = {
+            // Déclarer tempMessage au début du bloc try
+            let tempMessage = {
                 id: 'temp_' + Date.now(),
                 sender_id: this.userId,
                 content,
@@ -578,7 +578,7 @@ class ChatManager {
 
             // Vider les fichiers joints
             this.attachedFiles = [];
-            this.updateAttachmentsDisplay();
+            this.updateAttachmentsPreview();
         } catch (error) {
             console.error('Erreur handleSubmit:', error);
             // En cas d'erreur, retirer le message temporaire
@@ -698,53 +698,24 @@ class ChatManager {
         }
 
         const modal = document.getElementById('callModal');
-        const status = document.getElementById('callStatus');
-        const acceptBtn = document.getElementById('acceptCall');
-        const declineBtn = document.getElementById('declineCall');
-        const userInfo = document.querySelector('.selected-user-info .user-info');
-        if (!modal || !status || !acceptBtn || !declineBtn || !userInfo) return;
-
-        const avatar = userInfo.querySelector('img')?.src || 'assets/images/default-avatar.png';
-        const name = userInfo.querySelector('h3')?.textContent || 'Utilisateur';
-        document.getElementById('callAvatar').src = avatar;
-        document.getElementById('callUserName').textContent = name;
-        status.textContent = `Appel ${type} en cours...`;
-        modal.style.display = 'block';
-
-        try {
-            const response = await this.api.socketRequest('startCall', {
-                conversation_id: this.selectedConversationId,
-                call_type: type
-            });
-
-            if (response.success) {
-                this.isCalling = true;
-                this.ringtone.play();
-                
-                acceptBtn.addEventListener('click', () => {
-                    this.stopRingtone();
-                    status.textContent = `Connecté en ${type}`;
-                    if (type === 'video') {
-                        document.getElementById('remoteVideo').style.display = 'block';
-                        document.getElementById('localVideo').style.display = 'block';
-                    }
-                }, { once: true });
-
-                declineBtn.addEventListener('click', () => {
-                    this.stopRingtone();
-                    modal.style.display = 'none';
-                    this.api.socketRequest('endCall', {
-                        call_id: response.call_id
-                    }).catch(err => console.error('Erreur endCall:', err));
-                }, { once: true });
-            } else {
-                throw new Error(response.message || 'Erreur démarrage appel');
-            }
-        } catch (error) {
-            console.error('Erreur startCall:', error);
-            this.showNotification('Erreur lors du démarrage de l\'appel', 'error');
-            modal.style.display = 'none';
+        if (modal) {
+            modal.style.display = 'block';
         }
+
+        this.api.socketRequest('startCall', {
+            conversation_id: this.selectedConversationId,
+            call_type: type
+        }, (response) => {
+            if (response && response.success) {
+                // Afficher la modale, démarrer la sonnerie, etc.
+                this.showNotification('Appel en cours...', 'info');
+            } else {
+                this.showNotification(response?.message || 'Erreur lors de l\'appel', 'error');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        });
     }
 
     handleIncomingCall(callData) {
