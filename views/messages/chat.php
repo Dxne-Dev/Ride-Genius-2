@@ -59,13 +59,17 @@
             </div>
             <div class="chat-messages" id="chatMessages"></div>
             <div class="chat-input">
-                <form id="messageForm" class="message-form" onsubmit="return false;">
+                <form id="messageForm" class="message-form">
                     <div class="message-attachments" id="messageAttachments"></div>
                     <div class="input-group">
-                        <button type="button" class="attach-btn" id="attachButton"><i class="fas fa-paperclip"></i></button>
+                        <button type="button" class="attach-btn" id="attachButton">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
                         <input type="text" id="messageInput" placeholder="Écrivez votre message..." autocomplete="off">
                         <input type="file" id="fileInput" name="files[]" style="display: none" multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt">
-                        <button type="submit" id="sendButton"><i class="fas fa-paper-plane"></i></button>
+                        <button type="submit" id="sendButton">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
                     </div>
                 </form>
             </div>
