@@ -52,10 +52,13 @@ class ChatManager {
             },
             (message) => {
                 console.log('Message reçu via socket:', message);
-                if (this.isConversationOpen(message.conversation_id)) {
+                if (message.conversation_id === this.selectedConversationId) {
+                    this.displayMessage(message);
                     this.markMessagesAsRead(message.conversation_id);
+                } else {
+                    this.updateUnreadCount(message.conversation_id);
                 }
-                this.displayMessage(message);
+                this.loadConversations();
             },
             (reaction) => {
                 console.log('Réaction reçue via socket:', reaction);
@@ -367,6 +370,12 @@ class ChatManager {
     }
 
     displayMessage(message, isInitialLoad = false) {
+        // Ne pas afficher le message si la conversation n'est pas active
+        if (message.conversation_id !== this.selectedConversationId && !isInitialLoad) {
+            return;
+        }
+
+        // Marquer les messages comme lus si la conversation est active
         if (message.conversation_id === this.selectedConversationId) {
             this.markMessagesAsRead(message.conversation_id);
         }
