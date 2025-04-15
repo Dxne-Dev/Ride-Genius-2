@@ -1,5 +1,5 @@
 ✅ À faire maintenant
 
 Étape	Action
-1️⃣	Vérifie si tu as une fonction renderConversations()
-2️⃣	Assure-toi qu’elle est appelée après l’envoi ou la réception
+1️⃣	Vérifie comment on "Marques les conversations" comme lues
+2️⃣	explique la moi 

@@ -52,6 +52,9 @@ class ChatManager {
             },
             (message) => {
                 console.log('Message reçu via socket:', message);
+                if (this.isConversationOpen(message.conversation_id)) {
+                    this.markMessagesAsRead(message.conversation_id);
+                }
                 this.displayMessage(message);
             },
             (reaction) => {
@@ -364,6 +367,10 @@ class ChatManager {
     }
 
     displayMessage(message, isInitialLoad = false) {
+        if (message.conversation_id === this.selectedConversationId) {
+            this.markMessagesAsRead(message.conversation_id);
+        }
+
         const container = document.getElementById('chatMessages');
         if (!container) {
             console.error('Container de messages non trouvé');
@@ -910,6 +917,10 @@ class ChatManager {
             audio.pause();
             audio.currentTime = 0;
         }
+    }
+
+    isConversationOpen(conversationId) {
+        return this.selectedConversationId === conversationId;
     }
 }
 
