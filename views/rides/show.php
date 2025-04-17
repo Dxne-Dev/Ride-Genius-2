@@ -74,6 +74,15 @@
                                     <i class="fas fa-list me-1"></i> Voir les réservations
                                 </a>
                             </div>
+                        <?php elseif(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'conducteur' && $_SESSION['user_id'] == $ride->driver_id): ?>
+                            <div>
+                                <a href="index.php?page=ride-bookings&ride_id=<?php echo $ride->id; ?>" class="btn btn-info me-2">
+                                    <i class="fas fa-list me-1"></i> Voir les réservations
+                                </a>
+                                <a href="index.php?page=edit-ride&id=<?php echo $ride->id; ?>" class="btn btn-primary">
+                                    <i class="fas fa-edit me-1"></i> Modifier
+                                </a>
+                            </div>
                         <?php elseif(isset($_SESSION['user_id']) && $_SESSION['user_id'] != $ride->driver_id): ?>
                             <?php if($has_booked): ?>
                                 <button class="btn btn-success" disabled>
@@ -87,15 +96,6 @@
                             <?php if ($has_booked && isset($booking_details['status']) && $booking_details['status'] === 'completed'): ?>
                                 <a href="index.php?page=leave-review&ride_id=<?php echo $ride->id; ?>" class="btn btn-primary">Laisser un avis</a>
                             <?php endif; ?>
-                        
-                            <div>
-                                <a href="index.php?page=ride-bookings&ride_id=<?php echo $ride->id; ?>" class="btn btn-info me-2">
-                                    <i class="fas fa-list me-1"></i> Voir les réservations
-                                </a>
-                                <a href="index.php?page=edit-ride&id=<?php echo $ride->id; ?>" class="btn btn-primary">
-                                    <i class="fas fa-edit me-1"></i> Modifier
-                                </a>
-                            </div>
                         <?php elseif(!isset($_SESSION['user_id'])): ?>
                             <a href="index.php?page=login" class="btn btn-primary">
                                 <i class="fas fa-sign-in-alt me-1"></i> Connectez-vous pour réserver
@@ -152,21 +152,42 @@
                                 <strong>Nom: </strong>
                                 <?php echo htmlspecialchars($ride->driver_name); ?>
                             </p>
+                            <?php if(isset($ride->driver_email) && !empty($ride->driver_email)): ?>
                             <p class="mb-2">
                                 <i class="fas fa-envelope me-2 text-primary"></i>
                                 <strong>Email: </strong>
-                                <?php echo isset($ride->driver_email) ? htmlspecialchars($ride->driver_email) : 'Non renseigné'; ?>
+                                <?php echo htmlspecialchars($ride->driver_email); ?>
                             </p>
+                            <?php endif; ?>
+                            <?php if(isset($ride->driver_phone) && !empty($ride->driver_phone)): ?>
                             <p class="mb-2">
                                 <i class="fas fa-phone me-2 text-primary"></i>
                                 <strong>Téléphone: </strong>
-                                <?php echo isset($ride->driver_phone) ? htmlspecialchars($ride->driver_phone) : 'Non renseigné'; ?>
+                                <?php echo htmlspecialchars($ride->driver_phone); ?>
                             </p>
+                            <?php endif; ?>
                         </div>
                     <?php elseif(isset($_SESSION['user_id']) && $ride->driver_id != $_SESSION['user_id']): ?>
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Les coordonnées du conducteur seront disponibles après confirmation de votre réservation.
+                        <div class="mb-3">
+                            <p class="mb-2">
+                                <i class="fas fa-user me-2 text-primary"></i>
+                                <strong>Nom: </strong>
+                                <?php echo htmlspecialchars($ride->driver_name); ?>
+                            </p>
+                            <?php if(isset($ride->driver_email) && !empty($ride->driver_email)): ?>
+                            <p class="mb-2">
+                                <i class="fas fa-envelope me-2 text-primary"></i>
+                                <strong>Email: </strong>
+                                <?php echo htmlspecialchars($ride->driver_email); ?>
+                            </p>
+                            <?php endif; ?>
+                            <?php if(isset($ride->driver_phone) && !empty($ride->driver_phone)): ?>
+                            <p class="mb-2">
+                                <i class="fas fa-phone me-2 text-primary"></i>
+                                <strong>Téléphone: </strong>
+                                <?php echo htmlspecialchars($ride->driver_phone); ?>
+                            </p>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

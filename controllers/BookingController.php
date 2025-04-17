@@ -298,6 +298,20 @@ class BookingController {
         
         // Définir $has_booked en fonction du statut de la réservation
         $has_booked = ($booking_details['status'] !== 'cancelled'); 
+        
+        // Calculer le prix total
+        $driverSubscription = $this->getDriverSubscriptionType($this->ride->driver_id);
+        if ($driverSubscription === 'eco') {
+            $commission = $this->commissionModel->calculateCommission($this->ride->price, 'eco');
+            $totalPrice = $this->ride->price;
+        } elseif ($driverSubscription === 'pro') {
+            $commission = $this->commissionModel->calculateCommission($this->ride->price, 'pro');
+            $totalPrice = $this->ride->price + $commission['amount'];
+        } else {
+            $totalPrice = $this->ride->price;
+            $commission = ['amount' => 0, 'rate' => 0];
+        }
+        
         $ride = $this->ride;
         include "views/rides/show.php";
     }
