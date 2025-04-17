@@ -162,7 +162,41 @@ switch($page) {
             $auth->logout();
         }
         break;
-        
+    case 'subscription':
+        require_once "controllers/SubscriptionController.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        $subscription = new SubscriptionController($db);
+        $subscription->showDetails();
+        break;
+    case 'subscribe':
+        require_once "controllers/SubscriptionController.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        $subscription = new SubscriptionController($db);
+        $subscription->subscribe();
+        break;
+    case 'subscription-details':
+        require_once "controllers/SubscriptionController.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        $subscription = new SubscriptionController($db);
+        $subscription->showDetails();
+        break;
+    case 'cancel-subscription':
+        require_once "controllers/SubscriptionController.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        $subscription = new SubscriptionController($db);
+        $subscription->cancel();
+        break;
+    case 'toggle-auto-renew':
+        require_once "controllers/SubscriptionController.php";
+        $database = new Database();
+        $db = $database->getConnection();
+        $subscription = new SubscriptionController($db);
+        $subscription->toggleAutoRenew();
+        break;
     // Page d'accueil par défaut
     default:
         // Initialisation de la connexion à la base de données

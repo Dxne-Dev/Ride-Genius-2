@@ -126,47 +126,61 @@ class Subscription {
     public function getPlanDetails($plan_type) {
         $plans = [
             'eco' => [
-                'name' => 'EcoTrajet',
+                'name' => 'Eco',
                 'price' => 0,
-                'description' => 'Pour les voyageurs occasionnels',
+                'description' => 'Plan de base',
                 'features' => [
-                    '2 trajets/mois',
-                    'Recherche basique',
-                    'Messagerie standard',
-                    'Évaluation des conducteurs'
+                    'Commission de 15% par trajet',
+                    'Accès aux fonctionnalités de base',
+                    'Support par email'
                 ],
                 'duration' => 30 // jours
             ],
-            'pro' => [
+            'protrajet' => [
                 'name' => 'ProTrajet',
-                'price' => 7.90,
-                'description' => 'Pour les navetteurs réguliers',
+                'price' => 9.99,
+                'description' => 'Plan professionnel',
                 'features' => [
-                    'Trajets illimités',
-                    'Recherche avancée',
-                    'Messagerie instantanée',
-                    'Trajets prioritaires',
-                    'Badge "Conducteur vérifié"',
-                    'Support en 24h'
+                    'Commission réduite à 10%',
+                    'Support prioritaire',
+                    'Statistiques avancées',
+                    'Badge Pro sur votre profil'
                 ],
                 'duration' => 30 // jours
             ],
-            'business' => [
+            'businesstrajet' => [
                 'name' => 'BusinessTrajet',
-                'price' => 14.90,
-                'description' => 'Pour les professionnels de la route',
+                'price' => 29.99,
+                'description' => 'Plan business',
                 'features' => [
-                    'Tous les avantages ProTrajet',
-                    'Choix des passagers',
-                    'Itinéraires premium',
-                    'Statistiques détaillées',
-                    'Support prioritaire 24/7',
-                    '0% de commission'
+                    'Commission minimale de 5%',
+                    'Support VIP 24/7',
+                    'Tableau de bord personnalisé',
+                    'Badge Business Elite',
+                    'Accès prioritaire aux nouvelles fonctionnalités'
                 ],
                 'duration' => 30 // jours
             ]
         ];
 
         return isset($plans[$plan_type]) ? $plans[$plan_type] : null;
+    }
+
+    /**
+     * Met à jour le statut de renouvellement automatique
+     * @param int $subscription_id
+     * @param bool $auto_renew
+     * @return bool
+     */
+    public function updateAutoRenew($subscription_id, $auto_renew) {
+        $query = "UPDATE " . $this->table_name . "
+                SET auto_renew = :auto_renew
+                WHERE id = :id";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $subscription_id);
+        $stmt->bindParam(":auto_renew", $auto_renew, PDO::PARAM_BOOL);
+
+        return $stmt->execute();
     }
 } 

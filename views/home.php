@@ -6,6 +6,16 @@
 if (!isset($_SESSION['user_role'])) {
     $_SESSION['user_role'] = null; // Définir une valeur par défaut si elle n'existe pas
 }
+
+// Initialisation des modèles nécessaires
+$subscription = new Subscription($db);
+$wallet = new Wallet($db);
+
+// Vérifier si l'utilisateur est connecté et est un conducteur
+if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
+    $activeSubscription = $subscription->getActiveSubscription($_SESSION['user_id']);
+    $walletBalance = $wallet->getBalance($_SESSION['user_id']);
+}
 ?>
 
 <head>
@@ -67,7 +77,6 @@ if (!isset($_SESSION['user_role'])) {
                             <h5 class="card-title">Commission Wallet</h5>
                             <h3 class="text-primary">
                                 <?php
-                                $wallet = new Wallet($db);
                                 $balance = $wallet->getBalance($_SESSION['user_id']);
                                 echo number_format($balance, 2) . ' €';
                                 ?>
@@ -365,6 +374,110 @@ if (!isset($_SESSION['user_role'])) {
         </div>
     </div>
 
+    <!-- Subscription Plans Section -->
+    <?php if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur'): ?>
+        <!-- Section Abonnement -->
+        <div class="container py-5" id="subscription-section">
+            <?php if ($activeSubscription): ?>
+                <!-- Affichage des détails de l'abonnement actif -->
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card shadow">
+                            <div class="card-header bg-primary text-white">
+                                <h3 class="mb-0">Votre abonnement actif</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <h4 class="alert-heading">Plan <?php echo ucfirst($activeSubscription['plan_type']); ?></h4>
+                                    <p>Vous êtes actuellement abonné au plan <strong><?php echo ucfirst($activeSubscription['plan_type']); ?></strong>.</p>
+                                    <p>Date d'expiration: <strong><?php echo date('d/m/Y', strtotime($activeSubscription['end_date'])); ?></strong></p>
+                                    <hr>
+                                    <p class="mb-0">
+                                        <a href="index.php?page=subscription-details" class="btn btn-outline-primary">Gérer mon abonnement</a>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <!-- Affichage des plans d'abonnement disponibles -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2 class="text-center mb-4">Nos Plans d'Abonnement</h2>
+                        <p class="text-center text-muted">Choisissez le plan qui correspond à vos besoins</p>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- Plan Eco -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center p-4">
+                                <h3 class="card-title">Eco</h3>
+                                <div class="pricing mb-4">
+                                    <h4 class="text-primary mb-0">Gratuit</h4>
+                                    <p class="text-muted">Commission de 15% par trajet</p>
+                                </div>
+                                <ul class="list-unstyled mb-4">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Accès aux fonctionnalités de base</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support par email</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Profil conducteur standard</li>
+                                </ul>
+                                <a href="index.php?page=subscribe&plan=eco" class="btn btn-primary w-100">Choisir ce plan</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plan ProTrajet -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center p-4">
+                                <h3 class="card-title">ProTrajet</h3>
+                                <div class="pricing mb-4">
+                                    <h4 class="text-primary mb-0">9.99 €</h4>
+                                    <p class="text-muted">Commission réduite à 10%</p>
+                                </div>
+                                <ul class="list-unstyled mb-4">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support prioritaire</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Statistiques avancées</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Badge Pro sur votre profil</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Accès aux fonctionnalités premium</li>
+                                </ul>
+                                <a href="index.php?page=subscribe&plan=protrajet" class="btn <?php echo $walletBalance >= 9.99 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
+                                    <?php echo $walletBalance < 9.99 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plan BusinessTrajet -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center p-4">
+                                <h3 class="card-title">BusinessTrajet</h3>
+                                <div class="pricing mb-4">
+                                    <h4 class="text-primary mb-0">29.99 €</h4>
+                                    <p class="text-muted">Commission minimale de 5%</p>
+                                </div>
+                                <ul class="list-unstyled mb-4">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Support VIP 24/7</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Tableau de bord personnalisé</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Badge Business Elite</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Accès prioritaire aux nouvelles fonctionnalités</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Statistiques détaillées et rapports</li>
+                                </ul>
+                                <a href="index.php?page=subscribe&plan=businesstrajet" class="btn <?php echo $walletBalance >= 29.99 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
+                                    <?php echo $walletBalance < 29.99 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
+
     <!-- Testimonials Section -->
     <div class="bg-light py-5">
         <div class="container">
@@ -569,5 +682,43 @@ document.addEventListener('DOMContentLoaded', function() {
     setInterval(loadNextBatch, 20000);
 });
 </script>
+
+<!-- Script pour le défilement vers la section d'abonnement -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($_SESSION['redirect_to_subscription']) && $_SESSION['redirect_to_subscription']): ?>
+        // Supprimer le flag de redirection
+        <?php unset($_SESSION['redirect_to_subscription']); ?>
+        
+        // Faire défiler jusqu'à la section d'abonnement avec une animation
+        const subscriptionSection = document.getElementById('subscription-section');
+        if (subscriptionSection) {
+            setTimeout(function() {
+                subscriptionSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                
+                // Ajouter une classe pour mettre en évidence la section
+                subscriptionSection.classList.add('highlight-section');
+                
+                // Supprimer la classe après l'animation
+                setTimeout(function() {
+                    subscriptionSection.classList.remove('highlight-section');
+                }, 2000);
+            }, 500);
+        }
+    <?php endif; ?>
+});
+</script>
+
+<style>
+.highlight-section {
+    animation: highlight 2s ease-in-out;
+}
+
+@keyframes highlight {
+    0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7); }
+    50% { box-shadow: 0 0 20px 10px rgba(0, 123, 255, 0.3); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
+}
+</style>
 
 <?php include 'includes/footer.php'; ?>

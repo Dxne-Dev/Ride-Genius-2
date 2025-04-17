@@ -130,7 +130,6 @@ class RideController {
         include "views/rides/show.php";
     }
     
-    
     // Créer un trajet
     public function create() {
         $this->driverGuard();
@@ -143,7 +142,10 @@ class RideController {
         $subscription = new Subscription($this->db);
         $activeSubscription = $subscription->getActiveSubscription($_SESSION['user_id']);
         if (!$activeSubscription) {
-            $errors[] = "Vous devez avoir un abonnement actif pour créer un trajet";
+            $_SESSION['error'] = "Vous devez avoir un abonnement actif pour créer un trajet";
+            $_SESSION['redirect_to_subscription'] = true; // Marquer pour redirection vers la section abonnement
+            header("Location: index.php");
+            exit();
         }
         
         // 2. Vérifier le solde du wallet
@@ -157,7 +159,7 @@ class RideController {
         // Si des erreurs sont présentes, les afficher et empêcher la création
         if (!empty($errors)) {
             $_SESSION['error'] = implode("<br>", $errors);
-            header("Location: index.php?page=subscription");
+            header("Location: index.php?page=wallet");
             exit();
         }
         
