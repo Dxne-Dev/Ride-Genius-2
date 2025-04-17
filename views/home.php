@@ -13,6 +13,10 @@ if (!isset($_SESSION['user_role'])) {
     <link rel="stylesheet" href="assets/css/floating-notifications.css">
     <script src="assets/js/floating-notifications.js"></script>
     <script src="assets/js/subscription.js"></script>
+    
+    <!-- Chart.js pour le graphique des commissions -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="assets/js/commission-chart.js"></script>
 </head>
 
 <div class="container-fluid p-0">
