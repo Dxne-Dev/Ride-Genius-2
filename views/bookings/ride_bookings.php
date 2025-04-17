@@ -4,9 +4,15 @@
 <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Réservations pour le trajet</h1>
-        <a href="index.php?page=my-rides" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Retour à mes trajets
-        </a>
+        <?php if(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+            <a href="index.php?page=rides" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour aux trajets
+            </a>
+        <?php else: ?>
+            <a href="index.php?page=my-rides" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour à mes trajets
+            </a>
+        <?php endif; ?>
     </div>
     
     <div class="card shadow mb-4">
@@ -53,7 +59,9 @@
                                 <th>Places</th>
                                 <th>Date de réservation</th>
                                 <th>Statut</th>
-                                <th>Actions</th>
+                                <?php if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'): ?>
+                                    <th>Actions</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -61,7 +69,7 @@
                                 <tr>
                                     <td><?php echo htmlspecialchars($row['passenger_name']); ?></td>
                                     <td>
-                                        <?php if($row['status'] === 'accepted'): ?>
+                                        <?php if($row['status'] === 'accepted' || (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin')): ?>
                                             <p class="mb-0"><i class="fas fa-envelope me-1"></i> <?php echo htmlspecialchars($row['passenger_email']); ?></p>
                                             <?php if($row['passenger_phone']): ?>
                                                 <p class="mb-0"><i class="fas fa-phone me-1"></i> <?php echo htmlspecialchars($row['passenger_phone']); ?></p>
@@ -85,25 +93,26 @@
                                             <span class="badge bg-info">Terminée</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <?php if($row['status'] === 'pending'): ?>
-                                            <div class="btn-group" role="group">
-                                                <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=accepted&return=ride-bookings" class="btn btn-sm btn-success" title="Accepter">
-                                                    <i class="fas fa-check"></i> Accepter
+                                    <?php if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'): ?>
+                                        <td>
+                                            <?php if($row['status'] === 'pending'): ?>
+                                                <div class="btn-group" role="group">
+                                                    <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=accepted&return=ride-bookings" class="btn btn-sm btn-success" title="Accepter">
+                                                        <i class="fas fa-check"></i> Accepter
+                                                    </a>
+                                                    <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=rejected&return=ride-bookings" class="btn btn-sm btn-danger" title="Rejeter" onclick="return confirm('Êtes-vous sûr de vouloir rejeter cette réservation ?')">
+                                                        <i class="fas fa-times"></i> Rejeter
+                                                    </a>
+                                                </div>
+                                            <?php elseif($row['status'] === 'accepted'): ?>
+                                                <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=completed&return=ride-bookings" class="btn btn-sm btn-info" title="Marquer comme terminé">
+                                                    <i class="fas fa-flag-checkered"></i> Terminer
                                                 </a>
-                                                <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=rejected&return=ride-bookings" class="btn btn-sm btn-danger" title="Rejeter" onclick="return confirm('Êtes-vous sûr de vouloir rejeter cette réservation ?')">
-                                                    <i class="fas fa-times"></i> Rejeter
-                                                </a>
-                                            </div>
-                                        <?php elseif($row['status'] === 'accepted'): ?>
-                                            <a href="index.php?page=update-booking-status&id=<?php echo $row['id']; ?>&status=completed&return=ride-bookings" class="btn btn-sm btn-info" title="Marquer comme terminé">
-    <i class="fas fa-flag-checkered"></i> Terminer
-</a>
-
-                                        <?php else: ?>
-                                            <button class="btn btn-sm btn-secondary" disabled>Aucune action</button>
-                                        <?php endif; ?>
-                                    </td>
+                                            <?php else: ?>
+                                                <button class="btn btn-sm btn-secondary" disabled>Aucune action</button>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>

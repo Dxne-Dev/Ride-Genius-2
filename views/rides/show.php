@@ -70,11 +70,8 @@
                         
                         <?php if(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
                             <div>
-                                <a href="index.php?page=ride-bookings&ride_id=<?php echo $ride->id; ?>" class="btn btn-info me-2">
+                                <a href="index.php?page=ride-bookings&ride_id=<?php echo $ride->id; ?>" class="btn btn-info">
                                     <i class="fas fa-list me-1"></i> Voir les réservations
-                                </a>
-                                <a href="index.php?page=edit-ride&id=<?php echo $ride->id; ?>" class="btn btn-primary">
-                                    <i class="fas fa-edit me-1"></i> Modifier
                                 </a>
                             </div>
                         <?php elseif(isset($_SESSION['user_id']) && $_SESSION['user_id'] != $ride->driver_id): ?>
