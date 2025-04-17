@@ -58,6 +58,11 @@
                                 <li><a class="dropdown-item" href="index.php?page=my-rides">Mes trajets</a></li>
                             </ul>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.php?page=wallet">
+                                <i class="fas fa-wallet me-1"></i>Wallet
+                            </a>
+                        </li>
                     <?php endif; ?>
 
                     <li class="nav-item dropdown">
@@ -69,6 +74,14 @@
                             <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
                         </ul>
                     </li>
+
+                    <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'passager'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.php?page=wallet">
+                                <i class="fas fa-wallet me-1"></i>Wallet
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 <?php endif; ?>
             </ul>
 
