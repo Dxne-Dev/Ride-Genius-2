@@ -60,9 +60,10 @@ class RideController {
             
             $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
             
-            // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+            // Pour les conducteurs ProTrajet et BusinessTrajet, le passager voit le prix + commission
+            // Pour les conducteurs Eco, le passager voit le prix initial
             $displayPrice = $row['price'];
-            if ($subscriptionType === 'pro') {
+            if ($subscriptionType === 'pro' || $subscriptionType === 'business') {
                 $displayPrice = $row['price'] + $commissionInfo['amount'];
             }
             
@@ -115,9 +116,10 @@ class RideController {
         
         $commissionInfo = $commission->calculateCommission($ride->price, $subscriptionType);
         
-        // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+        // Pour les conducteurs ProTrajet et BusinessTrajet, le passager voit le prix + commission
+        // Pour les conducteurs Eco, le passager voit le prix initial
         $displayPrice = $ride->price;
-        if ($subscriptionType === 'pro') {
+        if ($subscriptionType === 'pro' || $subscriptionType === 'business') {
             $displayPrice = $ride->price + $commissionInfo['amount'];
         }
         
@@ -368,9 +370,10 @@ class RideController {
                     
                     $commissionInfo = $commission->calculateCommission($row['price'], $subscriptionType);
                     
-                    // Pour les conducteurs ProTrajet, on ajoute la commission au prix affiché
+                    // Pour les conducteurs ProTrajet et BusinessTrajet, le passager voit le prix + commission
+                    // Pour les conducteurs Eco, le passager voit le prix initial
                     $displayPrice = $row['price'];
-                    if ($subscriptionType === 'pro') {
+                    if ($subscriptionType === 'pro' || $subscriptionType === 'business') {
                         $displayPrice = $row['price'] + $commissionInfo['amount'];
                     }
                     

@@ -35,25 +35,22 @@
     // Fonction d'initialisation principale
     function initializeWallet($) {
         if (typeof $ === 'undefined') {
-            console.error('jQuery n\'est toujours pas disponible après le chargement');
+            console.error('jQuery is not loaded');
             return;
         }
 
         // Fonction pour formater les montants
         function formatAmount(amount) {
-            return new Intl.NumberFormat('fr-FR', {
-                style: 'currency',
-                currency: 'EUR'
-            }).format(amount);
+            return parseFloat(amount).toFixed(2) + '€';
         }
 
-        // Fonction pour mettre à jour le solde affiché
+        // Fonction pour mettre à jour le solde
         function updateBalance() {
             $.ajax({
                 url: 'api/wallet_api.php',
                 method: 'POST',
                 data: { action: 'getBalance' },
-                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                dataType: 'json',
                 success: function(response) {
                     if (response.success) {
                         $('.balance-amount').text(formatAmount(response.balance));
@@ -83,7 +80,7 @@
                 url: 'api/wallet_api.php',
                 method: 'POST',
                 data: { action: 'getTransactions' },
-                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                dataType: 'json',
                 success: function(response) {
                     if (response.success) {
                         const tbody = $('.transactions-table tbody');
@@ -338,36 +335,23 @@
         });
 
         // Fonction pour afficher les notifications
-        function showNotification(message, type = 'info') {
-            const toast = $('#notificationToast');
-            const toastTitle = $('#toastTitle');
-            const toastMessage = $('#toastMessage');
-            
-            // Définir le titre et le message en fonction du type
-            switch (type) {
-                case 'success':
-                    toastTitle.text('Succès');
-                    toast.removeClass('bg-danger bg-warning').addClass('bg-success');
-                    break;
-                case 'error':
-                    toastTitle.text('Erreur');
-                    toast.removeClass('bg-success bg-warning').addClass('bg-danger');
-                    break;
-                case 'warning':
-                    toastTitle.text('Attention');
-                    toast.removeClass('bg-success bg-danger').addClass('bg-warning');
-                    break;
-                default:
-                    toastTitle.text('Information');
-                    toast.removeClass('bg-success bg-danger bg-warning');
-                    break;
-            }
-            
-            toastMessage.text(message);
-            
-            // Afficher le toast
+        function showNotification(message, type = 'success') {
+            const toast = $('<div>').addClass('toast').attr('role', 'alert').attr('aria-live', 'assertive').attr('aria-atomic', 'true');
+            const toastHeader = $('<div>').addClass('toast-header');
+            const toastTitle = $('<strong>').addClass('me-auto').text(type === 'success' ? 'Succès' : 'Erreur');
+            const toastClose = $('<button>').addClass('btn-close').attr('type', 'button').attr('data-bs-dismiss', 'toast');
+            const toastBody = $('<div>').addClass('toast-body').text(message);
+
+            toastHeader.append(toastTitle).append(toastClose);
+            toast.append(toastHeader).append(toastBody);
+
+            $('#toastContainer').append(toast);
             const bsToast = new bootstrap.Toast(toast);
             bsToast.show();
+
+            toast.on('hidden.bs.toast', function() {
+                $(this).remove();
+            });
         }
 
         // Gestionnaires pour les modales Bootstrap
@@ -384,6 +368,12 @@
         // Initialisation
         updateBalance();
         loadTransactions();
+
+        // Rafraîchissement automatique toutes les 30 secondes
+        setInterval(function() {
+            updateBalance();
+            loadTransactions();
+        }, 30000);
     }
 
     // Attendre que le DOM soit chargé avant de vérifier jQuery

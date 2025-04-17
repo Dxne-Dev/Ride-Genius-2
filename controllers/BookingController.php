@@ -140,30 +140,36 @@ class BookingController {
                     
                     // Calculer la commission selon le type d'abonnement
                     if ($driverSubscription === 'eco') {
-                        $commissionRate = 10; // 10% pour eco
-                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.10;
-                        $driverAmount = ($this->ride->price * $_POST['seats']) - $commissionAmount;
+                        // Pour les conducteurs eco (15%)
+                        $commissionRate = 15;
+                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.15;
+                        $driverAmount = ($this->ride->price * $_POST['seats']) - $commissionAmount; // Le conducteur reçoit le prix - commission
+                        $totalPrice = $this->ride->price * $_POST['seats']; // Le passager paie le prix initial
                     } elseif ($driverSubscription === 'pro') {
-                        $commissionRate = 2; // 2% pour pro
-                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.02;
-                        $driverAmount = $this->ride->price * $_POST['seats'];
+                        // Pour les conducteurs ProTrajet (10%)
+                        $commissionRate = 10;
+                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.10;
+                        $driverAmount = $this->ride->price * $_POST['seats']; // Le conducteur reçoit le prix initial
+                        $totalPrice = ($this->ride->price * $_POST['seats']) + $commissionAmount; // Le passager paie le prix + commission
                     } else { // business
-                        $commissionRate = 0; // 0% pour business
-                        $commissionAmount = 0;
-                        $driverAmount = $this->ride->price * $_POST['seats'];
+                        // Pour les conducteurs BusinessTrajet (5%)
+                        $commissionRate = 5;
+                        $commissionAmount = $this->ride->price * $_POST['seats'] * 0.05;
+                        $driverAmount = $this->ride->price * $_POST['seats']; // Le conducteur reçoit le prix initial
+                        $totalPrice = ($this->ride->price * $_POST['seats']) + $commissionAmount; // Le passager paie le prix + commission
                     }
                     
                     // Utiliser substractFromBalance au lieu de withdrawFunds pour éviter les transactions imbriquées
-                    error_log("BookingController: Tentative de débit - User: $passengerId - Amount: $totalPriceForSeats");
-                    if (!$this->walletModel->substractFromBalance($passengerId, $totalPriceForSeats)) {
-                        error_log("BookingController: Échec du débit - User: $passengerId - Amount: $totalPriceForSeats");
+                    error_log("BookingController: Tentative de débit - User: $passengerId - Amount: $totalPrice");
+                    if (!$this->walletModel->substractFromBalance($passengerId, $totalPrice)) {
+                        error_log("BookingController: Échec du débit - User: $passengerId - Amount: $totalPrice");
                         throw new Exception("Erreur lors du débit du passager. Solde insuffisant ou erreur technique.");
                     }
                     
-                    error_log("BookingController: Débit réussi - User: $passengerId - Amount: $totalPriceForSeats");
+                    error_log("BookingController: Débit réussi - User: $passengerId - Amount: $totalPrice");
                     
                     // Enregistrer la transaction dans l'historique du passager
-                    if (!$this->walletModel->logTransaction($passengerId, 'debit', $totalPriceForSeats, "Paiement trajet #$bookingId")) {
+                    if (!$this->walletModel->logTransaction($passengerId, 'debit', $totalPrice, "Paiement trajet #$bookingId")) {
                         error_log("BookingController: Échec de l'enregistrement de la transaction passager");
                         throw new Exception("Erreur lors de l'enregistrement de la transaction passager");
                     }
@@ -212,7 +218,7 @@ class BookingController {
                     // Créer la transaction avec le statut 'completed' directement
                     $transactionData = [
                         'booking_id' => (int)$bookingId,
-                        'amount' => (float)$totalPriceForSeats,
+                        'amount' => (float)$totalPrice,
                         'status' => 'completed',
                         'commission_amount' => (float)$commissionAmount
                     ];

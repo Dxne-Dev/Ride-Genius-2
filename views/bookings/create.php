@@ -20,18 +20,23 @@
                             </div>
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Conducteur:</strong> <?php echo htmlspecialchars($ride->driver_name); ?></p>
-                                <?php if ($driverSubscription === 'pro'): ?>
+                                <?php if ($driverSubscription === 'eco'): ?>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> €</p>
+                                    <small class="text-muted">
+                                        (Le conducteur paiera une commission de <?php echo $commission['rate']; ?>%)
+                                    </small>
+                                <?php elseif ($driverSubscription === 'pro'): ?>
                                     <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> €</p>
                                     <small class="text-muted">
                                         (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
                                     </small>
-                                <?php else: ?>
-                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> €</p>
-                                    <?php if ($driverSubscription === 'eco'): ?>
-                                        <small class="text-muted">
-                                            (Le conducteur paiera une commission de <?php echo $commission['rate']; ?>%)
-                                        </small>
-                                    <?php endif; ?>
+                                <?php else: // business ?>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> €</p>
+                                    <small class="text-muted">
+                                        (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                        <br>
+                                        Le conducteur recevra <?php echo number_format($ride->price + ($commission['amount'] * 0.01), 2); ?>€ (incluant 1% de la commission)
+                                    </small>
                                 <?php endif; ?>
                                 <p class="mb-0"><strong>Places disponibles:</strong> <?php echo htmlspecialchars($ride->available_seats); ?></p>
                             </div>

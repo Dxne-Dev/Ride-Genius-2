@@ -15,12 +15,12 @@ class Commission {
      */
     public function calculateCommission($amount, $subscriptionType) {
         $rates = [
-            'eco' => 0.10,   // 10% pour les conducteurs eco (gratuit)
-            'pro' => 0.02,   // 2% pour les conducteurs ProTrajet
-            'business' => 0  // 0% pour les conducteurs BusinessTrajet
+            'eco' => 0.15,   // 15% pour les conducteurs eco
+            'pro' => 0.10,   // 10% pour les conducteurs ProTrajet
+            'business' => 0.05  // 5% pour les conducteurs BusinessTrajet
         ];
 
-        $rate = $rates[$subscriptionType] ?? 0.10; // Par défaut 10%
+        $rate = $rates[$subscriptionType] ?? 0.15; // Par défaut 15%
         $commissionAmount = $amount * $rate;
 
         return [
