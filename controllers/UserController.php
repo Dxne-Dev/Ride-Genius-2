@@ -209,4 +209,35 @@ class UserController {
         // Afficher la vue
         include "views/admin/users.php";
     }
+
+    // Profil d'un utilisateur spécifique (pour l'admin)
+    public function userProfile() {
+        $this->adminGuard();
+        
+        if(!isset($_GET['id'])) {
+            $_SESSION['error'] = "ID utilisateur non spécifié";
+            header("Location: index.php?page=admin-users");
+            exit();
+        }
+        
+        $this->user->id = $_GET['id'];
+        if(!$this->user->readOne()) {
+            $_SESSION['error'] = "Utilisateur non trouvé";
+            header("Location: index.php?page=admin-users");
+            exit();
+        }
+        
+        // Rendre l'objet user accessible à la vue
+        $user = $this->user;
+        
+        // Obtenir les avis reçus
+        $this->review->recipient_id = $this->user->id;
+        $reviews = $this->review->readUserReviews();
+        
+        // Obtenir la note moyenne
+        $rating_data = $this->review->getUserRating();
+        
+        // Afficher la vue
+        include "views/users/profil.php";
+    }
 }

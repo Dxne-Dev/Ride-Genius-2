@@ -80,10 +80,14 @@ switch($page) {
     case 'messages':
     case 'wallet':
     case 'logout':
+    case 'user-profile':
         // Pages de profil
         if ($page == 'profile') {
             $user = new UserController();
             $user->profile();
+        } else if ($page == 'user-profile') {
+            $user = new UserController();
+            $user->userProfile();
         }
         // Pages de trajets
         if ($page == 'rides' || $page == 'ride-details' || $page == 'create-ride' || $page == 'edit-ride' || $page == 'delete-ride' || $page == 'my-rides' || $page == 'search-rides') {

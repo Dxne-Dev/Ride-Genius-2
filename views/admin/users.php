@@ -44,7 +44,7 @@
                                 <td><?php echo date('d/m/Y', strtotime($row['created_at'])); ?></td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="#" class="btn btn-sm btn-outline-primary" title="Voir détails">
+                                        <a href="index.php?page=user-profile&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <?php if($row['id'] != $_SESSION['user_id']): ?>

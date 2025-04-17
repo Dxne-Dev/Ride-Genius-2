@@ -47,8 +47,10 @@
                     <?php endif; ?>
                     
                     <div class="d-grid gap-2">
-                        <a href="index.php?page=edit-profile" class="btn btn-outline-primary">Modifier profil</a>
-                        <a href="index.php?page=change-password" class="btn btn-outline-secondary">Changer mot de passe</a>
+                        <?php if(!isset($_GET['id'])): ?>
+                            <a href="index.php?page=edit-profile" class="btn btn-outline-primary">Modifier profil</a>
+                            <a href="index.php?page=change-password" class="btn btn-outline-secondary">Changer mot de passe</a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
