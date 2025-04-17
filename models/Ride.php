@@ -66,11 +66,16 @@ class Ride {
     }
     
     // Lire tous les trajets
-    public function read() {
+    public function read($limit = null) {
         $query = "SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as driver_name 
                   FROM " . $this->table . " r
                   LEFT JOIN users u ON r.driver_id = u.id
                   ORDER BY r.departure_time ASC";
+                  
+        if ($limit !== null) {
+            $query .= " LIMIT " . (int)$limit;
+        }
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         
@@ -233,19 +238,20 @@ class Ride {
 
     // Mettre à jour le nombre de places disponibles
     public function updateSeats() {
-        $query = "UPDATE rides SET available_seats = :available_seats WHERE id = :id";
+        $query = "UPDATE " . $this->table . "
+                SET available_seats = :available_seats
+                WHERE id = :id";
+                
         $stmt = $this->conn->prepare($query);
         
-        // Nettoyer les données
-        $this->available_seats = htmlspecialchars(strip_tags($this->available_seats));
-        $this->id = htmlspecialchars(strip_tags($this->id));
+        $stmt->bindParam(':available_seats', $this->available_seats);
+        $stmt->bindParam(':id', $this->id);
         
-        // Lier les paramètres
-        $stmt->bindParam(':available_seats', $this->available_seats, PDO::PARAM_INT);
-        $stmt->bindParam(':id', $this->id, PDO::PARAM_INT);
+        if($stmt->execute()) {
+            return true;
+        }
         
-        // Exécuter la requête
-        return $stmt->execute();
+        return false;
     }
 
     public function countByStatus($status) {
@@ -253,5 +259,14 @@ class Ride {
         $stmt = $this->conn->prepare($query);
         $stmt->execute([$status]);
         return $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+    }
+
+    // Compter le nombre total de trajets
+    public function count() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
     }
 }

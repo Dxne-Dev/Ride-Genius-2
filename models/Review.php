@@ -102,4 +102,29 @@ class Review {
         
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    // Lire tous les avis
+    public function readAll() {
+        $query = "SELECT r.*, 
+                         CONCAT(u.first_name, ' ', u.last_name) as author_name,
+                         CONCAT(ru.first_name, ' ', ru.last_name) as recipient_name
+                  FROM " . $this->table . " r
+                  LEFT JOIN users u ON r.author_id = u.id
+                  LEFT JOIN users ru ON r.recipient_id = ru.id
+                  ORDER BY r.created_at DESC";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        
+        return $stmt;
+    }
+
+    // Compter le nombre total d'avis
+    public function count() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
+    }
 }

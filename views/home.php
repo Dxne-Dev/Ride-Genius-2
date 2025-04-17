@@ -365,75 +365,12 @@ if (!isset($_SESSION['user_role'])) {
     <div class="bg-light py-5">
         <div class="container">
             <h2 class="text-center mb-5">Ce que disent nos utilisateurs</h2>
-            <div class="row">
-                <div class="col-md-4 mb-4 mb-md-0">
-                    <div class="card h-100 shadow-sm glass-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex mb-3">
-                                <div class="me-3">
-                                    <img src="assets/images/user01.png" alt="User" class="rounded-circle" width="60" height="60">
-                                </div>
-                                <div>
-                                    <h5 class="mb-1">Sophie Martin</h5>
-                                    <div class="text-warning mb-1">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                    <p class="text-muted small mb-0">Passagère</p>
-                                </div>
-                            </div>
-                            <p class="card-text">"J'utilise RideGenius depuis 6 mois et je suis ravie ! J'économise beaucoup sur mes déplacements et j'ai rencontré des gens formidables."</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 mb-4 mb-md-0">
-                    <div class="card h-100 shadow-sm glass-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex mb-3">
-                                <div class="me-3">
-                                    <img src="assets/images/user03.png" alt="User" class="rounded-circle" width="60" height="60">
-                                </div>
-                                <div>
-                                    <h5 class="mb-1">Thomas Dupont</h5>
-                                    <div class="text-warning mb-1">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star-half-alt"></i>
-                                    </div>
-                                    <p class="text-muted small mb-0">Conducteur</p>
-                                </div>
-                            </div>
-                            <p class="card-text">"En tant que conducteur régulier, RideGenius m'aide à réduire mes frais de trajet. L'interface est simple et les passagers sont toujours à l'heure."</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card h-100 shadow-sm glass-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex mb-3">
-                                <div class="me-3">
-                                    <img src="assets/images/user02.png" alt="User" class="rounded-circle" width="60" height="60">
-                                </div>
-                                <div>
-                                    <h5 class="mb-1">Émilie Bernard</h5>
-                                    <div class="text-warning mb-1">
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                        <i class="fas fa-star"></i>
-                                    </div>
-                                    <p class="text-muted small mb-0">Passagère & Conductrice</p>
-                                </div>
-                            </div>
-                            <p class="card-text">"Je suis à la fois passagère et conductrice. RideGenius est de loin la meilleure plateforme de covoiturage que j'ai utilisée. Très fiable et sécurisée."</p>
-                        </div>
-                    </div>
+            <div class="row" id="testimonials-container">
+                <!-- Les avis seront chargés ici progressivement -->
+            </div>
+            <div id="loading-testimonials" class="text-center py-3 d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
                 </div>
             </div>
         </div>
@@ -478,5 +415,155 @@ if (!isset($_SESSION['user_role'])) {
         });
     </script>
 <?php endif; ?>
+
+<!-- Script pour l'affichage progressif des avis -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données des avis (seront remplacées par les données réelles)
+    const testimonialsData = [
+        {
+            name: "Sophie Martin",
+            role: "Passagère",
+            rating: 5,
+            comment: "J'utilise RideGenius depuis 6 mois et je suis ravie ! J'économise beaucoup sur mes déplacements et j'ai rencontré des gens formidables.",
+            image: "assets/images/user01.png"
+        },
+        {
+            name: "Thomas Dupont",
+            role: "Conducteur",
+            rating: 4.5,
+            comment: "En tant que conducteur régulier, RideGenius m'aide à réduire mes frais de trajet. L'interface est simple et les passagers sont toujours à l'heure.",
+            image: "assets/images/user03.png"
+        },
+        {
+            name: "Émilie Bernard",
+            role: "Passagère & Conductrice",
+            rating: 5,
+            comment: "Je suis à la fois passagère et conductrice. RideGenius est de loin la meilleure plateforme de covoiturage que j'ai utilisée. Très fiable et sécurisée.",
+            image: "assets/images/user02.png"
+        },
+        {
+            name: "Lucas Petit",
+            role: "Passager",
+            rating: 5,
+            comment: "Je voyage régulièrement pour mon travail et RideGenius m'a permis de réduire considérablement mes frais de transport. Les conducteurs sont toujours ponctuels.",
+            image: "assets/images/user04.png"
+        },
+        {
+            name: "Julie Moreau",
+            role: "Conductrice",
+            rating: 4,
+            comment: "J'apprécie la simplicité de l'application et la qualité des passagers. C'est un excellent moyen de rentabiliser mes trajets quotidiens.",
+            image: "assets/images/user05.png"
+        },
+        {
+            name: "Nicolas Dubois",
+            role: "Passager",
+            rating: 5,
+            comment: "RideGenius a révolutionné mes déplacements. Plus besoin de prendre le train, je trouve facilement des covoiturages pour mes déplacements professionnels.",
+            image: "assets/images/user06.png"
+        },
+        {
+            name: "Camille Leroy",
+            role: "Conductrice",
+            rating: 4.5,
+            comment: "En tant que conductrice, j'apprécie la flexibilité et la sécurité de la plateforme. Les paiements sont simples et les commissions raisonnables.",
+            image: "assets/images/user07.png"
+        },
+        {
+            name: "Antoine Roux",
+            role: "Passager & Conducteur",
+            rating: 5,
+            comment: "Je suis un utilisateur régulier, à la fois comme passager et conducteur. RideGenius offre une expérience utilisateur exceptionnelle.",
+            image: "assets/images/user08.png"
+        },
+        {
+            name: "Sarah Blanc",
+            role: "Passagère",
+            rating: 4,
+            comment: "J'ai découvert RideGenius il y a quelques mois et je ne peux plus m'en passer. C'est économique, écologique et j'ai fait de belles rencontres.",
+            image: "assets/images/user09.png"
+        }
+    ];
+    
+    const testimonialsContainer = document.getElementById('testimonials-container');
+    const loadingIndicator = document.getElementById('loading-testimonials');
+    const batchSize = 3; // Nombre d'avis à afficher à la fois
+    let currentIndex = 0;
+    
+    // Fonction pour créer un élément d'avis
+    function createTestimonialElement(testimonial) {
+        const colElement = document.createElement('div');
+        colElement.className = 'col-md-4 mb-4 mb-md-0';
+        
+        // Créer les étoiles
+        let starsHtml = '';
+        for(let i = 1; i <= 5; i++) {
+            if(i <= testimonial.rating) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            } else if(i - 0.5 <= testimonial.rating) {
+                starsHtml += '<i class="fas fa-star-half-alt"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star"></i>';
+            }
+        }
+        
+        colElement.innerHTML = `
+            <div class="card h-100 shadow-sm glass-card">
+                <div class="card-body p-4">
+                    <div class="d-flex mb-3">
+                        <div class="me-3">
+                            <img src="${testimonial.image}" alt="User" class="rounded-circle" width="60" height="60">
+                        </div>
+                        <div>
+                            <h5 class="mb-1">${testimonial.name}</h5>
+                            <div class="text-warning mb-1">
+                                ${starsHtml}
+                            </div>
+                            <p class="text-muted small mb-0">${testimonial.role}</p>
+                        </div>
+                    </div>
+                    <p class="card-text">"${testimonial.comment}"</p>
+                </div>
+            </div>
+        `;
+        
+        return colElement;
+    }
+    
+    // Fonction pour charger un lot d'avis
+    function loadNextBatch() {
+        if(currentIndex >= testimonialsData.length) {
+            // Tous les avis ont été affichés, recommencer depuis le début
+            currentIndex = 0;
+        }
+        
+        // Afficher l'indicateur de chargement
+        loadingIndicator.classList.remove('d-none');
+        
+        // Simuler un délai de chargement
+        setTimeout(() => {
+            // Masquer l'indicateur de chargement
+            loadingIndicator.classList.add('d-none');
+            
+            // Vider le conteneur avant d'ajouter les nouveaux avis
+            testimonialsContainer.innerHTML = '';
+            
+            // Ajouter le prochain lot d'avis
+            for(let i = 0; i < batchSize && currentIndex < testimonialsData.length; i++) {
+                const testimonial = testimonialsData[currentIndex];
+                testimonialsContainer.appendChild(createTestimonialElement(testimonial));
+                currentIndex++;
+            }
+        }, 500); // Délai de 500ms pour l'animation
+    }
+    
+    // Charger le premier lot d'avis
+    loadNextBatch();
+    
+    // Configurer l'intervalle pour charger les avis toutes les 20 secondes
+    setInterval(loadNextBatch, 20000);
+});
+</script>
 
 <?php include 'includes/footer.php'; ?>

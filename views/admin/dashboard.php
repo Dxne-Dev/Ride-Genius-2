@@ -159,6 +159,117 @@
             </div>
         </div>
     </div>
+
+    <!-- Derniers avis -->
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Derniers avis</h5>
+                    <a href="index.php?page=admin-reviews" class="btn btn-sm btn-outline-primary">Voir tous</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="reviews-container">
+                    <!-- Les avis seront chargés ici progressivement -->
+                </div>
+                <div id="loading-reviews" class="text-center py-3 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php include 'includes/footer.php'; ?>
+
+<!-- Script pour l'affichage progressif des avis -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données des avis (seront remplacées par les données réelles)
+    const reviewsData = <?php 
+        $reviewsArray = [];
+        while($row = $reviews->fetch(PDO::FETCH_ASSOC)) {
+            $reviewsArray[] = $row;
+        }
+        echo json_encode($reviewsArray);
+    ?>;
+    
+    const reviewsContainer = document.getElementById('reviews-container');
+    const loadingIndicator = document.getElementById('loading-reviews');
+    const batchSize = 3; // Nombre d'avis à afficher à la fois
+    let currentIndex = 0;
+    
+    // Fonction pour créer un élément d'avis
+    function createReviewElement(review) {
+        const reviewElement = document.createElement('div');
+        reviewElement.className = 'mb-3';
+        
+        // Créer les étoiles
+        let starsHtml = '';
+        for(let i = 1; i <= 5; i++) {
+            if(i <= review.rating) {
+                starsHtml += '<i class="fas fa-star text-warning"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star text-warning"></i>';
+            }
+        }
+        
+        // Formater la date
+        const date = new Date(review.created_at);
+        const formattedDate = date.toLocaleDateString('fr-FR');
+        
+        reviewElement.innerHTML = `
+            <div class="d-flex justify-content-between mb-2">
+                <div>
+                    <strong>${review.author_name}</strong> a évalué <strong>${review.recipient_name}</strong>
+                    <div class="text-warning">
+                        ${starsHtml}
+                    </div>
+                </div>
+                <div class="text-muted small">
+                    ${formattedDate}
+                </div>
+            </div>
+            <p class="mb-0">
+                ${review.comment || '<span class="text-muted">Aucun commentaire</span>'}
+            </p>
+        `;
+        
+        return reviewElement;
+    }
+    
+    // Fonction pour charger un lot d'avis
+    function loadNextBatch() {
+        if(currentIndex >= reviewsData.length) {
+            // Tous les avis ont été affichés, recommencer depuis le début
+            currentIndex = 0;
+            reviewsContainer.innerHTML = '';
+        }
+        
+        // Afficher l'indicateur de chargement
+        loadingIndicator.classList.remove('d-none');
+        
+        // Simuler un délai de chargement
+        setTimeout(() => {
+            // Masquer l'indicateur de chargement
+            loadingIndicator.classList.add('d-none');
+            
+            // Ajouter le prochain lot d'avis
+            for(let i = 0; i < batchSize && currentIndex < reviewsData.length; i++) {
+                const review = reviewsData[currentIndex];
+                reviewsContainer.appendChild(createReviewElement(review));
+                currentIndex++;
+            }
+        }, 500); // Délai de 500ms pour l'animation
+    }
+    
+    // Charger le premier lot d'avis
+    loadNextBatch();
+    
+    // Configurer l'intervalle pour charger les avis toutes les 20 secondes
+    setInterval(loadNextBatch, 20000);
+});
+</script>

@@ -272,8 +272,13 @@ class User {
     }
 
     // Lire tous les utilisateurs
-    public function read() {
+    public function read($limit = null) {
         $query = "SELECT * FROM " . $this->table . " ORDER BY created_at DESC";
+        
+        if ($limit !== null) {
+            $query .= " LIMIT " . (int)$limit;
+        }
+        
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         
@@ -364,15 +369,17 @@ class User {
     public function delete() {
         $query = "DELETE FROM " . $this->table . " WHERE id = ?";
         $stmt = $this->conn->prepare($query);
-        
-        $this->id = htmlspecialchars(strip_tags($this->id));
         $stmt->bindParam(1, $this->id);
-        
-        if($stmt->execute()) {
-            return true;
-        }
-        
-        return false;
+        return $stmt->execute();
+    }
+
+    // Compter le nombre total d'utilisateurs
+    public function count() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
     }
 
     public function getAdminId() {

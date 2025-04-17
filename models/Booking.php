@@ -146,4 +146,51 @@ public function delete() {
         $stmt->execute([$status]);
         return $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
     }
+
+    // Compter le nombre total de réservations
+    public function count() {
+        $query = "SELECT COUNT(*) as total FROM " . $this->table;
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row['total'];
+    }
+
+    // Obtenir les statistiques de commission
+    public function getCommissionStats() {
+        // Calculer le montant total des réservations
+        $query = "SELECT 
+                    COUNT(*) as total_bookings,
+                    SUM(b.seats * r.price) as total_amount,
+                    SUM(b.seats * r.price * 0.10) as total_commission
+                  FROM " . $this->table . " b
+                  JOIN rides r ON b.ride_id = r.id
+                  WHERE b.status = 'completed'";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Calculer les statistiques par mois pour le graphique
+        $monthlyQuery = "SELECT 
+                          DATE_FORMAT(b.created_at, '%Y-%m') as month,
+                          COUNT(*) as bookings,
+                          SUM(b.seats * r.price) as amount,
+                          SUM(b.seats * r.price * 0.10) as commission
+                        FROM " . $this->table . " b
+                        JOIN rides r ON b.ride_id = r.id
+                        WHERE b.status = 'completed'
+                        GROUP BY DATE_FORMAT(b.created_at, '%Y-%m')
+                        ORDER BY month DESC
+                        LIMIT 12";
+        
+        $monthlyStmt = $this->conn->prepare($monthlyQuery);
+        $monthlyStmt->execute();
+        $monthlyData = $monthlyStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        return [
+            'total' => $result,
+            'monthly' => $monthlyData
+        ];
+    }
 }

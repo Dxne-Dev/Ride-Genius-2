@@ -3,12 +3,16 @@ class UserController {
     private $db;
     private $user;
     private $review;
+    private $ride;
+    private $booking;
 
     public function __construct() {
         $database = new Database();
         $this->db = $database->getConnection();
         $this->user = new User($this->db);
         $this->review = new Review($this->db);
+        $this->ride = new Ride($this->db);
+        $this->booking = new Booking($this->db);
     }
 
     // Protéger les routes
@@ -147,35 +151,23 @@ class UserController {
     public function adminDashboard() {
         $this->adminGuard();
         
-        // Statistiques de base
-        $user_count_query = "SELECT COUNT(*) as total FROM users";
-        $ride_count_query = "SELECT COUNT(*) as total FROM rides";
-        $booking_count_query = "SELECT COUNT(*) as total FROM bookings";
+        // Récupérer les statistiques
+        $user_count = $this->user->count();
+        $ride_count = $this->ride->count();
+        $booking_count = $this->booking->count();
+        $review_count = $this->review->count();
         
-        $user_stmt = $this->db->prepare($user_count_query);
-        $user_stmt->execute();
-        $user_count = $user_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        // Récupérer les 5 derniers utilisateurs
+        $recent_users_stmt = $this->user->read(5);
         
-        $ride_stmt = $this->db->prepare($ride_count_query);
-        $ride_stmt->execute();
-        $ride_count = $ride_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        // Récupérer les 5 derniers trajets
+        $recent_rides_stmt = $this->ride->read(5);
         
-        $booking_stmt = $this->db->prepare($booking_count_query);
-        $booking_stmt->execute();
-        $booking_count = $booking_stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        // Récupérer les derniers avis (tous les avis au lieu de seulement trois)
+        $reviews = $this->review->readAll();
         
-        // Derniers utilisateurs inscrits
-        $recent_users_query = "SELECT * FROM users ORDER BY created_at DESC LIMIT 5";
-        $recent_users_stmt = $this->db->prepare($recent_users_query);
-        $recent_users_stmt->execute();
-        
-        // Derniers trajets créés
-        $recent_rides_query = "SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as driver_name 
-                              FROM rides r
-                              LEFT JOIN users u ON r.driver_id = u.id
-                              ORDER BY r.created_at DESC LIMIT 5";
-        $recent_rides_stmt = $this->db->prepare($recent_rides_query);
-        $recent_rides_stmt->execute();
+        // Récupérer les statistiques de commission
+        $commissionStats = $this->booking->getCommissionStats();
         
         // Afficher la vue
         include "views/admin/dashboard.php";
