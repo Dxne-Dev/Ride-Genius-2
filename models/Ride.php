@@ -17,6 +17,8 @@ class Ride {
     
     // propriétés jointes
     public $driver_name;
+    public $driver_email;
+    public $driver_phone;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -103,6 +105,7 @@ class Ride {
         $query ="SELECT 
                 r.*,
                 CONCAT(u.first_name, ' ', u.last_name) as driver_name,
+                u.email as driver_email,
                 u.phone as driver_phone
               FROM rides r
               LEFT JOIN users u ON r.driver_id = u.id
@@ -127,6 +130,8 @@ class Ride {
             $this->status = $row['status'];
             $this->created_at = $row['created_at'];
             $this->driver_name = $row['driver_name'];
+            $this->driver_email = $row['driver_email'];
+            $this->driver_phone = $row['driver_phone'];
             
             return true;
         }
