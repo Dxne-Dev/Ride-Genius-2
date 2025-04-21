@@ -148,7 +148,7 @@ $db = $database->getConnection();
                                 $query = "SELECT b.*, r.price, r.departure, r.destination, r.departure_time, r.driver_id 
                                           FROM bookings b 
                                           JOIN rides r ON b.ride_id = r.id 
-                                          WHERE b.passenger_id = :user_id AND b.status = 'accepted'";
+                                          WHERE b.passenger_id = :user_id AND b.status IN ('accepted', 'completed')";
                                 $stmt = $db->prepare($query);
                                 $stmt->bindParam(':user_id', $_SESSION['user_id'], PDO::PARAM_INT);
                                 $stmt->execute();
@@ -207,11 +207,14 @@ $db = $database->getConnection();
                                                         <i class="fas fa-eye"></i>
                                                     </a>
                                                     <?php if (!$has_reviewed && $driver_id): ?>
-                                                        <a href="index.php?page=create-review&booking_id=<?= htmlspecialchars($row['id']) ?>&recipient_id=<?= htmlspecialchars($driver_id) ?>" class="btn btn-sm btn-outline-success" title="Laisser un avis">
+                                                        <button type="button" class="btn btn-sm btn-outline-success" title="Laisser un avis" onclick="openReviewModal(<?= htmlspecialchars($row['id']) ?>, <?= htmlspecialchars($driver_id) ?>, '<?= htmlspecialchars($departure) ?>', '<?= htmlspecialchars($destination) ?>', '<?= htmlspecialchars($date_string) ?>', '<?= htmlspecialchars($time) ?>')">
                                                             <i class="fas fa-star"></i>
-                                                        </a>
+                                                        </button>
                                                     <?php endif; ?>
                                                 </div>
+                                                <?php if ($row['status'] === 'completed'): ?>
+                                                    <span class="badge bg-info mt-2">Terminée</span>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                         <?php
@@ -299,4 +302,235 @@ $db = $database->getConnection();
     </div>
 </div>
 
-<?php include 'includes/footer.php'; ?>
+<!-- Conteneur pour les toasts -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3"></div>
+
+<!-- Modal pour l'avis -->
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-labelledby="reviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title" id="reviewModalLabel">
+                    <i class="fas fa-star me-2"></i>Évaluer votre trajet
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Trajet:</strong> <span id="rideDetails"></span></p>
+                    <p class="mb-1"><strong>Date:</strong> <span id="rideDate"></span></p>
+                    <p class="mb-0"><strong>Heure:</strong> <span id="rideTime"></span></p>
+                </div>
+                
+                <form id="reviewForm" method="POST" action="index.php?page=create-review" class="needs-validation" novalidate>
+                    <input type="hidden" name="booking_id" id="bookingId">
+                    <input type="hidden" name="recipient_id" id="recipientId">
+                    
+                    <div class="mb-4 text-center">
+                        <label class="form-label fw-bold mb-3">Comment s'est passé votre trajet ?</label>
+                        <div class="rating">
+                            <?php for($i = 5; $i >= 1; $i--): ?>
+                                <input type="radio" name="rating" value="<?php echo $i; ?>" id="star<?php echo $i; ?>" required>
+                                <label for="star<?php echo $i; ?>"><i class="fas fa-star"></i></label>
+                            <?php endfor; ?>
+                        </div>
+                        <div class="invalid-feedback">
+                            Veuillez attribuer une note
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="comment" class="form-label fw-bold">Partagez votre expérience</label>
+                        <textarea class="form-control" id="comment" name="comment" rows="3" 
+                                placeholder="Comment s'est passé votre trajet ? Le conducteur était-il ponctuel et agréable ?"></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-paper-plane me-2"></i>Envoyer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    cursor: pointer;
+    font-size: 2em;
+    color: #dee2e6;
+    transition: color 0.2s ease-in-out;
+}
+
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+    color: #ffc107;
+}
+
+.rating label:hover,
+.rating label:hover ~ label {
+    transform: scale(1.1);
+}
+</style>
+
+<script>
+function openReviewModal(bookingId, recipientId, departure, destination, date, time) {
+    // Remplir les champs du modal
+    document.getElementById('bookingId').value = bookingId;
+    document.getElementById('recipientId').value = recipientId;
+    document.getElementById('rideDetails').textContent = departure + ' → ' + destination;
+    document.getElementById('rideDate').textContent = date;
+    document.getElementById('rideTime').textContent = time;
+    
+    // Réinitialiser le formulaire
+    document.getElementById('reviewForm').reset();
+    
+    // Afficher le modal
+    const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    reviewModal.show();
+}
+
+// Validation du formulaire et soumission AJAX
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('reviewForm');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!form.checkValidity()) {
+            e.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        const formData = new FormData(this);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Envoi en cours...';
+        
+        fetch('index.php?page=create-review', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Afficher un message de succès
+                const toastContainer = document.querySelector('.toast-container');
+                const toastElement = document.createElement('div');
+                toastElement.className = 'toast';
+                toastElement.setAttribute('role', 'alert');
+                toastElement.setAttribute('aria-live', 'assertive');
+                toastElement.setAttribute('aria-atomic', 'true');
+                toastElement.innerHTML = `
+                    <div class="toast-header bg-success text-white">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong class="me-auto">Succès</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${data.message}
+                    </div>
+                `;
+                toastContainer.appendChild(toastElement);
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                // Supprimer le toast après qu'il soit caché
+                toastElement.addEventListener('hidden.bs.toast', function() {
+                    toastElement.remove();
+                });
+                
+                // Fermer le modal
+                const reviewModal = bootstrap.Modal.getInstance(document.getElementById('reviewModal'));
+                reviewModal.hide();
+                
+                // Recharger la page après un court délai
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                // Afficher un message d'erreur
+                const toastContainer = document.querySelector('.toast-container');
+                const toastElement = document.createElement('div');
+                toastElement.className = 'toast';
+                toastElement.setAttribute('role', 'alert');
+                toastElement.setAttribute('aria-live', 'assertive');
+                toastElement.setAttribute('aria-atomic', 'true');
+                toastElement.innerHTML = `
+                    <div class="toast-header bg-danger text-white">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong class="me-auto">Erreur</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${data.message}
+                    </div>
+                `;
+                toastContainer.appendChild(toastElement);
+                const toast = new bootstrap.Toast(toastElement);
+                toast.show();
+                
+                // Supprimer le toast après qu'il soit caché
+                toastElement.addEventListener('hidden.bs.toast', function() {
+                    toastElement.remove();
+                });
+                
+                // Réactiver le bouton
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Envoyer';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Afficher un message d'erreur
+            const toastContainer = document.querySelector('.toast-container');
+            const toastElement = document.createElement('div');
+            toastElement.className = 'toast';
+            toastElement.setAttribute('role', 'alert');
+            toastElement.setAttribute('aria-live', 'assertive');
+            toastElement.setAttribute('aria-atomic', 'true');
+            toastElement.innerHTML = `
+                <div class="toast-header bg-danger text-white">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong class="me-auto">Erreur</strong>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    Une erreur est survenue lors de l'envoi de l'avis.
+                </div>
+            `;
+            toastContainer.appendChild(toastElement);
+            const toast = new bootstrap.Toast(toastElement);
+            toast.show();
+            
+            // Supprimer le toast après qu'il soit caché
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+            
+            // Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Envoyer';
+        });
+    });
+});
+</script>

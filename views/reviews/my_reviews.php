@@ -25,9 +25,6 @@ $reviews = $reviewModel->readUserReviews();
                 <div class="me-4">
                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 1.5rem;">
                         <?php 
-                            $user = new User($db);
-                            $user->id = $_SESSION['user_id'];
-                            $user->readOne();
                             echo strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1));
                         ?>
                     </div>

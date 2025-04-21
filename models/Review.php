@@ -66,7 +66,8 @@ class Review {
     
     // Lire tous les avis reçus par un utilisateur
     public function readUserReviews() {
-        $query = "SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as author_name
+        $query = "SELECT r.id, r.rating, r.comment, r.created_at, 
+                     CONCAT(u.first_name, ' ', u.last_name) as author_name
                   FROM " . $this->table . " r
                   LEFT JOIN users u ON r.author_id = u.id
                   WHERE r.recipient_id = ?
@@ -81,13 +82,32 @@ class Review {
     
     // Vérifier si un utilisateur peut laisser un avis
     public function canReview() {
-        $query = "SELECT * FROM bookings WHERE ride_id = :ride_id AND passenger_id = :author_id AND status = 'completed'";
+        // Vérifier si l'utilisateur a réservé ce trajet
+        $query = "SELECT b.* FROM bookings b 
+                  WHERE b.ride_id = :ride_id 
+                  AND b.passenger_id = :author_id 
+                  AND b.status = 'completed'";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":ride_id", $this->ride_id);
         $stmt->bindParam(":author_id", $this->author_id);
         $stmt->execute();
         
-        return $stmt->rowCount() > 0;
+        if ($stmt->rowCount() == 0) {
+            return false;
+        }
+        
+        // Récupérer l'ID de la réservation
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        $this->booking_id = $booking['id'];
+        
+        // Vérifier si un avis existe déjà pour cette réservation
+        $check_query = "SELECT * FROM " . $this->table . " WHERE booking_id = ? AND author_id = ?";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->bindParam(1, $this->booking_id);
+        $check_stmt->bindParam(2, $this->author_id);
+        $check_stmt->execute();
+        
+        return $check_stmt->rowCount() == 0; // Peut laisser un avis si aucun n'existe déjà
     }
     
     // Obtenir la note moyenne d'un utilisateur

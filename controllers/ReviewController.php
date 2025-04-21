@@ -1,14 +1,14 @@
 <?php
+require_once 'services/ReviewService.php';
+
 class ReviewController {
     private $db;
-    private $review;
-    private $booking;
+    private $reviewService;
 
     public function __construct() {
         $database = new Database();
         $this->db = $database->getConnection();
-        $this->review = new Review($this->db);
-        $this->booking = new Booking($this->db);
+        $this->reviewService = new ReviewService($this->db);
     }
 
     // Protéger les routes
@@ -20,80 +20,55 @@ class ReviewController {
         }
     }
     
+    // Gérer les erreurs de manière cohérente
+    private function handleError($message, $redirect = 'my-bookings') {
+        $_SESSION['error'] = $message;
+        header("Location: index.php?page=$redirect");
+        exit();
+    }
+    
     // Créer un avis
     public function create() {
         $this->authGuard();
         
-        if(!isset($_GET['booking_id']) || !isset($_GET['recipient_id'])) {
-            header("Location: index.php?page=my-bookings");
-            exit();
-        }
-        
-        $booking_id = $_GET['booking_id'];
-        $recipient_id = $_GET['recipient_id'];
-        
-        // Vérifier que l'utilisateur peut laisser un avis
-        $this->review->booking_id = $booking_id;
-        $this->review->author_id = $_SESSION['user_id'];
-        
-        if(!$this->review->canReview()) {
-            $_SESSION['error'] = "Vous ne pouvez pas laisser un avis pour cette réservation";
-            header("Location: index.php?page=my-bookings");
-            exit();
-        }
-        
-        // Traitement du formulaire
-        if($_SERVER["REQUEST_METHOD"] == "POST") {
-            $errors = [];
+        // Déterminer si on crée un avis à partir d'une réservation ou d'un trajet
+        if (isset($_GET['booking_id']) || isset($_POST['booking_id'])) {
+            $booking_id = $_GET['booking_id'] ?? $_POST['booking_id'];
+            $recipient_id = $_GET['recipient_id'] ?? $_POST['recipient_id'];
             
-            if(!isset($_POST['rating']) || !is_numeric($_POST['rating']) || $_POST['rating'] < 1 || $_POST['rating'] > 5) {
-                $errors[] = "La note doit être entre 1 et 5";
-            }
-            
-            // Si pas d'erreurs, créer l'avis
-            if(empty($errors)) {
-                $this->review->booking_id = $booking_id;
-                $this->review->author_id = $_SESSION['user_id'];
-                $this->review->recipient_id = $recipient_id;
-                $this->review->rating = $_POST['rating'];
-                $this->review->comment = $_POST['comment'] ?? null;
-                
-                if($this->review->create()) {
-                    $_SESSION['success'] = "Avis créé avec succès";
-                    header("Location: index.php?page=my-bookings");
-                    exit();
+            // Vérifier que l'utilisateur peut laisser un avis
+            if (!$this->reviewService->canUserReview($_SESSION['user_id'], $booking_id)) {
+                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                    echo json_encode(['success' => false, 'message' => "Vous ne pouvez pas laisser un avis pour cette réservation"]);
+                    exit;
                 } else {
-                    $errors[] = "Une erreur est survenue. Veuillez réessayer.";
+                    $this->handleError("Vous ne pouvez pas laisser un avis pour cette réservation");
                 }
             }
-        }
-        
-        // Obtenir les détails de la réservation
-        $this->booking->id = $booking_id;
-        $booking_details = $this->booking->readOne();
-        
-        // Afficher la vue
-        include "views/reviews/create.php";
-    }
-
-    // Laisser un avis
-    public function leaveReview() {
-        $this->authGuard();
-        
-        if (!isset($_GET['ride_id'])) {
-            header("Location: index.php?page=my-bookings");
-            exit();
-        }
-        
-        $ride_id = $_GET['ride_id'];
-        $this->review->ride_id = $ride_id;
-        $this->review->author_id = $_SESSION['user_id'];
-        
-        // Vérifier que l'utilisateur peut laisser un avis
-        if (!$this->review->canReview()) {
-            $_SESSION['error'] = "Vous ne pouvez pas laisser un avis pour ce trajet";
-            header("Location: index.php?page=my-bookings");
-            exit();
+            
+            // Obtenir les détails de la réservation
+            $booking = new Booking($this->db);
+            $booking->id = $booking_id;
+            $booking_details = $booking->readOne();
+        } elseif (isset($_GET['ride_id'])) {
+            $ride_id = $_GET['ride_id'];
+            
+            // Vérifier que l'utilisateur peut laisser un avis
+            if (!$this->reviewService->canUserReview($_SESSION['user_id'], $ride_id)) {
+                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                    echo json_encode(['success' => false, 'message' => "Vous ne pouvez pas laisser un avis pour ce trajet"]);
+                    exit;
+                } else {
+                    $this->handleError("Vous ne pouvez pas laisser un avis pour ce trajet");
+                }
+            }
+        } else {
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                echo json_encode(['success' => false, 'message' => "Paramètres manquants pour créer un avis"]);
+                exit;
+            } else {
+                $this->handleError("Paramètres manquants pour créer un avis");
+            }
         }
         
         // Traitement du formulaire
@@ -106,17 +81,33 @@ class ReviewController {
             
             // Si pas d'erreurs, créer l'avis
             if (empty($errors)) {
-                $this->review->recipient_id = $_POST['recipient_id'] ?? null;
-                $this->review->rating = $_POST['rating'];
-                $this->review->comment = $_POST['comment'] ?? null;
+                $recipient_id = isset($recipient_id) ? $recipient_id : ($_POST['recipient_id'] ?? null);
+                $booking_id = isset($booking_id) ? $booking_id : null;
                 
-                if ($this->review->create()) {
-                    $_SESSION['success'] = "Avis créé avec succès";
-                    header("Location: index.php?page=my-bookings");
-                    exit();
+                if ($this->reviewService->createReview(
+                    $_SESSION['user_id'],
+                    $recipient_id,
+                    $_POST['rating'],
+                    $_POST['comment'] ?? null,
+                    $booking_id
+                )) {
+                    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                        echo json_encode(['success' => true, 'message' => "Avis créé avec succès"]);
+                        exit;
+                    } else {
+                        $_SESSION['success'] = "Avis créé avec succès";
+                        header("Location: index.php?page=my-bookings");
+                        exit();
+                    }
                 } else {
                     $errors[] = "Une erreur est survenue. Veuillez réessayer.";
                 }
+            }
+            
+            // Si erreurs et requête AJAX
+            if (!empty($errors) && isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                echo json_encode(['success' => false, 'message' => implode(", ", $errors)]);
+                exit;
             }
         }
         
@@ -129,11 +120,13 @@ class ReviewController {
         $this->authGuard();
         
         // Récupérer les avis reçus par l'utilisateur
-        $this->review->recipient_id = $_SESSION['user_id'];
-        $reviews = $this->review->readUserReviews();
+        $reviews = $this->reviewService->getUserReviews($_SESSION['user_id']);
         
         // Récupérer la note moyenne
-        $rating_data = $this->review->getUserRating();
+        $rating_data = $this->reviewService->getUserRating($_SESSION['user_id']);
+        
+        // Récupérer les informations de l'utilisateur
+        $user = $this->reviewService->getUserInfo($_SESSION['user_id']);
         
         // Afficher la vue
         include "views/reviews/my_reviews.php";

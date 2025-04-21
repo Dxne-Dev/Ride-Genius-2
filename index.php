@@ -19,6 +19,9 @@ require_once "models/Subscription.php";
 require_once 'models/Message.php';
 require_once 'models/Conversation.php';
 
+// Inclure les services
+require_once "services/ReviewService.php";
+
 // Inclure les contrôleurs
 require_once "controllers/AuthController.php";
 require_once "controllers/UserController.php";
@@ -126,7 +129,7 @@ switch($page) {
             $booking->updateStatus();
         }
         // Pages d'avis
-        if ($page == 'create-review') {
+        else if ($page == 'create-review' || $page == 'leave-review') {
             $review = new ReviewController();
             $review->create();
         } else if ($page == 'my-reviews') {
