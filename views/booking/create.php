@@ -8,7 +8,7 @@
                     <p class="card-text">Prix de base :</p>
                 </div>
                 <div class="col-5 text-end">
-                    <p class="card-text"><?php echo number_format($ride['price'], 2); ?>€</p>
+                    <p class="card-text"><?php echo number_format($ride['price'], 2); ?> FCFA</p>
                 </div>
             </div>
             <?php if ($driverSubscription === 'eco'): ?>
@@ -17,7 +17,7 @@
                         <p class="card-text text-danger">Commission :</p>
                     </div>
                     <div class="col-5 text-end">
-                        <p class="card-text text-danger"><?php echo number_format($commission['amount'], 2); ?>€ (<?php echo $commission['rate']; ?>%)</p>
+                        <p class="card-text text-danger"><?php echo number_format($commission['amount'], 2); ?> FCFA (<?php echo $commission['rate']; ?>%)</p>
                     </div>
                 </div>
                 <div class="row">
@@ -25,7 +25,7 @@
                         <p class="card-text">Prix total :</p>
                     </div>
                     <div class="col-5 text-end">
-                        <p class="card-text fw-bold"><?php echo number_format($ride['price'], 2); ?>€</p>
+                        <p class="card-text fw-bold"><?php echo number_format($ride['price'], 2); ?> FCFA</p>
                     </div>
                 </div>
                 <small class="text-muted">
@@ -37,7 +37,7 @@
                         <p class="card-text text-info">Commission :</p>
                     </div>
                     <div class="col-5 text-end">
-                        <p class="card-text text-info"><?php echo number_format($commission['amount'], 2); ?>€ (<?php echo $commission['rate']; ?>%)</p>
+                        <p class="card-text text-info"><?php echo number_format($commission['amount'], 2); ?> FCFA (<?php echo $commission['rate']; ?>%)</p>
                     </div>
                 </div>
                 <div class="row">
@@ -45,7 +45,7 @@
                         <p class="card-text">Prix total :</p>
                     </div>
                     <div class="col-5 text-end">
-                        <p class="card-text fw-bold"><?php echo number_format($totalPrice, 2); ?>€</p>
+                        <p class="card-text fw-bold"><?php echo number_format($totalPrice, 2); ?> FCFA</p>
                     </div>
                 </div>
                 <small class="text-muted">
@@ -57,7 +57,7 @@
                         <p class="card-text text-success">Prix total :</p>
                     </div>
                     <div class="col-5 text-end">
-                        <p class="card-text text-success fw-bold"><?php echo number_format($ride['price'], 2); ?>€ (sans commission)</p>
+                        <p class="card-text text-success fw-bold"><?php echo number_format($ride['price'], 2); ?> FCFA (sans commission)</p>
                     </div>
                 </div>
                 <small class="text-muted">
@@ -75,7 +75,7 @@
                     <p class="card-text">Solde disponible :</p>
                 </div>
                 <div class="col-5 text-end">
-                    <p class="card-text"><?php echo number_format($passengerBalance, 2); ?>€</p>
+                    <p class="card-text"><?php echo number_format($passengerBalance, 2); ?> FCFA</p>
                 </div>
             </div>
             <?php if ($passengerBalance < $totalPrice): ?>

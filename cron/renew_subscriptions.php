@@ -70,7 +70,7 @@ foreach ($subscriptionsToRenew as $sub) {
         $message .= "Nouvelle période : du " . date('d/m/Y', strtotime($newSubscriptionData['start_date'])) . 
                    " au " . date('d/m/Y', strtotime($newSubscriptionData['end_date'])) . "\n";
         if ($sub['plan_type'] !== 'eco') {
-            $message .= "Montant débité : " . number_format($sub['price'], 2) . " €\n";
+            $message .= "Montant débité : " . number_format($sub['price'], 2) . " FCFA\n";
         }
         $message .= "\nCordialement,\nL'équipe RideGenius";
         

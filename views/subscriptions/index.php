@@ -79,7 +79,7 @@ $plans = [
                     <h3><?php echo $plan['name']; ?></h3>
                 </div>
                 <div class="card-body">
-                    <h4 class="card-title text-center mb-4"><?php echo number_format($plan['price'], 2); ?> €/mois</h4>
+                    <h4 class="card-title text-center mb-4"><?php echo number_format($plan['price'], 2); ?> FCFA/mois</h4>
                     <ul class="list-unstyled">
                         <?php foreach ($plan['features'] as $feature): ?>
                             <li class="mb-2"><i class="fas fa-check text-success me-2"></i><?php echo $feature; ?></li>
@@ -111,7 +111,7 @@ $plans = [
 
 <script>
 function subscribe(planType, price) {
-    if (!confirm(`Êtes-vous sûr de vouloir souscrire au plan ${planType} pour ${price}€ par mois ?`)) {
+    if (!confirm(`Êtes-vous sûr de vouloir souscrire au plan ${planType} pour ${price} FCFA par mois ?`)) {
         return;
     }
 

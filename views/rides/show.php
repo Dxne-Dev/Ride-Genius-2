@@ -9,7 +9,7 @@
                     <h1 class="card-title h3 mb-4">
                         <div class="d-flex align-items-center justify-content-between">
                             <span><?php echo htmlspecialchars($ride->departure); ?> → <?php echo htmlspecialchars($ride->destination); ?></span>
-                            <span class="badge bg-primary fs-5"><?php echo htmlspecialchars($totalPrice); ?> €</span>
+                            <span class="badge bg-primary fs-5"><?php echo htmlspecialchars($totalPrice); ?> FCFA</span>
                         </div>
                     </h1>
                     
@@ -205,7 +205,7 @@
                         </div>
                         <div class="col-5 text-end">
                             <p class="mb-1">
-                                <?php echo number_format($totalPrice, 2); ?> €
+                                <?php echo number_format($totalPrice, 2); ?> FCFA
                             </p>
                         </div>
                     </div>
@@ -232,7 +232,7 @@
                             </div>
                             <div class="col-5 text-end">
                                 <p class="mb-1">
-                                    <?php echo number_format($commission['amount'], 2); ?> € (<?php echo $commission['rate']; ?>%)
+                                    <?php echo number_format($commission['amount'], 2); ?> FCFA (<?php echo $commission['rate']; ?>%)
                                 </p>
                             </div>
                         </div>

@@ -49,7 +49,7 @@ class BookingTest {
 
         // Vérifier le solde initial du passager
         $initialBalance = $this->walletModel->getBalance($data['passenger_id']);
-        echo "Solde initial du passager: " . $initialBalance . "€<br>";
+        echo "Solde initial du passager: " . $initialBalance . " FCFA<br>";
 
         // Créer la réservation
         $result = $this->bookingController->createBooking($data);
@@ -57,11 +57,11 @@ class BookingTest {
         if ($result['success']) {
             echo "✅ Réservation créée avec succès<br>";
             echo "ID de la réservation: " . $result['booking_id'] . "<br>";
-            echo "Commission: " . $result['commission']['amount'] . "€ (taux: " . ($result['commission']['rate'] * 100) . "%)<br>";
+            echo "Commission: " . $result['commission']['amount'] . " FCFA (taux: " . ($result['commission']['rate'] * 100) . "%)<br>";
             
             // Vérifier le nouveau solde du passager
             $newBalance = $this->walletModel->getBalance($data['passenger_id']);
-            echo "Nouveau solde du passager: " . $newBalance . "€<br>";
+            echo "Nouveau solde du passager: " . $newBalance . " FCFA<br>";
         } else {
             echo "❌ Erreur lors de la création de la réservation: " . $result['message'] . "<br>";
         }
@@ -82,7 +82,7 @@ class BookingTest {
 
         // Vérifier le solde initial du passager
         $initialBalance = $this->walletModel->getBalance($data['passenger_id']);
-        echo "Solde initial du passager: " . $initialBalance . "€<br>";
+        echo "Solde initial du passager: " . $initialBalance . " FCFA<br>";
 
         // Créer la réservation
         $result = $this->bookingController->createBooking($data);
@@ -90,11 +90,11 @@ class BookingTest {
         if ($result['success']) {
             echo "✅ Réservation créée avec succès<br>";
             echo "ID de la réservation: " . $result['booking_id'] . "<br>";
-            echo "Commission: " . $result['commission']['amount'] . "€ (taux: " . ($result['commission']['rate'] * 100) . "%)<br>";
+            echo "Commission: " . $result['commission']['amount'] . " FCFA (taux: " . ($result['commission']['rate'] * 100) . "%)<br>";
             
             // Vérifier le nouveau solde du passager
             $newBalance = $this->walletModel->getBalance($data['passenger_id']);
-            echo "Nouveau solde du passager: " . $newBalance . "€<br>";
+            echo "Nouveau solde du passager: " . $newBalance . " FCFA<br>";
         } else {
             echo "❌ Erreur lors de la création de la réservation: " . $result['message'] . "<br>";
         }
@@ -109,7 +109,7 @@ class BookingTest {
 
         // Vérifier le solde initial du passager
         $initialBalance = $this->walletModel->getBalance($userId);
-        echo "Solde initial du passager: " . $initialBalance . "€<br>";
+        echo "Solde initial du passager: " . $initialBalance . " FCFA<br>";
 
         // Annuler la réservation
         $result = $this->bookingController->cancelBooking($bookingId, $userId);
@@ -119,7 +119,7 @@ class BookingTest {
             
             // Vérifier le nouveau solde du passager
             $newBalance = $this->walletModel->getBalance($userId);
-            echo "Nouveau solde du passager: " . $newBalance . "€<br>";
+            echo "Nouveau solde du passager: " . $newBalance . " FCFA<br>";
         } else {
             echo "❌ Erreur lors de l'annulation de la réservation: " . $result['message'] . "<br>";
         }
@@ -139,7 +139,7 @@ class BookingTest {
             
             // Récupérer les détails de la transaction
             $transaction = $this->bookingController->transactionModel->getTransactionByBooking($bookingId);
-            echo "Montant transféré au conducteur: " . $transaction['amount'] . "€<br>";
+            echo "Montant transféré au conducteur: " . $transaction['amount'] . " FCFA<br>";
         } else {
             echo "❌ Erreur lors de la complétion de la réservation: " . $result['message'] . "<br>";
         }

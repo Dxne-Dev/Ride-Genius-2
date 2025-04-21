@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
         seatsInput.addEventListener('input', function() {
             const seats = parseInt(this.value) || 0;
             const total = (seats * pricePerSeat).toFixed(2);
-            totalPriceElement.textContent = `${total} €`;
+            totalPriceElement.textContent = `${total} FCFA`;
         });
     }
 });

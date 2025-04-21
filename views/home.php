@@ -78,7 +78,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                             <h3 class="text-primary">
                                 <?php
                                 $balance = $wallet->getBalance($_SESSION['user_id']);
-                                echo number_format($balance, 2) . ' €';
+                                echo number_format($balance, 2) . ' FCFA';
                                 ?>
                             </h3>
                             <p class="text-muted">Total des commissions</p>
@@ -96,7 +96,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                                 <?php
                                 $commission = new Commission($db);
                                 $todayCommissions = $commission->getTodayTotal();
-                                echo number_format($todayCommissions, 2) . ' €';
+                                echo number_format($todayCommissions, 2) . ' FCFA';
                                 ?>
                             </h3>
                             <p class="text-muted">Gains aujourd'hui</p>
@@ -271,7 +271,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                         <div class="card-body">
                             <div class="d-flex justify-content-between mb-2">
                                 <h5 class="card-title"><?php echo htmlspecialchars($row['departure']); ?> → <?php echo htmlspecialchars($row['destination']); ?></h5>
-                                <span class="badge bg-primary" style="min-width: 70px; text-align: right;"><?php echo number_format($displayPrice, 2); ?> €</span>
+                                <span class="badge bg-primary" style="min-width: 70px; text-align: right;"><?php echo number_format($displayPrice, 2); ?> FCFA</span>
                             </div>
                             <p class="card-text text-muted mb-1">
                                 <i class="fas fa-calendar-alt me-2"></i><?php echo $departure_time->format('d/m/Y'); ?>
@@ -435,7 +435,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                             <div class="card-body text-center p-4">
                                 <h3 class="card-title">ProTrajet</h3>
                                 <div class="pricing mb-4">
-                                    <h4 class="text-primary mb-0">9.99 €</h4>
+                                    <h4 class="text-primary mb-0">9.99 FCFA</h4>
                                     <p class="text-muted">Commission réduite à 10%</p>
                                 </div>
                                 <ul class="list-unstyled mb-4">
@@ -457,7 +457,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                             <div class="card-body text-center p-4">
                                 <h3 class="card-title">BusinessTrajet</h3>
                                 <div class="pricing mb-4">
-                                    <h4 class="text-primary mb-0">29.99 €</h4>
+                                    <h4 class="text-primary mb-0">29.99 FCFA</h4>
                                     <p class="text-muted">Commission minimale de 5%</p>
                                 </div>
                                 <ul class="list-unstyled mb-4">
@@ -505,7 +505,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
             data: {
                 labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
                 datasets: [{
-                    label: 'Commissions (€)',
+                    label: 'Commissions (FCFA)',
                     data: [
                         <?php
                         $commission = new Commission($db);

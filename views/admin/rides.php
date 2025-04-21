@@ -36,7 +36,7 @@
                                     ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($row['available_seats']); ?></td>
-                                <td><?php echo htmlspecialchars($row['price']); ?> €</td>
+                                <td><?php echo htmlspecialchars($row['price']); ?> FCFA</td>
                                 <td>
                                     <?php 
                                         switch($row['status']) {

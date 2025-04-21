@@ -1,0 +1,248 @@
+@startuml "Diagramme de Classe"
+
+' Définition des classes principales
+class User {
+  -id: int
+  -firstName: string
+  -lastName: string
+  -email: string
+  -password: string
+  -phone: string
+  -role: enum
+  -subscriptionType: string
+  -verified: boolean
+  +register()
+  +login()
+  +updateProfile()
+  +verifyEmail()
+}
+
+class Ride {
+  -id: int
+  -driverId: int
+  -departure: string
+  -destination: string
+  -departureTime: datetime
+  -availableSeats: int
+  -price: decimal
+  -description: string
+  -status: enum
+  +createRide()
+  +updateRide()
+  +cancelRide()
+  +searchRides()
+}
+
+class Booking {
+  -id: int
+  -rideId: int
+  -passengerId: int
+  -seats: int
+  -totalPrice: decimal
+  -status: enum
+  -driverId: int
+  +createBooking()
+  +cancelBooking()
+  +acceptBooking()
+  +rejectBooking()
+}
+
+class Wallet {
+  -id: int
+  -userId: int
+  -balance: decimal
+  +addFunds()
+  +withdrawFunds()
+  +getBalance()
+}
+
+class Message {
+  -id: int
+  -senderId: int
+  -receiverId: int
+  -content: string
+  -type: string
+  -isRead: boolean
+  +sendMessage()
+  +markAsRead()
+  +deleteMessage()
+}
+
+class Review {
+  -id: int
+  -bookingId: int
+  -authorId: int
+  -recipientId: int
+  -rating: int
+  -comment: string
+  +createReview()
+  +updateReview()
+  +deleteReview()
+}
+
+' Relations entre les classes
+User "1" -- "*" Ride : crée >
+User "1" -- "*" Booking : effectue >
+User "1" -- "1" Wallet : possède >
+User "1" -- "*" Message : envoie >
+User "1" -- "*" Review : donne >
+Ride "1" -- "*" Booking : contient >
+Booking "1" -- "1" Review : génère >
+
+@enduml
+
+@startuml "Diagramme de Cas d'Utilisation"
+
+' Acteurs
+actor "Passager" as Passenger
+actor "Conducteur" as Driver
+actor "Administrateur" as Admin
+
+' Cas d'utilisation pour les Passagers
+rectangle "Fonctionnalités Passager" {
+  usecase "S'inscrire" as UC1
+  usecase "Se connecter" as UC2
+  usecase "Rechercher un trajet" as UC3
+  usecase "Réserver un trajet" as UC4
+  usecase "Payer" as UC5
+  usecase "Évaluer un conducteur" as UC6
+  usecase "Messagerie" as UC7
+  usecase "Gérer son profil" as UC8
+}
+
+' Cas d'utilisation pour les Conducteurs
+rectangle "Fonctionnalités Conducteur" {
+  usecase "Créer un trajet" as UC9
+  usecase "Gérer les réservations" as UC10
+  usecase "Voir son historique" as UC11
+  usecase "Gérer son portefeuille" as UC12
+}
+
+' Cas d'utilisation pour l'Administrateur
+rectangle "Fonctionnalités Admin" {
+  usecase "Gérer les utilisateurs" as UC13
+  usecase "Gérer les trajets" as UC14
+  usecase "Gérer les paiements" as UC15
+  usecase "Voir les statistiques" as UC16
+}
+
+' Relations
+Passenger --> UC1
+Passenger --> UC2
+Passenger --> UC3
+Passenger --> UC4
+Passenger --> UC5
+Passenger --> UC6
+Passenger --> UC7
+Passenger --> UC8
+
+Driver --> UC9
+Driver --> UC10
+Driver --> UC11
+Driver --> UC12
+
+Admin --> UC13
+Admin --> UC14
+Admin --> UC15
+Admin --> UC16
+
+@enduml
+
+@startuml "Diagramme de Séquence - Réservation de Trajet"
+
+actor "Passager" as Passenger
+participant "Système" as System
+participant "Base de données" as DB
+participant "Conducteur" as Driver
+participant "Service de paiement" as Payment
+
+' Séquence de réservation
+Passenger -> System: Recherche un trajet
+System -> DB: Requête des trajets disponibles
+DB --> System: Liste des trajets
+System --> Passenger: Affiche les résultats
+
+Passenger -> System: Sélectionne un trajet
+System -> DB: Vérifie disponibilité
+DB --> System: Confirme disponibilité
+
+Passenger -> System: Demande réservation
+System -> Driver: Notifie le conducteur
+Driver --> System: Accepte la réservation
+
+System -> Payment: Initie le paiement
+Payment --> System: Confirme le paiement
+System -> DB: Enregistre la réservation
+DB --> System: Confirme l'enregistrement
+System --> Passenger: Confirme la réservation
+
+@enduml
+
+@startuml "Diagramme de Séquence - Création de Trajet"
+
+actor "Conducteur" as Driver
+participant "Système" as System
+participant "Base de données" as DB
+participant "Service de géolocalisation" as Geo
+
+' Séquence de création de trajet
+Driver -> System: Accède au formulaire de création
+System -> Geo: Demande validation des lieux
+Geo --> System: Confirme les lieux
+
+Driver -> System: Remplit les détails du trajet
+System -> DB: Vérifie les contraintes
+DB --> System: Valide les contraintes
+
+Driver -> System: Confirme la création
+System -> DB: Enregistre le trajet
+DB --> System: Confirme l'enregistrement
+System --> Driver: Affiche confirmation
+
+@enduml
+
+@startuml "Diagramme de Séquence - Système de Messagerie"
+
+actor "Utilisateur A" as UserA
+participant "Système" as System
+participant "Base de données" as DB
+actor "Utilisateur B" as UserB
+
+' Séquence d'envoi de message
+UserA -> System: Envoie un message
+System -> DB: Vérifie les permissions
+DB --> System: Confirme les permissions
+
+System -> DB: Enregistre le message
+DB --> System: Confirme l'enregistrement
+
+System -> UserB: Notifie le destinataire
+UserB -> System: Marque comme lu
+System -> DB: Met à jour le statut
+DB --> System: Confirme la mise à jour
+
+@enduml
+
+@startuml "Diagramme de Séquence - Système de Paiement"
+
+actor "Utilisateur" as User
+participant "Système" as System
+participant "Portefeuille" as Wallet
+participant "Service de paiement" as Payment
+participant "Base de données" as DB
+
+' Séquence de paiement
+User -> System: Initie un paiement
+System -> Wallet: Vérifie le solde
+Wallet --> System: Retourne le solde
+
+System -> Payment: Traite le paiement
+Payment --> System: Confirme le paiement
+
+System -> DB: Enregistre la transaction
+DB --> System: Confirme l'enregistrement
+System -> Wallet: Met à jour le solde
+Wallet --> System: Confirme la mise à jour
+System --> User: Confirme le paiement
+
+@enduml 

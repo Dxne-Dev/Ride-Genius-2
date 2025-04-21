@@ -155,7 +155,7 @@ class RideController {
         $wallet = new Wallet($this->db);
         $balance = $wallet->getBalance($_SESSION['user_id']);
         if ($balance < 200) {
-            $errors[] = "Vous devez avoir un minimum de 200€ dans votre wallet pour créer un trajet";
+            $errors[] = "Vous devez avoir un minimum de 200 FCFA dans votre wallet pour créer un trajet";
         }
         
         // Si des erreurs sont présentes, les afficher et empêcher la création

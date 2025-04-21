@@ -61,7 +61,7 @@
                                             <div class="text-muted small"><?php echo $departure_time->format('H:i'); ?></div>
                                         </td>
                                         <td><?php echo htmlspecialchars($row['available_seats']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['price']); ?> €</td>
+                                        <td><?php echo htmlspecialchars($row['price']); ?> FCFA</td>
                                         <td><span class="badge bg-success">Actif</span></td>
                                         <td>
                                             <div class="btn-group" role="group">
@@ -126,7 +126,7 @@
                                             <div class="text-muted small"><?php echo $departure_time->format('H:i'); ?></div>
                                         </td>
                                         <td><?php echo htmlspecialchars($row['available_seats']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['price']); ?> €</td>
+                                        <td><?php echo htmlspecialchars($row['price']); ?> FCFA</td>
                                         <td>
                                             <?php if($row['status'] === 'completed'): ?>
                                                 <span class="badge bg-info">Terminé</span>
@@ -192,7 +192,7 @@
                                             <div class="text-muted small"><?php echo $departure_time->format('H:i'); ?></div>
                                         </td>
                                         <td><?php echo htmlspecialchars($row['available_seats']); ?></td>
-                                        <td><?php echo htmlspecialchars($row['price']); ?> €</td>
+                                        <td><?php echo htmlspecialchars($row['price']); ?> FCFA</td>
                                         <td><span class="badge bg-danger">Annulé</span></td>
                                         <td>
                                             <a href="index.php?page=ride-details&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir détails">

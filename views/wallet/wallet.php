@@ -44,7 +44,7 @@ include __DIR__ . '/../../includes/navbar.php';
             <div class="row align-items-center">
                 <div class="col-md-6 mb-3 mb-md-0">
                     <h2>Solde actuel</h2>
-                    <div class="balance-amount"><?php echo number_format($balance, 2); ?> €</div>
+                    <div class="balance-amount"><?php echo number_format($balance, 2); ?> FCFA</div>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <div class="d-grid d-md-inline-block gap-2">
@@ -70,23 +70,23 @@ include __DIR__ . '/../../includes/navbar.php';
                         <div class="col-md-6 mb-3">
                             <h6>Simuler un dépôt</h6>
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="10">10€</button>
-                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="50">50€</button>
-                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="100">100€</button>
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="10">10 FCFA</button>
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="50">50 FCFA</button>
+                                <button type="button" class="btn btn-outline-success quick-deposit" data-amount="100">100 FCFA</button>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <h6>Simuler un retrait</h6>
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="10">10€</button>
-                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="50">50€</button>
-                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="100">100€</button>
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="10">10 FCFA</button>
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="50">50 FCFA</button>
+                                <button type="button" class="btn btn-outline-danger quick-withdraw" data-amount="100">100 FCFA</button>
                             </div>
                         </div>
                     </div>
                     <div class="mt-3">
                         <button type="button" class="btn btn-outline-secondary" id="resetBalance">
-                            <i class="fas fa-redo me-1"></i> Réinitialiser le solde à 100€
+                            <i class="fas fa-redo me-1"></i> Réinitialiser le solde à 100 FCFA
                         </button>
                     </div>
                 </div>
@@ -99,13 +99,13 @@ include __DIR__ . '/../../includes/navbar.php';
                 <div class="col-md-6 mb-3 mb-md-0">
                     <div class="stat-card income h-100">
                         <h3>Revenus du mois</h3>
-                        <div class="stat-amount"><?php echo number_format($monthlyIncome, 2); ?> €</div>
+                        <div class="stat-amount"><?php echo number_format($monthlyIncome, 2); ?> FCFA</div>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="stat-card expenses h-100">
                         <h3>Dépenses du mois</h3>
-                        <div class="stat-amount"><?php echo number_format($monthlyExpenses, 2); ?> €</div>
+                        <div class="stat-amount"><?php echo number_format($monthlyExpenses, 2); ?> FCFA</div>
                     </div>
                 </div>
             </div>
@@ -156,14 +156,14 @@ include __DIR__ . '/../../includes/navbar.php';
                                     <td><?php echo htmlspecialchars($transaction['description']); ?></td>
                                     <td class="<?php echo $transaction['type'] === 'credit' ? 'credit' : 'debit'; ?>">
                                         <?php echo $transaction['type'] === 'credit' ? '+' : '-'; ?>
-                                        <?php echo number_format($transaction['amount'], 2); ?>€
+                                        <?php echo number_format($transaction['amount'], 2); ?> FCFA
                                     </td>
                                     <td>
                                         <span class="badge <?php echo $transaction['type'] === 'credit' ? 'bg-success' : 'bg-danger'; ?>">
                                             <?php echo $transaction['type'] === 'credit' ? 'Dépôt' : 'Retrait'; ?>
                                         </span>
                                     </td>
-                                    <td class="d-none d-md-table-cell"><?php echo number_format($transaction['balance_after'], 2); ?>€</td>
+                                    <td class="d-none d-md-table-cell"><?php echo number_format($transaction['balance_after'], 2); ?> FCFA</td>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
@@ -173,8 +173,8 @@ include __DIR__ . '/../../includes/navbar.php';
             
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div class="transaction-summary">
-                    <span class="me-3">Total dépôts: <strong class="text-success"><?php echo number_format($monthlyIncome, 2); ?>€</strong></span>
-                    <span>Total retraits: <strong class="text-danger"><?php echo number_format($monthlyExpenses, 2); ?>€</strong></span>
+                    <span class="me-3">Total dépôts: <strong class="text-success"><?php echo number_format($monthlyIncome, 2); ?> FCFA</strong></span>
+                    <span>Total retraits: <strong class="text-danger"><?php echo number_format($monthlyExpenses, 2); ?> FCFA</strong></span>
                 </div>
                 <div class="transaction-pagination">
                     <button class="btn btn-sm btn-outline-primary" id="loadMoreTransactions">
@@ -197,7 +197,7 @@ include __DIR__ . '/../../includes/navbar.php';
             <div class="modal-body">
                 <form id="addFundsForm">
                     <div class="mb-3">
-                        <label for="amount" class="form-label">Montant (€)</label>
+                        <label for="amount" class="form-label">Montant (FCFA)</label>
                         <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01" required>
                     </div>
                     <div class="mb-3">
@@ -233,9 +233,9 @@ include __DIR__ . '/../../includes/navbar.php';
             <div class="modal-body">
                 <form id="withdrawFundsForm">
                     <div class="mb-3">
-                        <label for="withdrawAmount" class="form-label">Montant (€)</label>
+                        <label for="withdrawAmount" class="form-label">Montant (FCFA)</label>
                         <input type="number" class="form-control" id="withdrawAmount" name="amount" min="1" step="0.01" max="<?php echo $balance; ?>" required>
-                        <small class="text-muted">Solde disponible: <?php echo number_format($balance, 2); ?> €</small>
+                        <small class="text-muted">Solde disponible: <?php echo number_format($balance, 2); ?> FCFA</small>
                     </div>
                     <div class="mb-3">
                         <label for="withdrawMethod" class="form-label">Méthode de retrait</label>
@@ -368,8 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mettre à jour le résumé
         if (transactionSummary) {
             transactionSummary.innerHTML = `
-                <span class="me-3">Total dépôts: <strong class="text-success">${totalCredit.toFixed(2)}€</strong></span>
-                <span>Total retraits: <strong class="text-danger">${totalDebit.toFixed(2)}€</strong></span>
+                <span class="me-3">Total dépôts: <strong class="text-success">${totalCredit.toFixed(2)} FCFA</strong></span>
+                <span>Total retraits: <strong class="text-danger">${totalDebit.toFixed(2)} FCFA</strong></span>
             `;
         }
         

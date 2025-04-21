@@ -96,7 +96,7 @@ $db = $database->getConnection();
                                                 <div class="text-muted small"><?= htmlspecialchars($time) ?></div>
                                             </td>
                                             <td><?= htmlspecialchars($row['seats']) ?></td>
-                                            <td><?= htmlspecialchars($total_price) ?> €</td>
+                                            <td><?= htmlspecialchars($total_price) ?> FCFA</td>
                                             <td>
                                                 <?php if ($row['status'] === 'pending'): ?>
                                                     <span class="badge bg-warning">En attente</span>
@@ -200,7 +200,7 @@ $db = $database->getConnection();
                                                 <div class="text-muted small"><?= htmlspecialchars($time) ?></div>
                                             </td>
                                             <td><?= htmlspecialchars($row['seats']) ?></td>
-                                            <td><?= htmlspecialchars($total_price) ?> €</td>
+                                            <td><?= htmlspecialchars($total_price) ?> FCFA</td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="index.php?page=booking-details&id=<?= htmlspecialchars($row['id']) ?>" class="btn btn-sm btn-outline-primary" title="Voir détails">

@@ -21,21 +21,21 @@
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Conducteur:</strong> <?php echo htmlspecialchars($ride->driver_name); ?></p>
                                 <?php if ($driverSubscription === 'eco'): ?>
-                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> €</p>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> FCFA</p>
                                     <small class="text-muted">
                                         (Le conducteur paiera une commission de <?php echo $commission['rate']; ?>%)
                                     </small>
                                 <?php elseif ($driverSubscription === 'pro'): ?>
-                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> €</p>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> FCFA</p>
                                     <small class="text-muted">
-                                        (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                        (Prix de base: <?php echo number_format($ride->price, 2); ?> FCFA + Commission: <?php echo number_format($commission['amount'], 2); ?> FCFA)
                                     </small>
                                 <?php else: // business ?>
-                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> €</p>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> FCFA</p>
                                     <small class="text-muted">
-                                        (Prix de base: <?php echo number_format($ride->price, 2); ?>€ + Commission: <?php echo number_format($commission['amount'], 2); ?>€)
+                                        (Prix de base: <?php echo number_format($ride->price, 2); ?> FCFA + Commission: <?php echo number_format($commission['amount'], 2); ?> FCFA)
                                         <br>
-                                        Le conducteur recevra <?php echo number_format($ride->price + ($commission['amount'] * 0.01), 2); ?>€ (incluant 1% de la commission)
+                                        Le conducteur recevra <?php echo number_format($ride->price + ($commission['amount'] * 0.01), 2); ?> FCFA (incluant 1% de la commission)
                                     </small>
                                 <?php endif; ?>
                                 <p class="mb-0"><strong>Places disponibles:</strong> <?php echo htmlspecialchars($ride->available_seats); ?></p>
@@ -65,7 +65,7 @@
                                     <h6 class="card-title">Récapitulatif de la réservation</h6>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Prix par place</span>
-                                        <span><?php echo number_format($totalPrice, 2); ?> €</span>
+                                        <span><?php echo number_format($totalPrice, 2); ?> FCFA</span>
                                     </div>
                                     <div class="d-flex justify-content-between mb-2">
                                         <span>Nombre de places</span>
@@ -74,7 +74,7 @@
                                     <hr>
                                     <div class="d-flex justify-content-between fw-bold">
                                         <span>Total</span>
-                                        <span id="totalPrice"><?php echo number_format($totalPrice, 2); ?> €</span>
+                                        <span id="totalPrice"><?php echo number_format($totalPrice, 2); ?> FCFA</span>
                                     </div>
                                 </div>
                             </div>
@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const seats = parseInt(this.value) || 0;
         seatsCount.textContent = seats;
         const total = (seats * pricePerSeat).toFixed(2);
-        totalPrice.textContent = total + ' €';
+        totalPrice.textContent = total + ' FCFA';
     });
 });
 </script>

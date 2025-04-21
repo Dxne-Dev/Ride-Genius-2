@@ -83,7 +83,7 @@ include __DIR__ . '/../../includes/navbar.php';
                             <p>Date de début: <?php echo date('d/m/Y', strtotime($activeSubscription['start_date'])); ?></p>
                             <p>Date de fin: <?php echo date('d/m/Y', strtotime($activeSubscription['end_date'])); ?></p>
                             <p>Renouvellement automatique: <?php echo $activeSubscription['auto_renew'] ? 'Activé' : 'Désactivé'; ?></p>
-                            <p>Prix: <span class="price-display"><?php echo number_format($activeSubscription['price'], 2); ?> €</span></p>
+                            <p>Prix: <span class="price-display"><?php echo number_format($activeSubscription['price'], 2); ?> FCFA</span></p>
                             
                             <div class="mt-3">
                                 <button class="btn btn-danger" id="cancelSubscriptionBtn">
@@ -135,7 +135,7 @@ include __DIR__ . '/../../includes/navbar.php';
                                         <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">LE PLUS CHOISI</span>
                                         <h4 class="card-title">🚙 ProTrajet</h4>
                                         <p class="card-text">Pour les navetteurs réguliers</p>
-                                        <h5 class="card-price">7,90 € <small class="text-muted">/mois</small></h5>
+                                        <h5 class="card-price">7,90 FCFA <small class="text-muted">/mois</small></h5>
                                         <ul class="list-unstyled subscription-details">
                                             <li><i class="fas fa-check-circle me-2 text-success"></i>Trajets illimités</li>
                                             <li><i class="fas fa-check-circle me-2 text-success"></i>Recherche avancée</li>
@@ -156,7 +156,7 @@ include __DIR__ . '/../../includes/navbar.php';
                                         <span class="badge bg-warning text-dark position-absolute top-0 end-0 m-2">ÉCONOMISEZ 20%</span>
                                         <h4 class="card-title">🚘 BusinessTrajet</h4>
                                         <p class="card-text">Pour les professionnels de la route</p>
-                                        <h5 class="card-price">14,90 € <small class="text-muted">/mois</small></h5>
+                                        <h5 class="card-price">14,90 FCFA <small class="text-muted">/mois</small></h5>
                                         <ul class="list-unstyled subscription-details">
                                             <li><i class="fas fa-check-circle me-2 text-success"></i>Tous les avantages ProTrajet</li>
                                             <li><i class="fas fa-check-circle me-2 text-success"></i>Choix des passagers</li>
@@ -210,7 +210,7 @@ include __DIR__ . '/../../includes/navbar.php';
                                                     <span class="badge bg-secondary">Expiré</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?php echo number_format($sub['price'], 2); ?> €</td>
+                                            <td><?php echo number_format($sub['price'], 2); ?> FCFA</td>
                                         </tr>
                                     <?php
                                         endforeach;

@@ -41,7 +41,7 @@
 
         // Fonction pour formater les montants
         function formatAmount(amount) {
-            return parseFloat(amount).toFixed(2) + '€';
+            return parseFloat(amount).toFixed(2) + 'FCFA';
         }
 
         // Fonction pour mettre à jour le solde
@@ -300,7 +300,7 @@
 
         // Gestionnaire pour réinitialiser le solde (mode sandbox)
         $('#resetBalance').on('click', function() {
-            if (confirm('Êtes-vous sûr de vouloir réinitialiser votre solde à 100€ ?')) {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser votre solde à 100FCFA ?')) {
                 $.ajax({
                     url: 'api/wallet_api.php',
                     method: 'POST',
@@ -311,7 +311,7 @@
                     dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                     success: function(response) {
                         if (response.success) {
-                            showNotification('Solde réinitialisé à 100€ avec succès', 'success');
+                            showNotification('Solde réinitialisé à 100FCFA avec succès', 'success');
                             updateBalance();
                             loadTransactions();
                         } else {

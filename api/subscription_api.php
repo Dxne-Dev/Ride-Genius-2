@@ -89,7 +89,7 @@ switch ($action) {
         if ($balance < 200) {
             echo json_encode([
                 'success' => false,
-                'message' => 'Vous devez avoir au moins 200€ dans votre wallet pour souscrire à un abonnement',
+                'message' => 'Vous devez avoir au moins 200 FCFA dans votre wallet pour souscrire à un abonnement',
                 'redirect' => 'wallet'
             ]);
             break;

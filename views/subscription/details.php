@@ -39,7 +39,7 @@ include 'includes/navbar.php';
 
                     <div class="mt-4">
                         <h4>Solde de votre portefeuille</h4>
-                        <p class="h2 text-primary"><?php echo number_format($walletBalance, 2); ?> €</p>
+                        <p class="h2 text-primary"><?php echo number_format($walletBalance, 2); ?> FCFA</p>
                         <a href="index.php?page=wallet" class="btn btn-outline-primary">Recharger mon portefeuille</a>
                     </div>
                 </div>

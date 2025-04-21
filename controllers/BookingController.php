@@ -68,7 +68,7 @@ class BookingController {
         // Vérifier le solde minimum du wallet
         $balance = $this->walletModel->getBalance($_SESSION['user_id']);
         if ($balance < 200) {
-            $_SESSION['error'] = "Vous devez avoir un minimum de 200€ dans votre wallet pour effectuer une réservation";
+            $_SESSION['error'] = "Vous devez avoir un minimum de 200 FCFA dans votre wallet pour effectuer une réservation";
             header("Location: index.php?page=wallet");
             exit();
         }
@@ -104,7 +104,7 @@ class BookingController {
             // Vérifier si le solde est suffisant pour le prix total
             $totalPriceForSeats = $totalPrice * $_POST['seats'];
             if ($balance < $totalPriceForSeats) {
-                $errors[] = "Solde insuffisant. Il vous manque " . ($totalPriceForSeats - $balance) . "€ pour effectuer cette réservation. Veuillez recharger votre wallet.";
+                $errors[] = "Solde insuffisant. Il vous manque " . ($totalPriceForSeats - $balance) . " FCFA pour effectuer cette réservation. Veuillez recharger votre wallet.";
             }
 
             // Si pas d'erreurs, créer la réservation
@@ -117,7 +117,7 @@ class BookingController {
                     $userBalance = $this->walletModel->getBalance($_SESSION['user_id']);
                     if ($userBalance < $totalPriceForSeats) {
                         error_log("BookingController: Solde insuffisant - User: " . $_SESSION['user_id'] . " - Balance: $userBalance - Required: $totalPriceForSeats");
-                        throw new Exception("Solde insuffisant. Votre solde actuel est de $userBalance€, le prix total est de $totalPriceForSeats€.");
+                        throw new Exception("Solde insuffisant. Votre solde actuel est de $userBalance FCFA, le prix total est de $totalPriceForSeats FCFA.");
                     }
                     
                     // Stocker l'ID utilisateur en variable locale pour éviter les problèmes de session

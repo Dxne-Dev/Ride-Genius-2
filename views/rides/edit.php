@@ -43,7 +43,7 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label for="price" class="form-label">Prix par place (€)</label>
+                            <label for="price" class="form-label">Prix par place (FCFA)</label>
                             <input type="number" class="form-control" id="price" name="price" value="<?php echo htmlspecialchars($ride->price); ?>" min="1" step="0.01" required>
                         </div>
                         

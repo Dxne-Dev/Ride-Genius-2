@@ -88,7 +88,7 @@ if (!isset($_SESSION['user_id'])) {
                                 </td>
                                 <td><?php echo date('d/m/Y H:i', strtotime($booking['departure_time'])); ?></td>
                                 <td><?php echo $booking['seats']; ?></td>
-                                <td><?php echo $booking['price']; ?>€</td>
+                                <td><?php echo $booking['price']; ?> FCFA</td>
                                 <td>
                                     <span class="badge bg-<?php 
                                         switch($booking['status']) {
@@ -183,7 +183,7 @@ if (!isset($_SESSION['user_id'])) {
                                     <p><strong>Destination:</strong> ${booking.destination}</p>
                                     <p><strong>Date:</strong> ${new Date(booking.departure_time).toLocaleString()}</p>
                                     <p><strong>Places réservées:</strong> ${booking.seats}</p>
-                                    <p><strong>Prix total:</strong> ${booking.price}€</p>
+                                    <p><strong>Prix total:</strong> ${booking.price} FCFA</p>
                                 </div>
                                 <div class="col-md-6">
                                     <h6>Informations du passager</h6>
