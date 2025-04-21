@@ -64,6 +64,13 @@ class BookingController {
             header("Location: index.php?page=ride-details&id=$ride_id");
             exit();
         }
+        
+        // Vérifier que l'utilisateur n'est pas un conducteur
+        if($_SESSION['user_role'] === 'conducteur') {
+            $_SESSION['error'] = "Les conducteurs ne peuvent pas réserver des trajets d'autres conducteurs";
+            header("Location: index.php?page=rides");
+            exit();
+        }
 
         // Vérifier le solde minimum du wallet
         $balance = $this->walletModel->getBalance($_SESSION['user_id']);

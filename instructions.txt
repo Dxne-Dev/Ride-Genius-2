@@ -1,3 +1,11 @@
-✅ À faire maintenant
+✅ À faire maintenant lorsque l'utilisateur connecté est un conducteur 
 
-image.png
+retirer toute possibilité de faire des reservations sur des trajets d'autres conducteur
+adapter la navbar en retirant le menu "Mes reservations" 
+recuperer et ajouter dans la liste du menu conducteur , l'option "Avis reçu"
+
+
+ne creer pas d'erreurs 
+ne créer pas ce qui existe dejà 
+verife bien les codes pour ne pas creer des erreurs bizarres 
+

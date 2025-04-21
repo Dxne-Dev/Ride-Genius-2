@@ -128,10 +128,11 @@ class ReviewController {
     public function myReviews() {
         $this->authGuard();
         
+        // Récupérer les avis reçus par l'utilisateur
         $this->review->recipient_id = $_SESSION['user_id'];
-        $stmt = $this->review->readUserReviews();
+        $reviews = $this->review->readUserReviews();
         
-        // Obtenir la note moyenne
+        // Récupérer la note moyenne
         $rating_data = $this->review->getUserRating();
         
         // Afficher la vue

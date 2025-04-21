@@ -62,8 +62,8 @@ $reviews = $reviewModel->readUserReviews();
             
             <hr>
             
-            <?php if($stmt->rowCount() > 0): ?>
-                <?php while($row = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+            <?php if($reviews->rowCount() > 0): ?>
+                <?php while($row = $reviews->fetch(PDO::FETCH_ASSOC)): ?>
                     <div class="mb-4">
                         <div class="d-flex justify-content-between mb-2">
                             <div>
