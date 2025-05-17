@@ -30,6 +30,9 @@ include __DIR__ . '/../../includes/navbar.php';
 
 <div class="container mt-5 pt-5">
     <div class="wallet-container">
+        <!-- Conteneur pour le widget KKiaPay -->
+        <div id="kkiapay-widget"></div>
+        
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-wallet me-2"></i>Mon Wallet</h1>
             <div class="sandbox-badge">
@@ -198,25 +201,15 @@ include __DIR__ . '/../../includes/navbar.php';
                 <form id="addFundsForm">
                     <div class="mb-3">
                         <label for="amount" class="form-label">Montant (FCFA)</label>
-                        <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01" required>
+                        <input type="number" class="form-control" id="amount" min="1" step="1" placeholder="Entrez le montant" required>
+                        <small class="text-muted">Solde disponible: <?php echo number_format($balance, 2); ?> FCFA</small>
                     </div>
-                    <div class="mb-3">
-                        <label for="paymentMethod" class="form-label">Méthode de paiement</label>
-                        <select class="form-select" id="paymentMethod" name="paymentMethod" required>
-                            <option value="card">Carte bancaire</option>
-                            <option value="paypal">PayPal</option>
-                            <option value="bank_transfer">Virement bancaire</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description (optionnel)</label>
-                        <input type="text" class="form-control" id="description" name="description">
+                    <div class="d-grid">
+                        <button type="button" id="submitAddFunds" class="btn btn-success">
+                            <i class="fas fa-check-circle me-1"></i> Payer maintenant
+                        </button>
                     </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" id="submitAddFunds">Ajouter</button>
             </div>
         </div>
     </div>
@@ -234,25 +227,15 @@ include __DIR__ . '/../../includes/navbar.php';
                 <form id="withdrawFundsForm">
                     <div class="mb-3">
                         <label for="withdrawAmount" class="form-label">Montant (FCFA)</label>
-                        <input type="number" class="form-control" id="withdrawAmount" name="amount" min="1" step="0.01" max="<?php echo $balance; ?>" required>
+                        <input type="number" class="form-control" id="withdrawAmount" min="1" max="<?php echo $balance; ?>" step="1" placeholder="Entrez le montant" required>
                         <small class="text-muted">Solde disponible: <?php echo number_format($balance, 2); ?> FCFA</small>
                     </div>
-                    <div class="mb-3">
-                        <label for="withdrawMethod" class="form-label">Méthode de retrait</label>
-                        <select class="form-select" id="withdrawMethod" name="withdrawMethod" required>
-                            <option value="bank_transfer">Virement bancaire</option>
-                            <option value="paypal">PayPal</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="withdrawDescription" class="form-label">Description (optionnel)</label>
-                        <input type="text" class="form-control" id="withdrawDescription" name="description">
+                    <div class="d-grid">
+                        <button type="button" id="submitWithdrawFunds" class="btn btn-danger">
+                            <i class="fas fa-check-circle me-1"></i> Retirer maintenant
+                        </button>
                     </div>
                 </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" id="submitWithdrawFunds">Retirer</button>
             </div>
         </div>
     </div>
@@ -270,6 +253,9 @@ include __DIR__ . '/../../includes/navbar.php';
         </div>
     </div>
 </div>
+
+<!-- Script KKiaPay - URL avec clé directement incluse -->
+<script src="https://cdn.kkiapay.me/k.js?key=0d7e7790fe7711efb8fad7f6612bd409" defer></script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
 

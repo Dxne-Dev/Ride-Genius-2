@@ -161,14 +161,35 @@ class Wallet {
     }
 
     /**
-     * Ajoute des fonds au wallet de l'utilisateur
+     * Vérifie si une transaction KKiaPay est valide
+     * @param string $transactionId ID de la transaction KKiaPay
+     * @return bool True si la transaction est valide
+     */
+    private function verifyKkiaPayTransaction($transactionId) {
+        // Charger la configuration KKiaPay
+        $config = require __DIR__ . '/../config/kkiapay.php';
+        
+        // Créer une instance de l'API KKiaPay
+        $kkiaPay = new KkiaPayAPI($config['private_key'], $config['sandbox']);
+        
+        // Vérifier la transaction
+        return $kkiaPay->isTransactionValid($transactionId);
+    }
+
+    /**
+     * Ajoute des fonds au wallet de l'utilisateur via KKiaPay
      * @param int $userId ID de l'utilisateur
      * @param float $amount Montant à ajouter
-     * @param string $description Description de la transaction
+     * @param string $transactionId ID de la transaction KKiaPay
      * @return bool Succès de l'opération
      */
-    public function addFunds($userId, $amount, $description = '') {
+    public function addFundsViaKkiaPay($userId, $amount, $transactionId) {
         try {
+            // Vérifier la transaction KKiaPay
+            if (!$this->verifyKkiaPayTransaction($transactionId)) {
+                throw new Exception('Transaction KKiaPay invalide');
+            }
+
             $this->db->beginTransaction();
 
             // Mettre à jour le solde
@@ -181,27 +202,33 @@ class Wallet {
 
             // Enregistrer la transaction
             $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) 
-                      VALUES (?, 'credit', ?, ?, ?, 'system', NOW())";
+                      VALUES (?, 'credit', ?, ?, ?, 'kkiapay', NOW())";
             $stmt = $this->db->prepare($query);
-            $stmt->execute([$userId, $amount, $description, $newBalance]);
+            $stmt->execute([$userId, $amount, "Dépôt via KKiaPay - Transaction ID: $transactionId", $newBalance]);
 
             $this->db->commit();
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Erreur lors de l'ajout de fonds via KKiaPay: " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Retire des fonds du wallet de l'utilisateur
+     * Retire des fonds du wallet de l'utilisateur via KKiaPay
      * @param int $userId ID de l'utilisateur
      * @param float $amount Montant à retirer
-     * @param string $description Description de la transaction
+     * @param string $transactionId ID de la transaction KKiaPay
      * @return bool Succès de l'opération
      */
-    public function withdrawFunds($userId, $amount, $description = '') {
+    public function withdrawFundsViaKkiaPay($userId, $amount, $transactionId) {
         try {
+            // Vérifier la transaction KKiaPay
+            if (!$this->verifyKkiaPayTransaction($transactionId)) {
+                throw new Exception('Transaction KKiaPay invalide');
+            }
+
             $this->db->beginTransaction();
 
             // Vérifier le solde
@@ -220,14 +247,15 @@ class Wallet {
 
             // Enregistrer la transaction
             $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) 
-                      VALUES (?, 'debit', ?, ?, ?, 'system', NOW())";
+                      VALUES (?, 'debit', ?, ?, ?, 'kkiapay', NOW())";
             $stmt = $this->db->prepare($query);
-            $stmt->execute([$userId, $amount, $description, $newBalance]);
+            $stmt->execute([$userId, $amount, "Retrait via KKiaPay - Transaction ID: $transactionId", $newBalance]);
 
             $this->db->commit();
             return true;
         } catch (Exception $e) {
             $this->db->rollBack();
+            error_log("Erreur lors du retrait de fonds via KKiaPay: " . $e->getMessage());
             return false;
         }
     }
