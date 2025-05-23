@@ -21,9 +21,9 @@
                             <div class="col-md-6">
                                 <p class="mb-1"><strong>Conducteur:</strong> <?php echo htmlspecialchars($ride->driver_name); ?></p>
                                 <?php if ($driverSubscription === 'eco'): ?>
-                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($ride->price, 2); ?> FCFA</p>
+                                    <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> FCFA</p>
                                     <small class="text-muted">
-                                        (Le conducteur paiera une commission de <?php echo $commission['rate']; ?>%)
+                                        (Prix de base: <?php echo number_format($ride->price, 2); ?> FCFA + Commission: <?php echo number_format($commission['amount'], 2); ?> FCFA)
                                     </small>
                                 <?php elseif ($driverSubscription === 'pro'): ?>
                                     <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> FCFA</p>

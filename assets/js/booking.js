@@ -36,17 +36,18 @@ class BookingManager {
 
         switch(driverSubscription) {
             case 'eco':
-                commissionRate = 10;
-                commission = ridePrice * 0.10;
+                commissionRate = 15;
+                commission = ridePrice * 0.15;
                 break;
             case 'pro':
-                commissionRate = 2;
-                commission = ridePrice * 0.02;
+                commissionRate = 10;
+                commission = ridePrice * 0.10;
                 totalPrice = ridePrice + commission;
                 break;
             case 'business':
-                commissionRate = 0;
-                commission = 0;
+                commissionRate = 5;
+                commission = ridePrice * 0.05;
+                totalPrice = ridePrice + commission;
                 break;
         }
 

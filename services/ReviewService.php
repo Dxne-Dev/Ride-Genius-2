@@ -15,9 +15,30 @@ class ReviewService {
     }
     
     public function canUserReview($userId, $rideId) {
-        $this->review->ride_id = $rideId;
-        $this->review->author_id = $userId;
-        return $this->review->canReview();
+        // Vérifier si l'utilisateur est un passager
+        $user = new User($this->db);
+        $user->id = $userId;
+        $user->readOne();
+        
+        if ($user->type !== 'passenger') {
+            return false; // Seuls les passagers peuvent laisser des avis
+        }
+
+        // Vérifier si l'utilisateur a réservé ce trajet et s'il a payé
+        $query = "SELECT b.*, p.status as payment_status 
+                  FROM bookings b 
+                  LEFT JOIN payments p ON b.id = p.booking_id 
+                  WHERE b.ride_id = :ride_id 
+                  AND b.passenger_id = :user_id 
+                  AND b.status = 'completed'
+                  AND p.status = 'completed'";
+        
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(":ride_id", $rideId);
+        $stmt->bindParam(":user_id", $userId);
+        $stmt->execute();
+        
+        return $stmt->rowCount() > 0;
     }
     
     public function createReview($userId, $recipientId, $rating, $comment, $bookingId = null) {

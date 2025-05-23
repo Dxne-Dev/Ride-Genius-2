@@ -82,11 +82,25 @@ class Review {
     
     // Vérifier si un utilisateur peut laisser un avis
     public function canReview() {
-        // Vérifier si l'utilisateur a réservé ce trajet
-        $query = "SELECT b.* FROM bookings b 
+        // Vérifier si l'utilisateur est un passager
+        $user_query = "SELECT type FROM users WHERE id = ?";
+        $user_stmt = $this->conn->prepare($user_query);
+        $user_stmt->bindParam(1, $this->author_id);
+        $user_stmt->execute();
+        $user = $user_stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($user['type'] !== 'passenger') {
+            return false; // Seuls les passagers peuvent laisser des avis
+        }
+
+        // Vérifier si l'utilisateur a réservé ce trajet et s'il a payé
+        $query = "SELECT b.*, p.status as payment_status 
+                  FROM bookings b 
+                  LEFT JOIN payments p ON b.id = p.booking_id 
                   WHERE b.ride_id = :ride_id 
                   AND b.passenger_id = :author_id 
-                  AND b.status = 'completed'";
+                  AND b.status = 'completed'
+                  AND p.status = 'completed'";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(":ride_id", $this->ride_id);
         $stmt->bindParam(":author_id", $this->author_id);
@@ -99,6 +113,7 @@ class Review {
         // Récupérer l'ID de la réservation
         $booking = $stmt->fetch(PDO::FETCH_ASSOC);
         $this->booking_id = $booking['id'];
+        $this->recipient_id = $booking['driver_id'];
         
         // Vérifier si un avis existe déjà pour cette réservation
         $check_query = "SELECT * FROM " . $this->table . " WHERE booking_id = ? AND author_id = ?";
