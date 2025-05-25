@@ -18,6 +18,12 @@
     <link href="assets/css/wallet.css" rel="stylesheet">
     <!-- Destinations CSS -->
     <link href="assets/css/destinations.css" rel="stylesheet">
+    <!-- Navbar Fix CSS - pour éviter que le contenu soit masqué par la navbar fixe -->
+    <link href="assets/css/navbar-fix.css" rel="stylesheet">
+    <!-- Navbar Alignment CSS - pour améliorer l'alignement et l'aspect visuel de la navbar -->
+    <link href="assets/css/navbar-alignment.css" rel="stylesheet">
+    <!-- Role Specific CSS - pour les styles spécifiques aux rôles d'utilisateurs -->
+    <link href="assets/css/role-specific.css" rel="stylesheet">
     
     <!-- Theme detection script - runs early to prevent flash -->
     <script>
@@ -33,4 +39,4 @@
         });
     </script>
 </head>
-<body>
+<body <?php echo isset($_SESSION['user_role']) ? 'data-role="' . htmlspecialchars($_SESSION['user_role']) . '"' : ''; ?>>

@@ -36,6 +36,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="index.php?page=wallet"><i class="fas fa-wallet me-1"></i>Wallet</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?page=messages"><i class="fas fa-envelope me-1"></i>Messages</a>
+                    </li>
                 <?php else: ?>
                     <!-- Navbar pour les utilisateurs normaux -->
                     <li class="nav-item">
@@ -137,7 +140,7 @@
 <script src="assets/js/theme.js"></script>
 
 <?php if(isset($_SESSION['error'])): ?>
-    <div class="container mt-3">
+    <div class="container" style="margin-top: 80px;">
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <?php
                 echo $_SESSION['error'];
@@ -149,7 +152,7 @@
 <?php endif; ?>
 
 <?php if(isset($_SESSION['success'])): ?>
-    <div class="container mt-3">
+    <div class="container" style="margin-top: 80px;">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <?php
                 echo $_SESSION['success'];

@@ -115,9 +115,15 @@ class ReviewController {
         include "views/reviews/create.php";
     }
     
-    // Mes avis reçus
+    // Mes avis
     public function myReviews() {
         $this->authGuard();
+        
+        // Rediriger les passagers vers la page d'avis conducteur
+        if(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'passager') {
+            $this->driverReviews();
+            return;
+        }
         
         // Récupérer les avis reçus par l'utilisateur
         $reviews = $this->reviewService->getUserReviews($_SESSION['user_id']);
@@ -130,5 +136,19 @@ class ReviewController {
         
         // Afficher la vue
         include "views/reviews/my_reviews.php";
+    }
+    
+    // Avis conducteur (pour les passagers)
+    public function driverReviews() {
+        $this->authGuard();
+        
+        // Vérifier que l'utilisateur est un passager
+        if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'passager') {
+            $_SESSION['error'] = "Cette page est réservée aux passagers";
+            header("Location: index.php?page=profile");
+            exit();
+        }
+        
+        include "views/reviews/driver_reviews.php";
     }
 }

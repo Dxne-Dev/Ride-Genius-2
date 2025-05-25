@@ -32,11 +32,13 @@
                                     </small>
                                 <?php else: // business ?>
                                     <p class="mb-1"><strong>Prix par place:</strong> <?php echo number_format($totalPrice, 2); ?> FCFA</p>
-                                    <small class="text-muted">
+                                    <?php if($_SESSION['user_role'] === 'conducteur' || $_SESSION['user_role'] === 'admin'): ?>
+                                    <small class="text-muted commission-info">
                                         (Prix de base: <?php echo number_format($ride->price, 2); ?> FCFA + Commission: <?php echo number_format($commission['amount'], 2); ?> FCFA)
                                         <br>
                                         Le conducteur recevra <?php echo number_format($ride->price + ($commission['amount'] * 0.01), 2); ?> FCFA (incluant 1% de la commission)
                                     </small>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                 <p class="mb-0"><strong>Places disponibles:</strong> <?php echo htmlspecialchars($ride->available_seats); ?></p>
                             </div>

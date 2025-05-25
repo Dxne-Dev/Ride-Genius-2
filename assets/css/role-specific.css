@@ -1,0 +1,34 @@
+/* 
+ * Styles spécifiques aux rôles d'utilisateurs
+ * Ce fichier contient des styles qui s'appliquent différemment selon le rôle de l'utilisateur
+ */
+
+/* Pour les passagers, masquer les informations de commission */
+body[data-role="passager"] .commission-info {
+    display: none !important;
+}
+
+/* Pour les conducteurs et admins, afficher les informations de commission */
+body[data-role="conducteur"] .commission-info,
+body[data-role="admin"] .commission-info {
+    display: block !important;
+}
+
+/* Styles pour la page d'avis des conducteurs (pour les passagers) */
+.driver-review-card {
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.driver-review-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.driver-review-btn {
+    transition: all 0.3s ease;
+}
+
+.driver-review-btn:hover {
+    transform: scale(1.05);
+}

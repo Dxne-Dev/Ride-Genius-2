@@ -50,6 +50,12 @@
 <!-- Subscription JS (utilise jQuery) -->
 <script src="assets/js/subscription.js" defer></script>
 
+<!-- Alerts JS (pour faire disparaître les alertes automatiquement) -->
+<script src="assets/js/alerts.js" defer></script>
+
+<!-- Role Specific JS (pour les fonctionnalités spécifiques aux rôles d'utilisateurs) -->
+<script src="assets/js/role-specific.js" defer></script>
+
 <!-- Theme Toggle JS -->
 <script src="assets/js/theme-toggle.js" defer></script>
 

@@ -1,0 +1,26 @@
+/* 
+ * Styles pour corriger le problème de lisibilité avec la navbar fixe
+ * Ces styles ajoutent un padding-top aux conteneurs principaux pour éviter que le contenu soit masqué par la navbar
+ */
+
+/* Ajouter un padding-top à tous les conteneurs principaux */
+.container.py-5 {
+    padding-top: 80px !important; /* Assez grand pour dépasser la navbar */
+}
+
+/* Styles spécifiques pour les pages d'authentification */
+.auth-container {
+    padding-top: 80px !important;
+}
+
+/* Styles pour les titres de page qui pourraient être masqués */
+.page-title {
+    margin-top: 20px;
+}
+
+/* Ajuster le padding pour les appareils mobiles */
+@media (max-width: 768px) {
+    .container.py-5 {
+        padding-top: 70px !important;
+    }
+}

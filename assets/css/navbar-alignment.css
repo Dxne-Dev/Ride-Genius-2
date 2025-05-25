@@ -1,0 +1,86 @@
+/* 
+ * Styles pour corriger les problèmes d'alignement dans la navbar
+ * Particulièrement pour les utilisateurs avec le rôle de passager
+ */
+
+/* Assurer une largeur cohérente pour tous les éléments de la navbar */
+.navbar-nav .nav-item {
+    display: flex;
+    align-items: center;
+}
+
+/* Alignement des icônes dans la navbar */
+.navbar-nav .nav-link i {
+    width: 18px;
+    text-align: center;
+    margin-right: 0.5rem;
+}
+
+/* Assurer que les menus déroulants s'alignent correctement */
+.navbar-nav .dropdown-menu {
+    margin-top: 0.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* Améliorer l'espacement des éléments de menu */
+.navbar-nav .nav-link {
+    padding: 0.5rem 0.75rem; /* Réduire le padding horizontal */
+    display: flex;
+    align-items: center;
+    white-space: nowrap; /* Empêcher le texte de passer à la ligne */
+}
+
+/* S'assurer que "Trajets disponibles" reste sur une seule ligne */
+.navbar-nav .nav-item a[href="index.php?page=rides"] {
+    white-space: nowrap;
+}
+
+/* Assurer que les menus déroulants ont la même largeur minimale */
+.navbar-nav .dropdown-menu {
+    min-width: 200px;
+}
+
+/* Styles spécifiques pour le menu utilisateur */
+.navbar-nav .dropdown-menu.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+/* Assurer que les éléments de menu ont une hauteur cohérente */
+.navbar-nav .dropdown-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Améliorer l'espacement entre les éléments de la navbar */
+@media (min-width: 992px) {
+    .navbar-nav.mx-auto > li:not(:last-child) {
+        margin-right: 0.25rem; /* Réduire l'espace entre les éléments */
+    }
+    
+    /* Ajuster la taille de la police pour les écrans plus petits */
+    .navbar-nav .nav-link {
+        font-size: 0.95rem;
+    }
+}
+
+/* Correction spécifique pour le rôle passager */
+@media (min-width: 992px) {
+    .navbar-nav .nav-item.dropdown {
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* Optimisation pour les écrans de taille moyenne */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0.5rem; /* Réduire davantage le padding pour les écrans moyens */
+    }
+    
+    .navbar-brand {
+        margin-right: 0.5rem; /* Réduire la marge du logo */
+    }
+}

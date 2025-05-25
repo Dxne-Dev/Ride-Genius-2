@@ -124,7 +124,76 @@
                 </div>
             </div>
             
-            <!-- Avis reçus -->
+            <?php if($user->role === 'passager'): ?>
+            <!-- Avis-conducteur (pour les passagers) -->
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Avis-conducteur</h4>
+                </div>
+                <div class="card-body">
+                    <?php
+                    // Récupérer les avis donnés par ce passager
+                    $reviewsGiven = [];
+                    if(isset($_SESSION['user_id']) && $_SESSION['user_id'] == $user->id) {
+                        require_once 'models/Review.php';
+                        $db = new Database();
+                        $conn = $db->getConnection();
+                        
+                        $stmt = $conn->prepare("SELECT r.*, CONCAT(u.first_name, ' ', u.last_name) as driver_name, 
+                                              r.rating, r.comment, r.created_at
+                                              FROM reviews r 
+                                              JOIN users u ON r.recipient_id = u.id
+                                              WHERE r.author_id = ?
+                                              ORDER BY r.created_at DESC");
+                        $stmt->execute([$user->id]);
+                        $reviewsGiven = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+                    
+                    $count = count($reviewsGiven);
+                    foreach($reviewsGiven as $index => $review) {
+                    ?>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <strong><?php echo htmlspecialchars($review['driver_name']); ?></strong>
+                                    <div class="text-warning">
+                                        <?php 
+                                            for($i = 1; $i <= 5; $i++) {
+                                                if($i <= $review['rating']) {
+                                                    echo '<i class="fas fa-star"></i>';
+                                                } else {
+                                                    echo '<i class="far fa-star"></i>';
+                                                }
+                                            }
+                                        ?>
+                                    </div>
+                                </div>
+                                <div class="text-muted small">
+                                    <?php 
+                                        $date = new DateTime($review['created_at']);
+                                        echo $date->format('d/m/Y');
+                                    ?>
+                                </div>
+                            </div>
+                            <p class="mb-0">
+                                <?php echo $review['comment'] ? htmlspecialchars($review['comment']) : '<span class="text-muted">Aucun commentaire</span>'; ?>
+                            </p>
+                        </div>
+                        <?php if($index < $count - 1): ?>
+                            <hr>
+                        <?php endif; ?>
+                    <?php
+                    }
+                    
+                    if($count === 0) {
+                        echo '<p class="text-center">Vous n\'avez pas encore évalué de conducteurs.</p>';
+                        echo '<div class="text-center mt-3"><a href="index.php?page=driver-reviews" class="btn btn-primary">Évaluer un conducteur</a></div>';
+                    }
+                    ?>
+                </div>
+            </div>
+            <?php else: ?>
+            <!-- Avis reçus (pour les conducteurs et admins) -->
             <div class="card shadow">
                 <div class="card-header bg-white">
                     <h4 class="mb-0">Avis reçus</h4>
@@ -174,6 +243,7 @@
                     ?>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

@@ -91,6 +91,12 @@ switch($page) {
         } else if ($page == 'user-profile') {
             $user = new UserController();
             $user->userProfile();
+        } else if ($page == 'edit-profile') {
+            $user = new UserController();
+            $user->editProfile();
+        } else if ($page == 'change-password') {
+            $user = new UserController();
+            $user->changePassword();
         }
         // Pages de trajets
         if ($page == 'rides' || $page == 'ride-details' || $page == 'create-ride' || $page == 'edit-ride' || $page == 'delete-ride' || $page == 'my-rides' || $page == 'search-rides') {
