@@ -14,31 +14,51 @@ class ReviewService {
         $this->booking = new Booking($db);
     }
     
-    public function canUserReview($userId, $rideId) {
+    public function canUserReview($userId, $bookingId) {
         // Vérifier si l'utilisateur est un passager
         $user = new User($this->db);
         $user->id = $userId;
         $user->readOne();
         
-        if ($user->type !== 'passenger') {
+        if ($user->role !== 'passager') {
             return false; // Seuls les passagers peuvent laisser des avis
         }
 
-        // Vérifier si l'utilisateur a réservé ce trajet et s'il a payé
-        $query = "SELECT b.*, p.status as payment_status 
+        // Vérifier si la réservation existe et est marquée comme terminée
+        $query = "SELECT b.*, b.updated_at as completed_at 
                   FROM bookings b 
-                  LEFT JOIN payments p ON b.id = p.booking_id 
-                  WHERE b.ride_id = :ride_id 
+                  WHERE b.id = :booking_id 
                   AND b.passenger_id = :user_id 
-                  AND b.status = 'completed'
-                  AND p.status = 'completed'";
+                  AND b.status = 'completed'";
         
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(":ride_id", $rideId);
+        $stmt->bindParam(":booking_id", $bookingId);
         $stmt->bindParam(":user_id", $userId);
         $stmt->execute();
         
-        return $stmt->rowCount() > 0;
+        if ($stmt->rowCount() === 0) {
+            return false; // La réservation n'existe pas ou n'est pas terminée
+        }
+        
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Vérifier si la période d'évaluation de 7 jours est dépassée
+        $completedDate = new DateTime($booking['completed_at']);
+        $currentDate = new DateTime();
+        $daysDifference = $currentDate->diff($completedDate)->days;
+        
+        if ($daysDifference > 7) {
+            return false; // La période d'évaluation de 7 jours est dépassée
+        }
+        
+        // Vérifier si l'utilisateur a déjà laissé un avis pour cette réservation
+        $query = "SELECT * FROM reviews WHERE author_id = :user_id AND booking_id = :booking_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(":user_id", $userId);
+        $stmt->bindParam(":booking_id", $bookingId);
+        $stmt->execute();
+        
+        return $stmt->rowCount() === 0; // Retourne true si aucun avis n'a été laissé pour cette réservation
     }
     
     public function createReview($userId, $recipientId, $rating, $comment, $bookingId = null) {

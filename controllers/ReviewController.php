@@ -31,18 +31,57 @@ class ReviewController {
     public function create() {
         $this->authGuard();
         
-        // Déterminer si on crée un avis à partir d'une réservation ou d'un trajet
+        // Vérifier que l'utilisateur est un passager
+        if(!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'passager') {
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                echo json_encode(['success' => false, 'message' => "Seuls les passagers peuvent laisser des avis"]);
+                exit;
+            } else {
+                $this->handleError("Seuls les passagers peuvent laisser des avis", "profile");
+            }
+        }
+        
+        // Déterminer si on crée un avis à partir d'une réservation
         if (isset($_GET['booking_id']) || isset($_POST['booking_id'])) {
             $booking_id = $_GET['booking_id'] ?? $_POST['booking_id'];
             $recipient_id = $_GET['recipient_id'] ?? $_POST['recipient_id'];
             
-            // Vérifier que l'utilisateur peut laisser un avis
+            // Vérifier que la réservation est terminée et que l'utilisateur peut laisser un avis
             if (!$this->reviewService->canUserReview($_SESSION['user_id'], $booking_id)) {
+                // Récupérer les détails de la réservation pour déterminer la raison exacte
+                $booking = new Booking($this->db);
+                $booking->id = $booking_id;
+                $booking_details = $booking->readOne();
+                
+                $errorMessage = "Vous ne pouvez pas laisser un avis pour cette réservation.";
+                
+                if (!$booking_details || $booking_details['status'] !== 'completed') {
+                    $errorMessage .= " Assurez-vous que le conducteur a marqué la réservation comme terminée.";
+                } else {
+                    // Vérifier si la période de 7 jours est dépassée
+                    $completedDate = new DateTime($booking_details['updated_at']);
+                    $currentDate = new DateTime();
+                    $daysDifference = $currentDate->diff($completedDate)->days;
+                    
+                    if ($daysDifference > 7) {
+                        $errorMessage .= " La période d'évaluation de 7 jours après la fin du trajet est dépassée.";
+                    } else {
+                        // Vérifier si l'utilisateur a déjà laissé un avis
+                        $query = "SELECT * FROM reviews WHERE author_id = ? AND booking_id = ?";
+                        $stmt = $this->db->prepare($query);
+                        $stmt->execute([$_SESSION['user_id'], $booking_id]);
+                        
+                        if ($stmt->rowCount() > 0) {
+                            $errorMessage .= " Vous avez déjà laissé un avis pour cette réservation.";
+                        }
+                    }
+                }
+                
                 if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
-                    echo json_encode(['success' => false, 'message' => "Vous ne pouvez pas laisser un avis pour cette réservation"]);
+                    echo json_encode(['success' => false, 'message' => $errorMessage]);
                     exit;
                 } else {
-                    $this->handleError("Vous ne pouvez pas laisser un avis pour cette réservation");
+                    $this->handleError($errorMessage, "driver-reviews");
                 }
             }
             
@@ -50,24 +89,12 @@ class ReviewController {
             $booking = new Booking($this->db);
             $booking->id = $booking_id;
             $booking_details = $booking->readOne();
-        } elseif (isset($_GET['ride_id'])) {
-            $ride_id = $_GET['ride_id'];
-            
-            // Vérifier que l'utilisateur peut laisser un avis
-            if (!$this->reviewService->canUserReview($_SESSION['user_id'], $ride_id)) {
-                if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
-                    echo json_encode(['success' => false, 'message' => "Vous ne pouvez pas laisser un avis pour ce trajet"]);
-                    exit;
-                } else {
-                    $this->handleError("Vous ne pouvez pas laisser un avis pour ce trajet");
-                }
-            }
         } else {
             if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
                 echo json_encode(['success' => false, 'message' => "Paramètres manquants pour créer un avis"]);
                 exit;
             } else {
-                $this->handleError("Paramètres manquants pour créer un avis");
+                $this->handleError("Paramètres manquants pour créer un avis", "driver-reviews");
             }
         }
         

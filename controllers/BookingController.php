@@ -28,6 +28,10 @@ class BookingController {
         $this->walletModel = new Wallet($this->db);
         $this->subscriptionModel = new Subscription($this->db);
         $this->userModel = new User($this->db);
+        
+        // Charger le service de notification
+        require_once 'services/NotificationService.php';
+        $this->notificationService = new NotificationService($this->db);
     }
 
     // Protéger les routes
@@ -418,6 +422,11 @@ class BookingController {
         $this->booking->status = $newStatus;
         if($this->booking->updateStatus()) {
             $_SESSION['success'] = "Statut de la réservation mis à jour avec succès";
+            
+            // Envoyer une notification au passager si la réservation est marquée comme terminée
+            if($newStatus === 'completed') {
+                $this->notificationService->sendCompletionNotification($booking_id);
+            }
         } else {
             $_SESSION['error'] = "Erreur lors de la mise à jour du statut";
         }

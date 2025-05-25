@@ -224,6 +224,80 @@ try {
             $result = $controller->getAttachment($user_id, $attachment_id);
             break;
 
+        case 'uploadFile':
+            // Vérifier si un fichier a été envoyé
+            if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception('Aucun fichier valide n\'a été envoyé', 400);
+            }
+            
+            $conversation_id = $_POST['conversation_id'] ?? null;
+            if (!$conversation_id) {
+                throw new Exception('ID de conversation requis', 400);
+            }
+            
+            // Vérifier si l'utilisateur a accès à cette conversation
+            $stmt = $pdo->prepare("SELECT id FROM conversations WHERE id = ? AND (user1_id = ? OR user2_id = ?)");
+            $stmt->execute([$conversation_id, $user_id, $user_id]);
+            if (!$stmt->fetch()) {
+                throw new Exception('Vous n\'avez pas accès à cette conversation', 403);
+            }
+            
+            // Créer le dossier d'uploads s'il n'existe pas
+            $upload_dir = 'uploads/Attachments/';
+            if (!file_exists($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
+            
+            // Générer un nom de fichier unique
+            $file_name = $_FILES['file']['name'];
+            $file_type = $_FILES['file']['type'];
+            $file_size = $_FILES['file']['size'];
+            $file_tmp = $_FILES['file']['tmp_name'];
+            $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+            
+            // Générer un nom unique pour éviter les collisions
+            $unique_name = uniqid() . '_' . bin2hex(random_bytes(8)) . '.' . $file_ext;
+            $file_path = $upload_dir . $unique_name;
+            
+            // Déplacer le fichier uploadé vers le dossier cible
+            if (move_uploaded_file($file_tmp, $file_path)) {
+                // Déterminer le type de fichier (image, vidéo, autre)
+                $file_category = 'other';
+                if (strpos($file_type, 'image/') === 0) {
+                    $file_category = 'image';
+                } elseif (strpos($file_type, 'video/') === 0) {
+                    $file_category = 'video';
+                }
+                
+                // Enregistrer les informations du fichier dans la base de données
+                try {
+                    $stmt = $pdo->prepare("INSERT INTO attachments (conversation_id, sender_id, file_path, file_name, file_type, file_size, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+                    $stmt->execute([$conversation_id, $user_id, $file_path, $file_name, $file_category, $file_size]);
+                    $attachment_id = $pdo->lastInsertId();
+                    
+                    // Construire l'URL pour accéder au fichier
+                    $file_url = '/message_api.php?action=getAttachment&attachment_id=' . $attachment_id;
+                    
+                    $result = [
+                        'success' => true,
+                        'message' => 'Fichier envoyé avec succès',
+                        'file' => [
+                            'id' => $attachment_id,
+                            'name' => $file_name,
+                            'type' => $file_category,
+                            'size' => $file_size,
+                            'url' => $file_url
+                        ]
+                    ];
+                } catch (PDOException $e) {
+                    error_log("Erreur lors de l'enregistrement du fichier: " . $e->getMessage());
+                    throw new Exception('Erreur lors de l\'enregistrement du fichier', 500);
+                }
+            } else {
+                throw new Exception('Erreur lors du déplacement du fichier', 500);
+            }
+            break;
+
         case 'verifyToken':
             if (!isset($_REQUEST['user_id']) || !isset($_REQUEST['token'])) {
                 throw new Exception("Données d'authentification manquantes", 400);

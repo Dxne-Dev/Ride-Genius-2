@@ -97,6 +97,31 @@
                             </a>
                         </li>
                     <?php endif; ?>
+                    
+                    <!-- Notifications -->
+                    <li class="nav-item dropdown" id="notification-dropdown">
+                        <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell me-1"></i>
+                            <span class="badge rounded-pill bg-danger notification-badge d-none">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end notification-menu" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                            <li>
+                                <h6 class="dropdown-header">Notifications</h6>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <div id="notification-list">
+                                <li class="text-center py-2">
+                                    <span class="text-muted">Chargement des notifications...</span>
+                                </li>
+                            </div>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-center" href="index.php?page=notifications">
+                                    Voir toutes les notifications
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i>

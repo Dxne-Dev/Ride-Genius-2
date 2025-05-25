@@ -402,7 +402,76 @@ class ChatManager {
         // Créer le contenu du message
         const contentElement = document.createElement('div');
         contentElement.className = 'message-content';
-        contentElement.textContent = message.content;
+        
+        // Gérer le type de contenu
+        if (message.type === 'file') {
+            const fileElement = document.createElement('div');
+            fileElement.className = 'file-content';
+            
+            // Créer l'icône du fichier
+            const icon = document.createElement('div');
+            icon.className = 'file-icon';
+            icon.innerHTML = '<i class="fas fa-file"></i>';
+            
+            // Créer le nom du fichier
+            const fileName = document.createElement('div');
+            fileName.className = 'file-name';
+            fileName.textContent = message.file_name || 'Fichier';
+            
+            // Créer le lien de téléchargement
+            const downloadLink = document.createElement('a');
+            downloadLink.href = message.content.replace('/message_api.php?action=getAttachment', '/serve_attachment.php');
+            downloadLink.download = message.file_name;
+            downloadLink.className = 'download-link';
+            downloadLink.textContent = 'Télécharger';
+            
+            // Ajouter les éléments
+            fileElement.appendChild(icon);
+            fileElement.appendChild(fileName);
+            fileElement.appendChild(downloadLink);
+            contentElement.appendChild(fileElement);
+        } else if (message.type === 'image') {
+            console.log('Affichage d\'une image:', message);
+            
+            const imageElement = document.createElement('img');
+            
+            // S'assurer que l'URL est correcte
+            let imageUrl = message.content;
+            console.log('URL originale de l\'image:', imageUrl);
+            
+            // Utiliser serve_attachment.php au lieu de message_api.php
+            if (imageUrl.includes('message_api.php?action=getAttachment')) {
+                imageUrl = imageUrl.replace('/message_api.php?action=getAttachment', '/serve_attachment.php');
+                console.log('URL remplacée:', imageUrl);
+            }
+            
+            // S'assurer que l'URL commence par un slash
+            if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+                imageUrl = '/' + imageUrl;
+                console.log('URL corrigée avec slash:', imageUrl);
+            }
+            
+            imageElement.src = imageUrl;
+            imageElement.alt = message.file_name || 'Image';
+            imageElement.className = 'message-image';
+            
+            // Ajouter un gestionnaire d'événements pour le chargement réussi
+            imageElement.onload = () => {
+                console.log('Image chargée avec succès:', imageUrl);
+            };
+            
+            // Ajouter un gestionnaire d'erreur
+            imageElement.onerror = (e) => {
+                console.error('Erreur de chargement de l\'image:', imageUrl, e);
+                imageElement.src = 'assets/images/broken-image.png';
+                imageElement.alt = 'Image non disponible';
+            };
+            
+            contentElement.appendChild(imageElement);
+            console.log('Élément image ajouté au DOM');
+        } else {
+            contentElement.textContent = message.content;
+        }
         
         // Créer les métadonnées du message
         const metaElement = document.createElement('div');
@@ -536,13 +605,13 @@ class ChatManager {
             let element;
             switch (att.file_type) {
                 case 'image':
-                    element = `<img src="/message_api.php?action=getAttachment&attachment_id=${att.id}" alt="Media">`;
+                    element = `<img src="/serve_attachment.php?attachment_id=${att.id}" alt="Media" onerror="this.src='assets/images/broken-image.png'; this.alt='Image non disponible';">`;
                     break;
                 case 'video':
-                    element = `<video src="/message_api.php?action=getAttachment&attachment_id=${att.id}" controls></video>`;
+                    element = `<video src="/serve_attachment.php?attachment_id=${att.id}" controls></video>`;
                     break;
                 default:
-                    element = `<a href="/message_api.php?action=getAttachment&attachment_id=${att.id}" target="_blank">${att.file_path?.split('/').pop() || 'Fichier'}</a>`;
+                    element = `<a href="/serve_attachment.php?attachment_id=${att.id}" target="_blank">${att.file_path?.split('/').pop() || 'Fichier'}</a>`;
             }
             grid.innerHTML += `<div class="media-item">${element}</div>`;
         });
@@ -629,13 +698,108 @@ class ChatManager {
         this.api.flushMessageQueue();
     }
 
-    handleFileUpload(e) {
+    async handleFileUpload(e) {
         const files = Array.from(e.target.files || []);
-        this.attachedFiles = files.filter(file => file.size <= this.maxFileSize);
-        if (this.attachedFiles.length !== files.length) {
+        if (!files.length) return;
+        
+        // Vérifier la taille des fichiers
+        const validFiles = files.filter(file => file.size <= this.maxFileSize);
+        if (validFiles.length !== files.length) {
             this.showNotification('Certains fichiers dépassent la taille maximale (10 Mo)', 'warning');
         }
-        this.updateAttachmentsPreview();
+        
+        if (!validFiles.length) {
+            this.showNotification('Aucun fichier valide à envoyer', 'error');
+            return;
+        }
+        
+        // Vérifier si une conversation est sélectionnée
+        if (!this.selectedConversationId) {
+            this.showNotification('Veuillez sélectionner une conversation', 'error');
+            return;
+        }
+
+        // Traiter chaque fichier
+        for (const file of validFiles) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('action', 'uploadFile');
+            formData.append('conversation_id', this.selectedConversationId);
+            formData.append('sender_id', this.userId);
+            
+            try {
+                // Afficher un indicateur de chargement
+                this.showNotification(`Envoi de ${file.name} en cours...`, 'info');
+                
+                console.log(`Envoi du fichier ${file.name} (${file.size} octets, type: ${file.type})`);
+                
+                const response = await fetch('/message_api.php', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                console.log('Réponse du serveur:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur serveur: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.showNotification(`${file.name} envoyé avec succès`, 'success');
+                    
+                    // Déterminer le type de fichier
+                    const isImage = file.type.startsWith('image/');
+                    const messageType = isImage ? 'image' : 'file';
+                    
+                    // Créer un message avec le fichier
+                    console.log('Données du fichier reçues du serveur:', data.file);
+                    
+                    // S'assurer que l'URL est complète
+                    let fileUrl = data.file.url;
+                    if (!fileUrl.startsWith('http') && !fileUrl.startsWith('/')) {
+                        fileUrl = '/' + fileUrl;
+                    }
+                    
+                    // Remplacer l'URL pour utiliser serve_attachment.php
+                    fileUrl = fileUrl.replace('/message_api.php?action=getAttachment', '/serve_attachment.php');
+                    console.log('URL finale du fichier:', fileUrl);
+                    
+                    const message = {
+                        id: 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                        type: messageType,
+                        content: fileUrl,
+                        sender_id: this.userId,
+                        file_name: file.name,
+                        file_type: file.type,
+                        file_size: file.size,
+                        created_at: new Date().toISOString(),
+                        is_read: false,
+                        conversation_id: this.selectedConversationId
+                    };
+                    
+                    console.log('Message créé avec le fichier:', message);
+                    
+                    // Envoyer le message via l'API
+                    this.api.emitMessage(message);
+                    
+                    // Afficher le message localement
+                    this.displayMessage(message);
+                } else {
+                    throw new Error(data.message || `Erreur lors de l'envoi de ${file.name}`);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                this.showNotification(`Erreur lors de l'envoi de ${file.name}: ${error.message}`, 'error');
+            }
+        }
+        
+        // Réinitialiser l'input file pour permettre de sélectionner à nouveau le même fichier
+        e.target.value = '';
     }
 
     updateAttachmentsPreview() {

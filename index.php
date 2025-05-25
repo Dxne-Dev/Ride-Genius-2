@@ -28,6 +28,7 @@ require_once "controllers/UserController.php";
 require_once "controllers/RideController.php";
 require_once "controllers/BookingController.php";
 require_once "controllers/ReviewController.php";
+require_once "controllers/NotificationController.php";
 
 // URL de base
 $base_url = '/ride_genius';
@@ -175,6 +176,18 @@ switch($page) {
         if ($page == 'logout') {
             $auth = new AuthController();
             $auth->logout();
+        }
+        
+        // Pages de notifications
+        if ($page == 'notifications') {
+            $notification = new NotificationController();
+            $notification->index();
+        } else if ($page == 'mark-notification-read') {
+            $notification = new NotificationController();
+            $notification->markAsRead();
+        } else if ($page == 'get-unread-notifications') {
+            $notification = new NotificationController();
+            $notification->getUnread();
         }
         break;
     case 'subscription':

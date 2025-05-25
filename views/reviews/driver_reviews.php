@@ -89,6 +89,11 @@ while ($booking = $bookings->fetch(PDO::FETCH_ASSOC)) {
         </div>
     </div>
     
+    <div class="alert alert-info mb-4">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Information :</strong> Vous disposez de 7 jours après la fin d'un trajet pour laisser un avis au conducteur. Passé ce délai, il ne sera plus possible d'évaluer le trajet.
+    </div>
+    
     <?php if (empty($drivers)): ?>
         <div class="card shadow-sm">
             <div class="card-body text-center py-5">
@@ -145,19 +150,43 @@ while ($booking = $bookings->fetch(PDO::FETCH_ASSOC)) {
                                             </p>
                                         </div>
                                         <div class="ms-auto">
-                                            <?php if ($canReviewAnyRide && !$driver['has_review']): ?>
-                                                <button type="button" class="btn btn-primary" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#reviewModal" 
-                                                        data-driver-id="<?php echo $driver['id']; ?>"
-                                                        data-driver-name="<?php echo htmlspecialchars($driver['name']); ?>"
-                                                        data-booking-id="<?php echo $completedRides[array_key_first($completedRides)]['booking_id']; ?>">
-                                                    <i class="fas fa-star me-1"></i> Évaluer
-                                                </button>
+                                            <?php if ($canReviewAnyRide && !$driver['has_review']): 
+                                                // Calculer le temps restant pour évaluer
+                                                $ride = $completedRides[array_key_first($completedRides)];
+                                                $booking = new Booking($db);
+                                                $booking->id = $ride['booking_id'];
+                                                $bookingDetails = $booking->readOne();
+                                                
+                                                $completedDate = new DateTime($bookingDetails['updated_at']);
+                                                $currentDate = new DateTime();
+                                                $daysDifference = $currentDate->diff($completedDate)->days;
+                                                $daysRemaining = 7 - $daysDifference;
+                                            ?>
+                                                <div>
+                                                    <button type="button" class="btn btn-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#reviewModal" 
+                                                            data-driver-id="<?php echo $driver['id']; ?>"
+                                                            data-driver-name="<?php echo htmlspecialchars($driver['name']); ?>"
+                                                            data-booking-id="<?php echo $ride['booking_id']; ?>">
+                                                        <i class="fas fa-star me-1"></i> Évaluer
+                                                    </button>
+                                                    <div class="small text-muted mt-2">
+                                                        <i class="fas fa-hourglass-half me-1"></i> 
+                                                        <?php if ($daysRemaining > 1): ?>
+                                                            Il vous reste <?php echo $daysRemaining; ?> jours pour évaluer
+                                                        <?php elseif ($daysRemaining == 1): ?>
+                                                            Dernier jour pour évaluer !
+                                                        <?php else: ?>
+                                                            Dernières heures pour évaluer !
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
                                             <?php elseif ($driver['has_review']): ?>
                                                 <span class="badge bg-success p-2"><i class="fas fa-check me-1"></i> Déjà évalué</span>
                                             <?php else: ?>
                                                 <span class="badge bg-secondary p-2"><i class="fas fa-clock me-1"></i> En attente de fin de trajet</span>
+                                                <div class="small text-muted mt-1">Le conducteur doit marquer la réservation comme terminée avant que vous puissiez laisser un avis.</div>
                                             <?php endif; ?>
                                         </div>
                                     </div>
