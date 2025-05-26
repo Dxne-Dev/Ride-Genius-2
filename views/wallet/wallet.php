@@ -276,22 +276,82 @@ include __DIR__ . '/../../includes/navbar.php';
 <!-- Inclusion du JS wallet -->
 <script src="/assets/js/wallet.js"></script>
 <script>
-// Initialisation du JS wallet si la fonction existe
-if (typeof initializeWallet === 'function') {
-    initializeWallet(window.jQuery || undefined);
-} else if (window.jQuery) {
-    // Si la fonction n'est pas encore définie, attendre le chargement du script
-    $(function() {
-        if (typeof initializeWallet === 'function') {
-            initializeWallet(window.jQuery);
-        }
-    });
-}
+    // Initialisation du JS wallet si la fonction existe
+    if (typeof initializeWallet === 'function') {
+        initializeWallet(window.jQuery || undefined);
+    } else if (window.jQuery) {
+        // Si la fonction n'est pas encore définie, attendre le chargement du script
+        $(function() {
+            if (typeof initializeWallet === 'function') {
+                initializeWallet(window.jQuery);
+            }
+        });
+    }
+
+    // Fonction pour recharger la page après une opération
+    function reloadPageAfterOperation(delay = 1500) {
+        setTimeout(() => {
+            window.location.reload();
+        }, delay);
+    }
 </script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Éléments du DOM
+    // Gestionnaires pour les boutons d'ajout et de retrait de fonds
+    const submitAddFundsBtn = document.getElementById('submitAddFunds');
+    const submitWithdrawFundsBtn = document.getElementById('submitWithdrawFunds');
+    const quickDepositBtns = document.querySelectorAll('.quick-deposit');
+    const quickWithdrawBtns = document.querySelectorAll('.quick-withdraw');
+    const resetBalanceBtn = document.getElementById('resetBalance');
+    
+    // Ajouter des fonds
+    if (submitAddFundsBtn) {
+        submitAddFundsBtn.addEventListener('click', function() {
+            // Afficher une notification
+            showNotification('Fonds ajoutés avec succès', 'success');
+            // Recharger la page après un délai
+            reloadPageAfterOperation(1500);
+        });
+    }
+    
+    // Retirer des fonds
+    if (submitWithdrawFundsBtn) {
+        submitWithdrawFundsBtn.addEventListener('click', function() {
+            // Afficher une notification
+            showNotification('Fonds retirés avec succès', 'success');
+            // Recharger la page après un délai
+            reloadPageAfterOperation(1500);
+        });
+    }
+    
+    // Dépôt rapide
+    quickDepositBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const amount = this.getAttribute('data-amount');
+            showNotification(`Dépôt de ${amount} FCFA effectué`, 'success');
+            reloadPageAfterOperation(1000);
+        });
+    });
+    
+    // Retrait rapide
+    quickWithdrawBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const amount = this.getAttribute('data-amount');
+            showNotification(`Retrait de ${amount} FCFA effectué`, 'success');
+            reloadPageAfterOperation(1000);
+        });
+    });
+    
+    // Réinitialisation du solde
+    if (resetBalanceBtn) {
+        resetBalanceBtn.addEventListener('click', function() {
+            showNotification('Solde réinitialisé à 100 FCFA', 'success');
+            reloadPageAfterOperation(1000);
+        });
+    }
+    
+    // Éléments du DOM pour les transactions
     const transactionFilter = document.getElementById('transactionFilter');
     const transactionTableBody = document.querySelector('.transactions-table tbody');
     const transactionSummary = document.querySelector('.transaction-summary');
