@@ -165,12 +165,6 @@ switch($page) {
         // Page de wallet
         if ($page == 'wallet') {
             include "views/wallet/wallet.php";
-        } else if ($page == 'wallet-recharge') {
-            $wallet = new WalletController();
-            $wallet->recharge();
-        } else if ($page == 'kkiapay-webhook') {
-            $wallet = new WalletController();
-            $wallet->webhook();
         }
         // Page de déconnexion
         if ($page == 'logout') {
