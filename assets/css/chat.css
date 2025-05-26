@@ -96,12 +96,8 @@
 .chat-header h2 {
     margin: 0;
     font-size: 24px;
-    color: var(--text-dark);
+    color: var(--primary);
     font-weight: 700;
-    background: var(--messenger-gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
     display: inline-block;
 }
 
