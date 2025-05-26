@@ -336,4 +336,69 @@ class Wallet {
             return false;
         }
     }
-} 
+
+    /**
+     * Ajoute des fonds au wallet de l'utilisateur (hors KKiaPay)
+     * @param int $userId ID de l'utilisateur
+     * @param float $amount Montant à ajouter
+     * @param string $description Description de la transaction
+     * @return bool Succès de l'opération
+     */
+    public function addFunds($userId, $amount, $description = 'Dépôt de fonds') {
+        try {
+            $this->db->beginTransaction();
+            $this->ensureWalletExists($userId);
+            // Créditer le solde
+            $query = "UPDATE wallets SET balance = balance + ? WHERE user_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$amount, $userId]);
+            // Récupérer le nouveau solde
+            $newBalance = $this->getBalance($userId);
+            // Enregistrer la transaction
+            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) VALUES (?, 'credit', ?, ?, ?, 'system', NOW())";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$userId, $amount, $description, $newBalance]);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Erreur lors de l'ajout de fonds: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Retire des fonds du wallet de l'utilisateur (hors KKiaPay)
+     * @param int $userId ID de l'utilisateur
+     * @param float $amount Montant à retirer
+     * @param string $description Description de la transaction
+     * @return bool Succès de l'opération
+     */
+    public function withdrawFunds($userId, $amount, $description = 'Retrait de fonds') {
+        try {
+            $this->db->beginTransaction();
+            $this->ensureWalletExists($userId);
+            // Vérifier le solde
+            $currentBalance = $this->getBalance($userId);
+            if ($currentBalance < $amount) {
+                throw new Exception('Solde insuffisant');
+            }
+            // Débiter le solde
+            $query = "UPDATE wallets SET balance = balance - ? WHERE user_id = ?";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$amount, $userId]);
+            // Récupérer le nouveau solde
+            $newBalance = $this->getBalance($userId);
+            // Enregistrer la transaction
+            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) VALUES (?, 'debit', ?, ?, ?, 'system', NOW())";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([$userId, $amount, $description, $newBalance]);
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            error_log("Erreur lors du retrait de fonds: " . $e->getMessage());
+            return false;
+        }
+    }
+}

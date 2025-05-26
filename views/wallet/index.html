@@ -1,18 +1,12 @@
-voilà un exemple fonctionnelle de l'integration kkiapay
-
-<?php
-// Tu peux ajouter ici une logique PHP (connexion BDD, session utilisateur, etc.)
-?>
-<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Paiement KKiaPay via PHP</title>
+  <title>Paiement KKiaPay Dynamique</title>
 </head>
 <body>
   <h2>Paiement KKiaPay</h2>
 
-  <!-- Formulaire de paiement -->
+  <!-- Formulaire pour entrer le montant -->
   <form id="payment-form">
     <label for="amount">Montant à payer (FCFA) :</label>
     <input type="number" id="amount" name="amount" required min="1" />
@@ -30,23 +24,26 @@ voilà un exemple fonctionnelle de l'integration kkiapay
 
       const amount = document.getElementById("amount").value;
 
+      // Lancer le widget KKiaPay
       openKkiapayWidget({
         amount: amount,
-        key: "votre-cle-api-publique-ici",
+        key: "0d7e7790fe7711efb8fad7f6612bd409",
         position: "center",
-        sandbox: true, // Mettre à false en prod
-        theme: "#0095ff",
+        sandbox: true, // Retirer en production
+        theme: "#28a745",
         callback: "https://votre-site.com/success",
-        data: "ID-TRANS-123456"
+        data: "transaction_id_personnalisé"
       });
 
+      // Écouter les événements (optionnel)
       addSuccessListener(response => {
         console.log("Paiement réussi :", response);
-        // Exemple : envoyer l'ID de transaction vers un fichier PHP pour vérification serveur
+        // Vous pouvez rediriger ou traiter les données ici
       });
 
       addFailedListener(error => {
         console.log("Paiement échoué :", error);
+        alert("Échec du paiement, veuillez réessayer.");
       });
     });
   </script>

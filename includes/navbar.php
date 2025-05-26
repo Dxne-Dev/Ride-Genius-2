@@ -123,13 +123,17 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-user me-1"></i>
-                            <?php if(isset($_SESSION['first_name']) && isset($_SESSION['last_name'])): ?>
+                            <?php if(isset($_SESSION['user_name'])): ?>
+                                <span><?php echo htmlspecialchars($_SESSION['user_name']); ?></span>
+                            <?php elseif(isset($_SESSION['first_name']) && isset($_SESSION['last_name'])): ?>
                                 <span><?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?></span>
+                            <?php else: ?>
+                                <span>Mon compte</span>
                             <?php endif; ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li><a class="dropdown-item" href="index.php?page=profile"><i class="fas fa-user-circle me-1"></i>Mon profil</a></li>
                             <?php if(!(isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin')): ?>
                                 <li><a class="dropdown-item" href="index.php?page=edit-profile"><i class="fas fa-user-edit me-1"></i>Modifier profil</a></li>
@@ -161,8 +165,6 @@
     </div>
 </nav>
 
-<!-- Theme Toggle Script -->
-<script src="assets/js/theme.js"></script>
 
 <?php if(isset($_SESSION['error'])): ?>
     <div class="container" style="margin-top: 80px;">

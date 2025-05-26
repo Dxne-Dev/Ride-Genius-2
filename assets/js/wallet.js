@@ -1,303 +1,408 @@
-// Code de gestion du wallet
-document.addEventListener('DOMContentLoaded', function () {
-    // Vérifier si on est sur la page wallet en cherchant un élément spécifique à cette page
-    const isWalletPage = document.querySelector('.wallet-container') !== null;
-    
-    if (isWalletPage) {
-        console.log('Page wallet détectée');
-        // Tester si KKiaPay est disponible après un délai pour laisser le temps au script de se charger
-        setTimeout(function() {
-            if (typeof window.openKkiapayWidget !== 'function') {
-                console.error("KKiaPay ne s'est pas chargé correctement");
-                alert("KKiaPay ne s'est pas initialisé correctement. Vérifiez votre connexion ou rechargez la page.");
-            } else {
-                console.log('KKiaPay est correctement chargé');
-            }
-        }, 2000);
-        
-        initializeWallet(jQuery);
-    }
-});
-
-// Fonction d'initialisation principale
-function initializeWallet($) {
-    if (typeof $ === 'undefined') {
-        console.error('jQuery is not loaded');
-        return;
-    }
-
-    // Configuration de KKiaPay
-    const KKIA_PUBLIC_KEY = '0d7e7790fe7711efb8fad7f6612bd409';
-    const KKIA_SANDBOX = true;
-
-    // Fonction pour vérifier si KKiaPay est disponible
-    function isKKiapayAvailable() {
-        return typeof window.openKkiapayWidget === 'function';
-    }
-
-    // Fonction pour attendre que KKiaPay soit disponible
-    function waitForKKiapay(maxWait = 10000) {
-        console.log('Attente de KKiaPay...');
-        return new Promise((resolve, reject) => {
-            if (isKKiapayAvailable()) {
-                console.log('KKiaPay est déjà disponible');
-                resolve();
-                return;
-            }
-
-            let waited = 0;
-            const interval = 500;
-            const checkInterval = setInterval(() => {
-                waited += interval;
-                if (isKKiapayAvailable()) {
-                    clearInterval(checkInterval);
-                    console.log('KKiaPay est maintenant disponible');
-                    resolve();
-                } else if (waited >= maxWait) {
-                    clearInterval(checkInterval);
-                    reject(new Error("KKiaPay n'est pas devenu disponible après " + maxWait + "ms"));
-                }
-            }, interval);
-        });
-    }
-
-    // Fonction pour ouvrir le widget KKiaPay
-    async function openKkiaPayWidget(amount, type = 'deposit') {
-        console.log('Tentative d\'ouverture du widget KKiaPay');
-        
-        try {
-            // Attendre que KKiaPay soit disponible
-            await waitForKKiapay();
-            
-            // Nettoyer les anciens listeners (en minuscules comme dans la doc)
-            ['success', 'failed', 'closed'].forEach(event => {
-                if (window.removeKkiapayListener) {
-                    window.removeKkiapayListener(event);
-                }
-            });
-            
-            // Définir les fonctions de rappel
-            function successHandler(data) {
-                console.log('KKiaPay succès:', data);
-                if (type === 'deposit') {
-                    processDepositSuccess(amount, data.transactionId);
-                } else {
-                    processWithdrawSuccess(amount, data.transactionId);
-                }
-            }
-            
-            function failedHandler(error) {
-                console.error('KKiaPay échec:', error);
-                showNotification('Paiement échoué: ' + (error.message || 'Erreur inconnue'), 'error');
-            }
-            
-            // Ajouter les écouteurs avec la bonne syntaxe
-            if (window.addKkiapayListener) {
-                window.addKkiapayListener('success', successHandler);
-                window.addKkiapayListener('failed', failedHandler);
-            }
-            
-            // Ouvrir le widget avec les bons paramètres
-            if (typeof window.openKkiapayWidget === 'function') {
-                // Configuration du widget avec les bons paramètres selon la documentation
-                const widgetConfig = {
-                    amount: parseInt(amount),
-                    // Pas besoin de key ici, elle est déjà dans l'URL du script
-                    theme: "#4E6BFC",
-                    callback: window.location.origin + "/wallet_api.php?callback=true", // URL de callback
-                    name: "Ride Genius",
-                    description: type === 'deposit' ? "Ajouter des fonds" : "Retirer des fonds",
-                    sandbox: KKIA_SANDBOX
-                };
-                
-                console.log('Configuration du widget:', widgetConfig);
-                window.openKkiapayWidget(widgetConfig);
-                console.log('Widget KKiaPay ouvert');
-            } else {
-                throw new Error("La fonction openKkiapayWidget n'est pas disponible");
-            }
-        } catch (error) {
-            console.error('Erreur lors de l\'ouverture du widget KKiaPay:', error);
-            showNotification('Erreur lors de l\'ouverture du widget de paiement: ' + error.message, 'error');
+// Fonction pour vérifier si jQuery est chargé et l'initialiser si nécessaire
+(function() {
+    // Fonction pour charger jQuery dynamiquement
+    function loadJQuery(callback) {
+        if (typeof jQuery !== 'undefined') {
+            // jQuery est déjà chargé
+            callback(jQuery);
+            return;
         }
+
+        // Créer un élément script pour charger jQuery
+        const script = document.createElement('script');
+        script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+        script.integrity = 'sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=';
+        script.crossOrigin = 'anonymous';
+        
+        // Ajouter un gestionnaire d'événements pour le chargement
+        script.onload = function() {
+            console.log('jQuery chargé avec succès');
+            // Attendre un court délai pour s'assurer que jQuery est complètement initialisé
+            setTimeout(function() {
+                callback(jQuery);
+            }, 100);
+        };
+        
+        script.onerror = function() {
+            console.error('Échec du chargement de jQuery');
+        };
+        
+        // Insérer le script avant tous les autres scripts
+        const firstScript = document.getElementsByTagName('script')[0];
+        firstScript.parentNode.insertBefore(script, firstScript);
     }
 
-    // Fonction pour traiter un dépôt réussi
-    function processDepositSuccess(amount, transactionId) {
-        console.log('Traitement du dépôt:', { amount, transactionId });
-        $.ajax({
-            url: 'wallet_api.php',
-            method: 'POST',
-            data: {
-                action: 'addFunds',
-                amount: amount,
-                transaction_id: transactionId
-            },
-            dataType: 'json',
-            success: function(response) {
-                console.log('Réponse du serveur pour le dépôt:', response);
-                if (response.success) {
-                    showNotification('Dépôt effectué avec succès', 'success');
-                    $('#addFundsModal').modal('hide');
-                    updateBalance();
-                    loadTransactions();
-                    $('#addFundsForm')[0].reset();
-                } else {
-                    showNotification(response.message || 'Erreur lors de l\'ajout des fonds', 'error');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur AJAX pour le dépôt:', { xhr, status, error });
-                showNotification('Erreur lors de la communication avec le serveur', 'error');
-            }
-        });
-    }
+    // Fonction d'initialisation principale
+    function initializeWallet($) {
+        // Empêcher l'initialisation multiple
+        if (window.walletInitialized) {
+            return;
+        }
+        window.walletInitialized = true;
 
-    // Fonction pour traiter un retrait réussi
-    function processWithdrawSuccess(amount, transactionId) {
-        console.log('Traitement du retrait:', { amount, transactionId });
-        $.ajax({
-            url: 'wallet_api.php',
-            method: 'POST',
-            data: {
-                action: 'withdrawFunds',
-                amount: amount,
-                transaction_id: transactionId
-            },
-            dataType: 'json',
-            success: function(response) {
-                console.log('Réponse du serveur pour le retrait:', response);
-                if (response.success) {
-                    showNotification('Retrait effectué avec succès', 'success');
-                    $('#withdrawFundsModal').modal('hide');
-                    updateBalance();
-                    loadTransactions();
-                    $('#withdrawFundsForm')[0].reset();
-                } else {
-                    showNotification(response.message || 'Erreur lors du retrait des fonds', 'error');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur AJAX pour le retrait:', { xhr, status, error });
-                showNotification('Erreur lors de la communication avec le serveur', 'error');
-            }
-        });
-    }
+        // Nettoyer un éventuel intervalle existant
+        if (window.walletIntervalId) {
+            clearInterval(window.walletIntervalId);
+        }
 
-    // Fonction pour mettre à jour le solde
-    function updateBalance() {
-        $.ajax({
-            url: 'wallet_api.php',
-            method: 'POST',
-            data: { action: 'getBalance' },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('.balance-amount').text(formatAmount(response.balance));
-                    $('#withdrawAmount').attr('max', response.balance);
-                    $('small.text-muted').text('Solde disponible: ' + formatAmount(response.balance));
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur AJAX pour le solde:', { xhr, status, error });
-                showNotification('Erreur lors de la récupération du solde', 'error');
-            }
-        });
-    }
+        if (typeof $ === 'undefined') {
+            console.error('jQuery is not loaded');
+            return;
+        }
 
-    // Fonction pour charger les transactions
-    function loadTransactions() {
-        $.ajax({
-            url: 'wallet_api.php',
-            method: 'POST',
-            data: { action: 'getTransactions' },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    const tbody = $('.transactions-table tbody');
-                    tbody.empty();
+        // Fonction pour formater les montants
+        function formatAmount(amount) {
+            return parseFloat(amount).toFixed(2) + 'FCFA';
+        }
+
+        // Fonction pour mettre à jour le solde
+        function updateBalance() {
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: { action: 'getBalance' },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('.balance-amount').text(formatAmount(response.balance));
+                        // Mettre à jour la valeur maximale du champ de retrait
+                        $('#withdrawAmount').attr('max', response.balance);
+                        $('small.text-muted').text('Solde disponible: ' + formatAmount(response.balance));
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
                     
-                    if (response.transactions.length === 0) {
-                        tbody.append('<tr><td colspan="5" class="text-center">Aucune transaction</td></tr>');
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
                         return;
                     }
                     
-                    response.transactions.forEach(function(transaction) {
-                        const row = $('<tr>');
-                        row.append($('<td>').text(new Date(transaction.created_at).toLocaleString('fr-FR')));
-                        row.append($('<td>').text(transaction.description || '-'));
-                        
-                        const amountCell = $('<td>').addClass(transaction.type === 'credit' ? 'text-success' : 'text-danger');
-                        amountCell.text((transaction.type === 'credit' ? '+' : '-') + formatAmount(transaction.amount));
-                        row.append(amountCell);
-                        
-                        const typeBadge = $('<span>').addClass('badge ' + (transaction.type === 'credit' ? 'bg-success' : 'bg-danger'));
-                        typeBadge.text(transaction.type === 'credit' ? 'Crédit' : 'Débit');
-                        row.append($('<td>').append(typeBadge));
-                        
-                        row.append($('<td>').addClass('d-none d-md-table-cell').text(formatAmount(transaction.balance_after)));
-                        tbody.append(row);
-                    });
+                    showNotification('Erreur lors de la récupération du solde', 'error');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('Erreur AJAX pour les transactions:', { xhr, status, error });
-                showNotification('Erreur lors du chargement des transactions', 'error');
+            });
+        }
+
+        // Fonction pour charger les transactions
+        function loadTransactions() {
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: { action: 'getTransactions' },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const tbody = $('.transactions-table tbody');
+                        tbody.empty();
+                        
+                        if (response.transactions.length === 0) {
+                            tbody.append('<tr><td colspan="5" class="text-center">Aucune transaction</td></tr>');
+                            return;
+                        }
+                        
+                        response.transactions.forEach(function(transaction) {
+                            const row = $('<tr>');
+                            row.append($('<td>').text(new Date(transaction.created_at).toLocaleString('fr-FR')));
+                            row.append($('<td>').text(transaction.description || '-'));
+                            
+                            const amountCell = $('<td>').addClass(transaction.type === 'credit' ? 'text-success' : 'text-danger');
+                            amountCell.text((transaction.type === 'credit' ? '+' : '-') + formatAmount(transaction.amount));
+                            row.append(amountCell);
+                            
+                            const typeBadge = $('<span>').addClass('badge ' + (transaction.type === 'credit' ? 'bg-success' : 'bg-danger'));
+                            typeBadge.text(transaction.type === 'credit' ? 'Crédit' : 'Débit');
+                            row.append($('<td>').append(typeBadge));
+                            
+                            row.append($('<td>').addClass('d-none d-md-table-cell').text(formatAmount(transaction.balance_after)));
+                            tbody.append(row);
+                        });
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors du chargement des transactions', 'error');
+                }
+            });
+        }
+
+        // Gestionnaire pour l'ajout de fonds
+        $('#submitAddFunds').on('click', function() {
+            const amount = parseFloat($('#amount').val());
+            const paymentMethod = $('#paymentMethod').val();
+            const description = $('#description').val() || 'Dépôt de fonds';
+            
+            if (isNaN(amount) || amount <= 0) {
+                showNotification('Le montant doit être supérieur à 0', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: {
+                    action: 'addFunds',
+                    amount: amount,
+                    paymentMethod: paymentMethod,
+                    description: description
+                },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('Fonds ajoutés avec succès', 'success');
+                        $('#addFundsModal').modal('hide');
+                        // Correction : forcer la suppression du backdrop si besoin
+                        setTimeout(function() {
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css('padding-right', '');
+                        }, 500);
+                        updateBalance();
+                        loadTransactions();
+                        // Réinitialiser le formulaire
+                        $('#addFundsForm')[0].reset();
+                    } else {
+                        showNotification(response.message || 'Erreur lors de l\'ajout des fonds', 'error');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors de la communication avec le serveur', 'error');
+                }
+            });
+        });
+
+        // Gestionnaire pour le retrait de fonds
+        $('#submitWithdrawFunds').on('click', function() {
+            const amount = parseFloat($('#withdrawAmount').val());
+            const withdrawMethod = $('#withdrawMethod').val();
+            const description = $('#withdrawDescription').val() || 'Retrait de fonds';
+            
+            if (isNaN(amount) || amount <= 0) {
+                showNotification('Le montant doit être supérieur à 0', 'error');
+                return;
+            }
+            
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: {
+                    action: 'withdrawFunds',
+                    amount: amount,
+                    withdrawMethod: withdrawMethod,
+                    description: description
+                },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                success: function(response) {
+                    if (response.success) {
+                        showNotification('Fonds retirés avec succès', 'success');
+                        $('#withdrawFundsModal').modal('hide');
+                        // Correction : forcer la suppression du backdrop si besoin
+                        setTimeout(function() {
+                            $('.modal-backdrop').remove();
+                            $('body').removeClass('modal-open').css('padding-right', '');
+                        }, 500);
+                        updateBalance();
+                        loadTransactions();
+                        // Réinitialiser le formulaire
+                        $('#withdrawFundsForm')[0].reset();
+                    } else {
+                        showNotification(response.message || 'Erreur lors du retrait des fonds', 'error');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors de la communication avec le serveur', 'error');
+                }
+            });
+        });
+
+        // Gestionnaire pour les boutons de dépôt rapide (mode sandbox)
+        $('.quick-deposit').on('click', function() {
+            const amount = parseFloat($(this).data('amount'));
+            const description = 'Dépôt rapide (Mode démonstration)';
+            
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: {
+                    action: 'addFunds',
+                    amount: amount,
+                    paymentMethod: 'sandbox',
+                    description: description
+                },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(`Dépôt de ${formatAmount(amount)} simulé avec succès`, 'success');
+                        updateBalance();
+                        loadTransactions();
+                    } else {
+                        showNotification(response.message || 'Erreur lors de la simulation du dépôt', 'error');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors de la communication avec le serveur', 'error');
+                }
+            });
+        });
+
+        // Gestionnaire pour les boutons de retrait rapide (mode sandbox)
+        $('.quick-withdraw').on('click', function() {
+            const amount = parseFloat($(this).data('amount'));
+            const description = 'Retrait rapide (Mode démonstration)';
+            
+            $.ajax({
+                url: 'api/wallet_api.php',
+                method: 'POST',
+                data: {
+                    action: 'withdrawFunds',
+                    amount: amount,
+                    withdrawMethod: 'sandbox',
+                    description: description
+                },
+                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                success: function(response) {
+                    if (response.success) {
+                        showNotification(`Retrait de ${formatAmount(amount)} simulé avec succès`, 'success');
+                        updateBalance();
+                        loadTransactions();
+                    } else {
+                        showNotification(response.message || 'Erreur lors de la simulation du retrait', 'error');
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Erreur AJAX:", textStatus, errorThrown);
+                    
+                    // Vérifier si l'erreur est due à un problème de parsing JSON
+                    if (textStatus === "parsererror") {
+                        console.error("Réponse brute du serveur:", jqXHR.responseText);
+                        showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                        return;
+                    }
+                    
+                    showNotification('Erreur lors de la communication avec le serveur', 'error');
+                }
+            });
+        });
+
+        // Gestionnaire pour réinitialiser le solde (mode sandbox)
+        $('#resetBalance').on('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser votre solde à 100FCFA ?')) {
+                $.ajax({
+                    url: 'api/wallet_api.php',
+                    method: 'POST',
+                    data: {
+                        action: 'resetBalance',
+                        amount: 100
+                    },
+                    dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                    success: function(response) {
+                        if (response.success) {
+                            showNotification('Solde réinitialisé à 100FCFA avec succès', 'success');
+                            updateBalance();
+                            loadTransactions();
+                        } else {
+                            showNotification(response.message || 'Erreur lors de la réinitialisation du solde', 'error');
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error("Erreur AJAX:", textStatus, errorThrown);
+                        
+                        // Vérifier si l'erreur est due à un problème de parsing JSON
+                        if (textStatus === "parsererror") {
+                            console.error("Réponse brute du serveur:", jqXHR.responseText);
+                            showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
+                            return;
+                        }
+                        
+                        showNotification('Erreur lors de la communication avec le serveur', 'error');
+                    }
+                });
             }
         });
-    }
 
-    // Fonction pour formater les montants
-    function formatAmount(amount) {
-        return parseFloat(amount).toFixed(2) + ' FCFA';
-    }
+        // Fonction pour afficher les notifications
+        function showNotification(message, type = 'success') {
+            const toast = $('<div>').addClass('toast').attr('role', 'alert').attr('aria-live', 'assertive').attr('aria-atomic', 'true');
+            const toastHeader = $('<div>').addClass('toast-header');
+            const toastTitle = $('<strong>').addClass('me-auto').text(type === 'success' ? 'Succès' : 'Erreur');
+            const toastClose = $('<button>').addClass('btn-close').attr('type', 'button').attr('data-bs-dismiss', 'toast');
+            const toastBody = $('<div>').addClass('toast-body').text(message);
 
-    // Fonction pour afficher les notifications
-    function showNotification(message, type = 'success') {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alert = $('<div>')
-            .addClass('alert ' + alertClass + ' alert-dismissible fade show')
-            .attr('role', 'alert')
-            .html(`
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `);
-        
-        $('.wallet-container').prepend(alert);
-        
-        // Supprimer la notification après 5 secondes
-        setTimeout(() => {
-            alert.alert('close');
-        }, 5000);
-    }
+            toastHeader.append(toastTitle).append(toastClose);
+            toast.append(toastHeader).append(toastBody);
 
-    // Gestionnaires d'événements
-    $('#submitAddFunds').on('click', function() {
-        const amount = parseFloat($('#amount').val());
-        
-        if (isNaN(amount) || amount <= 0) {
-            showNotification('Le montant doit être supérieur à 0', 'error');
-            return;
+            $('#toastContainer').append(toast);
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+
+            toast.on('hidden.bs.toast', function() {
+                $(this).remove();
+            });
         }
-        
-        openKkiaPayWidget(amount, 'deposit');
-    });
 
-    $('#submitWithdrawFunds').on('click', function() {
-        const amount = parseFloat($('#withdrawAmount').val());
-        
-        if (isNaN(amount) || amount <= 0) {
-            showNotification('Le montant doit être supérieur à 0', 'error');
-            return;
-        }
-        
-        openKkiaPayWidget(amount, 'withdraw');
-    });
+        // Gestionnaires pour les modales Bootstrap
+        $('#addFundsModal').on('shown.bs.modal', function() {
+            // Mettre le focus sur le premier champ du formulaire
+            $('#amount').focus();
+        });
 
-    // Initialisation
-    $(document).ready(function() {
-        // Mettre à jour le solde et charger les transactions
+        $('#withdrawFundsModal').on('shown.bs.modal', function() {
+            // Mettre le focus sur le premier champ du formulaire
+            $('#withdrawAmount').focus();
+        });
+
+        // Initialisation
         updateBalance();
         loadTransactions();
-    });
-} 
+
+        // Rafraîchissement automatique toutes les 30 secondes
+        window.walletIntervalId = setInterval(function() {
+            updateBalance();
+            loadTransactions();
+        }, 30000);
+    }
+
+    // Attendre que le DOM soit chargé avant de vérifier jQuery
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            loadJQuery(initializeWallet);
+        });
+    } else {
+        loadJQuery(initializeWallet);
+    }
+})();

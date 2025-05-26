@@ -435,7 +435,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                             <div class="card-body text-center p-4">
                                 <h3 class="card-title">ProTrajet</h3>
                                 <div class="pricing mb-4">
-                                    <h4 class="text-primary mb-0">9.99 FCFA</h4>
+                                    <h4 class="text-primary mb-0">10 000 FCFA</h4>
                                     <p class="text-muted">Commission réduite à 10%</p>
                                 </div>
                                 <ul class="list-unstyled mb-4">
@@ -444,8 +444,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                                     <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Badge Pro sur votre profil</li>
                                     <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Accès aux fonctionnalités premium</li>
                                 </ul>
-                                <a href="index.php?page=subscribe&plan=protrajet" class="btn <?php echo $walletBalance >= 9.99 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
-                                    <?php echo $walletBalance < 9.99 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
+                                <a href="index.php?page=subscribe&plan=protrajet" class="btn <?php echo $walletBalance >= 10000 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
+                                    <?php echo $walletBalance < 10000 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
                                 </a>
                             </div>
                         </div>
@@ -457,7 +457,7 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                             <div class="card-body text-center p-4">
                                 <h3 class="card-title">BusinessTrajet</h3>
                                 <div class="pricing mb-4">
-                                    <h4 class="text-primary mb-0">29.99 FCFA</h4>
+                                    <h4 class="text-primary mb-0">20 000 FCFA</h4>
                                     <p class="text-muted">Commission minimale de 5%</p>
                                 </div>
                                 <ul class="list-unstyled mb-4">
@@ -467,8 +467,8 @@ if (isset($_SESSION['user_id']) && $_SESSION['user_role'] === 'conducteur') {
                                     <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Accès prioritaire aux nouvelles fonctionnalités</li>
                                     <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Statistiques détaillées et rapports</li>
                                 </ul>
-                                <a href="index.php?page=subscribe&plan=businesstrajet" class="btn <?php echo $walletBalance >= 29.99 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
-                                    <?php echo $walletBalance < 29.99 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
+                                <a href="index.php?page=subscribe&plan=businesstrajet" class="btn <?php echo $walletBalance >= 20000 ? 'btn-primary' : 'btn-secondary disabled'; ?> w-100">
+                                    <?php echo $walletBalance < 20000 ? 'Solde insuffisant' : 'Choisir ce plan'; ?>
                                 </a>
                             </div>
                         </div>

@@ -138,7 +138,7 @@ class Subscription {
             ],
             'protrajet' => [
                 'name' => 'ProTrajet',
-                'price' => 9.99,
+                'price' => 10000, // Prix mis à jour à 10 000 FCFA
                 'description' => 'Plan professionnel',
                 'features' => [
                     'Commission réduite à 10%',
@@ -150,7 +150,7 @@ class Subscription {
             ],
             'businesstrajet' => [
                 'name' => 'BusinessTrajet',
-                'price' => 29.99,
+                'price' => 20000, // Prix corrigé à 20 000 FCFA
                 'description' => 'Plan business',
                 'features' => [
                     'Commission minimale de 5%',
@@ -183,4 +183,4 @@ class Subscription {
 
         return $stmt->execute();
     }
-} 
+}
