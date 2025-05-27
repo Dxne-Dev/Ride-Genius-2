@@ -342,9 +342,10 @@ class Wallet {
      * @param int $userId ID de l'utilisateur
      * @param float $amount Montant à ajouter
      * @param string $description Description de la transaction
+     * @param string|null $transactionId ID de la transaction
      * @return bool Succès de l'opération
      */
-    public function addFunds($userId, $amount, $description = 'Dépôt de fonds') {
+    public function addFunds($userId, $amount, $description = 'Dépôt de fonds', $transactionId = null) {
         try {
             $this->db->beginTransaction();
             $this->ensureWalletExists($userId);
@@ -355,9 +356,15 @@ class Wallet {
             // Récupérer le nouveau solde
             $newBalance = $this->getBalance($userId);
             // Enregistrer la transaction
-            $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) VALUES (?, 'credit', ?, ?, ?, 'system', NOW())";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute([$userId, $amount, $description, $newBalance]);
+            if ($transactionId !== null) {
+                $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, transaction_id, created_at) VALUES (?, 'credit', ?, ?, ?, 'kkiapay', ?, NOW())";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$userId, $amount, $description, $newBalance, $transactionId]);
+            } else {
+                $query = "INSERT INTO wallet_transactions (user_id, type, amount, description, balance_after, payment_method, created_at) VALUES (?, 'credit', ?, ?, ?, 'system', NOW())";
+                $stmt = $this->db->prepare($query);
+                $stmt->execute([$userId, $amount, $description, $newBalance]);
+            }
             $this->db->commit();
             return true;
         } catch (Exception $e) {

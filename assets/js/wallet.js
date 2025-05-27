@@ -136,16 +136,65 @@
         }
 
         // Gestionnaire pour l'ajout de fonds
-        $('#submitAddFunds').on('click', function() {
+        $('#submitAddFunds').on('click', function(e) {
+            e.preventDefault();
             const amount = parseFloat($('#amount').val());
             const paymentMethod = $('#paymentMethod').val();
-            const description = $('#description').val() || 'Dépôt de fonds';
-            
+            const description = $('#description').val() || 'Dépôt via KKiaPay';
+
             if (isNaN(amount) || amount <= 0) {
                 showNotification('Le montant doit être supérieur à 0', 'error');
                 return;
             }
-            
+
+            if (paymentMethod === 'kkiapay') {
+                // Empêcher double ouverture
+                if (window.kkiapayPaymentPending) return;
+                window.kkiapayPaymentPending = true;
+                const userId = $('#userId').val() || '';
+                // Forcer le chargement depuis localhost si nécessaire
+                const iframeDomain = window.location.hostname === 'ride-genius'
+                    ? 'http://localhost/ride-genius'
+                    : window.location.origin;
+
+                const iframeUrl = `${iframeDomain}/kkiapay-iframe.html?amount=${amount}&userId=${userId}`;
+
+                const popup = window.open(
+                    iframeUrl,
+                    'Paiement KKiaPay',
+                    'width=600,height=750'
+                );
+
+                // Écoute la réponse de KKiaPay via postMessage
+                window.addEventListener("message", function(event) {
+                    window.kkiapayPaymentPending = false;
+                    if (event.data.status === 'success') {
+                        // Paiement validé → appelle l’API wallet pour créditer
+                        $.post('api/wallet_api.php', {
+                            action: 'addFunds',
+                            amount: event.data.amount,
+                            paymentMethod: 'kkiapay',
+                            description: 'Paiement via KKiaPay',
+                            transaction_id: event.data.transactionId
+                        }, function(resp) {
+                            if (resp.success) {
+                                showNotification('Fonds ajoutés avec succès via KKiaPay', 'success');
+                                $('#addFundsModal').modal('hide');
+                                updateBalance();
+                                loadTransactions();
+                                $('#addFundsForm')[0].reset();
+                            } else {
+                                showNotification('Erreur côté serveur KKiaPay', 'error');
+                            }
+                        }, 'json');
+                    } else if (event.data.status === 'error') {
+                        showNotification('Paiement KKiaPay échoué', 'error');
+                    }
+                }, { once: true });
+                return; // Stop ici, on ne passe pas à l'AJAX classique
+            }
+
+            // Cas standard (sandbox ou autres méthodes)
             $.ajax({
                 url: 'api/wallet_api.php',
                 method: 'POST',
@@ -155,19 +204,17 @@
                     paymentMethod: paymentMethod,
                     description: description
                 },
-                dataType: 'json', // Spécifier explicitement que nous attendons du JSON
+                dataType: 'json',
                 success: function(response) {
                     if (response.success) {
                         showNotification('Fonds ajoutés avec succès', 'success');
                         $('#addFundsModal').modal('hide');
-                        // Correction : forcer la suppression du backdrop si besoin
                         setTimeout(function() {
                             $('.modal-backdrop').remove();
                             $('body').removeClass('modal-open').css('padding-right', '');
                         }, 500);
                         updateBalance();
                         loadTransactions();
-                        // Réinitialiser le formulaire
                         $('#addFundsForm')[0].reset();
                     } else {
                         showNotification(response.message || 'Erreur lors de l\'ajout des fonds', 'error');
@@ -175,14 +222,11 @@
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
                     console.error("Erreur AJAX:", textStatus, errorThrown);
-                    
-                    // Vérifier si l'erreur est due à un problème de parsing JSON
                     if (textStatus === "parsererror") {
                         console.error("Réponse brute du serveur:", jqXHR.responseText);
                         showNotification('Le serveur a renvoyé une réponse invalide. Veuillez réessayer plus tard.', 'error');
                         return;
                     }
-                    
                     showNotification('Erreur lors de la communication avec le serveur', 'error');
                 }
             });

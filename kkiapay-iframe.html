@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Paiement avec KKiaPay</title>
+  <script src="https://cdn.kkiapay.me/k.js"></script>
+</head>
+<body>
+<script>
+  // Récupération des paramètres de l'URL
+  const queryParams = new URLSearchParams(window.location.search);
+  const amountParam = queryParams.get("amount");
+  const userId = queryParams.get("userId") || null;
+
+  // ✅ Conversion sécurisée du montant en nombre
+  const amount = parseInt(amountParam);
+
+  // Vérification des données
+  if (isNaN(amount) || amount <= 0) {
+    alert("Montant invalide pour KKiaPay !");
+    throw new Error("Paramètre amount non valide : " + amountParam);
+  }
+
+  console.log("➡️ Lancement KKiaPay avec :", { amount, userId });
+
+  // Ouverture du widget KKiaPay
+  openKkiapayWidget({
+    amount: amount,
+    key: "0d7e7790fe7711efb8fad7f6612bd409", // clé publique de test
+    sandbox: true, // à mettre à false en production
+    position: "center",
+    callback: "https://ride-genius.local/kkiapay-callback.php" // ou une page de confirmation simple
+  });
+
+  // Réception de l'événement de succès
+  addSuccessListener(function(response) {
+    console.log("✅ Paiement validé :", response);
+    window.opener.postMessage({
+      status: 'success',
+      transactionId: response.transactionId,
+      amount: amount,
+      userId: userId
+    }, "*");
+    window.close();
+  });
+
+  // Réception de l'événement d'échec
+  addFailedListener(function(error) {
+    console.error("❌ Paiement échoué :", error);
+    window.opener.postMessage({ status: 'error', error: error }, "*");
+    window.close();
+  });
+</script>
+</body>
+</html>

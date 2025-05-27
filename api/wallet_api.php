@@ -43,6 +43,7 @@ switch ($action) {
         $amount = floatval($_POST['amount'] ?? 0);
         $paymentMethod = $_POST['paymentMethod'] ?? '';
         $description = $_POST['description'] ?? 'Dépôt de fonds';
+        $transactionId = $_POST['transaction_id'] ?? null; // optionnel pour KKiaPay
 
         if ($amount <= 0) {
             echo json_encode([
@@ -59,8 +60,14 @@ switch ($action) {
                 'success' => $result,
                 'message' => $result ? 'Fonds ajoutés avec succès' : 'Erreur lors de l\'ajout des fonds'
             ]);
+        } elseif ($paymentMethod === 'kkiapay') {
+            $result = $wallet->addFunds($userId, $amount, $description, $transactionId);
+            echo json_encode([
+                'success' => $result,
+                'message' => $result ? 'Fonds ajoutés avec succès via KKiaPay' : 'Erreur lors du traitement du paiement KKiaPay'
+            ]);
         } else {
-            // En mode démonstration, on accepte tous les paiements
+            // Autres méthodes de paiement
             $result = $wallet->addFunds($userId, $amount, $description);
             echo json_encode([
                 'success' => $result,

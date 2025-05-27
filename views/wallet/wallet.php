@@ -203,10 +203,11 @@ include __DIR__ . '/../../includes/navbar.php';
                     <div class="mb-3">
                         <label for="paymentMethod" class="form-label">Méthode de paiement</label>
                         <select class="form-select" id="paymentMethod" name="paymentMethod" required>
-                            <option value="card">Carte bancaire</option>
-                            <option value="paypal">PayPal</option>
-                            <option value="bank_transfer">Virement bancaire</option>
-                        </select>
+    <option value="card">Carte bancaire</option>
+    <option value="paypal">PayPal</option>
+    <option value="bank_transfer">Virement bancaire</option>
+    <option value="kkiapay">KKiaPay</option> <!-- ✅ ajout -->
+</select>
                     </div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Description (optionnel)</label>
@@ -272,7 +273,8 @@ include __DIR__ . '/../../includes/navbar.php';
 </div>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>
-
+<!-- SDK KKiaPay -->
+<script src="https://cdn.kkiapay.me/k.js"></script>
 <!-- Inclusion du JS wallet -->
 <script src="/assets/js/wallet.js"></script>
 <script>
