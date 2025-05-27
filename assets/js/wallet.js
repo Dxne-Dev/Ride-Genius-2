@@ -233,62 +233,116 @@
         });
 
         // Gestionnaire pour le retrait de fonds
-        $('#submitWithdrawFunds').on('click', function() {
+        $('#submitWithdrawFunds').on('click', function(e) {
+            e.preventDefault();
+            const $form = $(this).closest('form');
             const amount = parseFloat($('#withdrawAmount').val());
             const withdrawMethod = $('#withdrawMethod').val();
-            const description = $('#withdrawDescription').val() || 'Retrait de fonds';
+            const description = $('#withdrawDescription').val() || 'Retrait via KKiaPay';
+            const userId = $('#userId').val() || '';
             
             if (isNaN(amount) || amount <= 0) {
                 showNotification('Le montant doit être supérieur à 0', 'error');
                 return;
             }
             
+            // Vérifier que le montant ne dépasse pas le solde
+            const currentBalance = parseFloat($('.balance-amount').text().replace(/[^0-9.,]/g, '').replace(',', '.'));
+            if (amount > currentBalance) {
+                showNotification('Le montant demandé dépasse votre solde disponible', 'error');
+                return;
+            }
+            
+            // Désactiver le bouton pour éviter les clics multiples
+            const $submitBtn = $(this);
+            const originalText = $submitBtn.html();
+            $submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Traitement...');
+            
             if (withdrawMethod === 'kkiapay') {
-                // Empêcher double ouverture
-                if (window.kkiapayWithdrawPending) return;
-                window.kkiapayWithdrawPending = true;
-                const userId = $('#userId').val() || '';
+                // Vérifier si un retrait est déjà en cours
+                if (window.kkiapayWithdrawPending) {
+                    showNotification('Un retrait est déjà en cours', 'warning');
+                    $submitBtn.prop('disabled', false).html(originalText);
+                    return;
+                }
                 
-                // Forcer le chargement depuis localhost si nécessaire
-                const iframeDomain = window.location.hostname === 'ride-genius'
+                window.kkiapayWithdrawPending = true;
+                
+                // Construire l'URL de l'iframe KKiaPay
+                // Utiliser le même format d'URL que pour le dépôt
+                const iframeDomain = window.location.hostname === 'ride-genius' || window.location.hostname === 'localhost'
                     ? 'http://localhost/ride-genius'
                     : window.location.origin;
+                
+                const iframeUrl = new URL(`${iframeDomain}/kkiapay-iframe.html`);
+                iframeUrl.searchParams.append('amount', amount);
+                iframeUrl.searchParams.append('userId', userId || '');
+                iframeUrl.searchParams.append('type', 'withdraw');
+                if (description) {
+                    iframeUrl.searchParams.append('description', description);
+                }
 
-                const iframeUrl = `${iframeDomain}/kkiapay-iframe.html?amount=${amount}&userId=${userId}&type=withdraw`;
-
+                // Ouvrir la fenêtre KKiaPay
                 const popup = window.open(
-                    iframeUrl,
-                    'Retrait via KKiaPay',
-                    'width=600,height=750'
+                    iframeUrl.toString(),
+                    'Retrait KKiaPay',
+                    'width=600,height=750,scrollbars=no,resizable=no,location=no,menubar=no,status=no'
                 );
 
-                // Écoute la réponse de KKiaPay via postMessage
-                window.addEventListener("message", function(event) {
+                // Vérifier si la fenêtre s'est bien ouverte
+                if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                    showNotification('Veuvez autoriser les fenêtres popups pour ce site pour effectuer un retrait', 'error');
                     window.kkiapayWithdrawPending = false;
-                    if (event.data.status === 'success') {
-                        // Retrait validé → appelle l'API wallet pour débiter
-                        $.post('api/wallet_api.php', {
-                            action: 'withdrawFunds',
-                            amount: event.data.amount,
-                            withdrawMethod: 'kkiapay',
-                            description: 'Retrait via KKiaPay',
-                            transaction_id: event.data.transactionId
-                        }, function(resp) {
-                            if (resp.success) {
-                                showNotification('Retrait effectué avec succès via KKiaPay', 'success');
-                                $('#withdrawFundsModal').modal('hide');
-                                updateBalance();
-                                loadTransactions();
-                                $('#withdrawFundsForm')[0].reset();
-                            } else {
-                                showNotification('Erreur côté serveur KKiaPay: ' + (resp.message || ''), 'error');
-                            }
-                        }, 'json');
-                    } else if (event.data.status === 'error') {
-                        showNotification('Retrait KKiaPay échoué: ' + (event.data.error || ''), 'error');
+                    $submitBtn.prop('disabled', false).html(originalText);
+                    return;
+                }
+
+                // Gérer la réponse de KKiaPay
+                const messageHandler = function(event) {
+                    // Vérifier l'origine du message pour des raisons de sécurité
+                    if (event.origin !== window.location.origin) {
+                        return;
                     }
-                }, { once: true });
-                return; // Stop ici, on ne passe pas à l'AJAX classique
+
+                    // Nettoyer l'écouteur d'événements
+                    window.removeEventListener('message', messageHandler);
+                    window.kkiapayWithdrawPending = false;
+                    $submitBtn.prop('disabled', false).html(originalText);
+
+                    switch (event.data.status) {
+                        case 'success':
+                            // Mettre à jour l'interface utilisateur
+                            showNotification('Retrait effectué avec succès', 'success');
+                            $form[0].reset();
+                            updateBalance();
+                            loadTransactions();
+                            $('#withdrawFundsModal').modal('hide');
+                            break;
+                            
+                        case 'cancelled':
+                            showNotification('Retrait annulé', 'info');
+                            break;
+                            
+                        case 'error':
+                            showNotification('Erreur de retrait: ' + (event.data.message || 'Veuillez réessayer'), 'error');
+                            break;
+                    }
+                };
+
+                // Ajouter l'écouteur d'événements
+                window.addEventListener('message', messageHandler);
+                
+                // Timeout au cas où on ne reçoit pas de réponse
+                setTimeout(() => {
+                    if (window.kkiapayWithdrawPending) {
+                        window.removeEventListener('message', messageHandler);
+                        window.kkiapayWithdrawPending = false;
+                        $submitBtn.prop('disabled', false).html(originalText);
+                        showNotification('Délai dépassé. Veuillez vérifier votre retrait et réessayer si nécessaire.', 'warning');
+                    }
+                }, 600000); // 10 minutes
+                
+                return; // Ne pas continuer avec le traitement AJAX standard
             }
 
             $.ajax({

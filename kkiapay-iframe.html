@@ -99,30 +99,15 @@
       // Ouverture du widget KKiaPay
       openKkiapayWidget(kkiapayConfig);
 
-      // Réception de l'événement de succès
+      // Anciens écouteurs d'événements (conservés pour compatibilité)
       addSuccessListener(function(response) {
-        console.log("✅ Opération réussie :", response);
-        window.opener.postMessage({
-          status: 'success',
-          transactionId: response.transactionId || response.transaction_id,
-          amount: amount,
-          userId: userId,
-          type: type
-        }, "*");
-        // Ne pas fermer immédiatement pour laisser le temps au message d'être reçu
-        setTimeout(() => window.close(), 500);
+        console.log("✅ Opération réussie (legacy) :", response);
+        // La nouvelle méthode utilise le callback dans config
       });
 
-      // Réception de l'événement d'échec
       addFailedListener(function(error) {
-        console.error("❌ Échec de l'opération :", error);
-        window.opener.postMessage({ 
-          status: 'error', 
-          error: error?.message || 'Erreur inconnue',
-          type: type
-        }, "*");
-        // Ne pas fermer immédiatement pour laisser le temps au message d'être reçu
-        setTimeout(() => window.close(), 500);
+        console.error("❌ Échec de l'opération (legacy) :", error);
+        showError('Échec du paiement: ' + (error?.message || 'Erreur inconnue'));
       });
     } else {
       throw new Error("L'API KKiaPay n'est pas disponible");
@@ -130,11 +115,15 @@
   } catch (error) {
     console.error("❌ Erreur lors de l'initialisation de KKiaPay :", error);
     showError("Impossible de charger le module de paiement. Veuillez réessayer plus tard.");
-    window.opener.postMessage({ 
-      status: 'error', 
-      error: error?.message || 'Erreur lors du chargement du module de paiement',
-      type: type
-    }, "*");
+    
+    // Informer la fenêtre parente
+    if (window.opener) {
+      window.opener.postMessage({ 
+        status: 'error', 
+        message: error?.message || 'Erreur lors du chargement du module de paiement',
+        type: type
+      }, window.location.origin);
+    }
   }
 </script>
 </body>
