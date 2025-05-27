@@ -235,7 +235,18 @@ include __DIR__ . '/../../includes/navbar.php';
                 <form id="withdrawFundsForm">
                     <div class="mb-3">
                         <label for="withdrawAmount" class="form-label">Montant (FCFA)</label>
-                        <input type="number" class="form-control" id="withdrawAmount" name="amount" min="1" step="0.01" max="<?php echo $balance; ?>" required>
+                        <input type="number" 
+                               class="form-control" 
+                               id="withdrawAmount" 
+                               name="amount" 
+                               min="1" 
+                               step="0.01" 
+                               max="<?php echo $balance; ?>" 
+                               required
+                               oninput="this.value = Math.min(this.value, this.max)">
+                        <div class="invalid-feedback">
+                            Le montant ne peut pas dépasser votre solde disponible
+                        </div>
                         <small class="text-muted">Solde disponible: <?php echo number_format($balance, 2); ?> FCFA</small>
                     </div>
                     <div class="mb-3">
@@ -243,7 +254,11 @@ include __DIR__ . '/../../includes/navbar.php';
                         <select class="form-select" id="withdrawMethod" name="withdrawMethod" required>
                             <option value="bank_transfer">Virement bancaire</option>
                             <option value="paypal">PayPal</option>
+                            <option value="kkiapay">KKiaPay</option>
                         </select>
+                        <div id="kkiapayInfo" class="mt-2 text-info d-none">
+                            <i class="fas fa-info-circle"></i> Le retrait via KKiaPay est traité instantanément
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="withdrawDescription" class="form-label">Description (optionnel)</label>
@@ -253,7 +268,7 @@ include __DIR__ . '/../../includes/navbar.php';
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" id="submitWithdrawFunds">Retirer</button>
+                <button type="button" class="btn btn-primary" id="submitWithdrawFunds" disabled>Retirer</button>
             </div>
         </div>
     </div>
@@ -278,6 +293,59 @@ include __DIR__ . '/../../includes/navbar.php';
 <!-- Inclusion du JS wallet -->
 <script src="/assets/js/wallet.js"></script>
 <script>
+    // Variables globales
+    const MAX_WITHDRAWAL_AMOUNT = <?php echo $balance; ?>;
+    const WITHDRAW_AMOUNT_INPUT = document.getElementById('withdrawAmount');
+    const WITHDRAW_FORM = document.getElementById('withdrawFundsForm');
+    const SUBMIT_WITHDRAW_BTN = document.getElementById('submitWithdrawFunds');
+
+    // Afficher les informations spécifiques à KKiaPay
+    document.getElementById('withdrawMethod').addEventListener('change', function() {
+        const kkiapayInfo = document.getElementById('kkiapayInfo');
+        if (this.value === 'kkiapay') {
+            kkiapayInfo.classList.remove('d-none');
+        } else {
+            kkiapayInfo.classList.add('d-none');
+        }
+    });
+
+    // Validation du montant de retrait
+    function validateWithdrawalAmount() {
+        const amount = parseFloat(WITHDRAW_AMOUNT_INPUT.value);
+        const isValid = !isNaN(amount) && amount > 0 && amount <= MAX_WITHDRAWAL_AMOUNT;
+        
+        if (isValid) {
+            WITHDRAW_AMOUNT_INPUT.classList.remove('is-invalid');
+            SUBMIT_WITHDRAW_BTN.disabled = false;
+            return true;
+        } else {
+            WITHDRAW_AMOUNT_INPUT.classList.add('is-invalid');
+            SUBMIT_WITHDRAW_BTN.disabled = true;
+            
+            if (amount > MAX_WITHDRAWAL_AMOUNT) {
+                showNotification('Le montant demandé dépasse votre solde disponible', 'error');
+            }
+            return false;
+        }
+    }
+
+    // Événements de validation
+    if (WITHDRAW_AMOUNT_INPUT) {
+        WITHDRAW_AMOUNT_INPUT.addEventListener('input', validateWithdrawalAmount);
+        WITHDRAW_AMOUNT_INPUT.addEventListener('blur', validateWithdrawalAmount);
+    }
+
+    // Validation du formulaire avant soumission
+    if (WITHDRAW_FORM) {
+        WITHDRAW_FORM.addEventListener('submit', function(e) {
+            if (!validateWithdrawalAmount()) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        });
+    }
+
     // Initialisation du JS wallet si la fonction existe
     if (typeof initializeWallet === 'function') {
         initializeWallet(window.jQuery || undefined);

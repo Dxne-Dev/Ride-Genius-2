@@ -4,52 +4,138 @@
   <meta charset="UTF-8">
   <title>Paiement avec KKiaPay</title>
   <script src="https://cdn.kkiapay.me/k.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      font-size: 1.5em;
+      margin-bottom: 20px;
+    }
+    .loading {
+      padding: 20px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-<script>
+  <div class="container">
+    <h1 id="title">Chargement du paiement...</h1>
+    <div id="kkiapay-widget">
+      <p class="loading">Veuillez patienter, chargement du module de paiement...</p>
+    </div>
+  </div>
+
+  <script>
   // Récupération des paramètres de l'URL
   const queryParams = new URLSearchParams(window.location.search);
   const amountParam = queryParams.get("amount");
   const userId = queryParams.get("userId") || null;
+  const type = queryParams.get("type") || 'deposit';
 
-  // ✅ Conversion sécurisée du montant en nombre
+  // Conversion sécurisée du montant en nombre
   const amount = parseInt(amountParam);
+  const isWithdrawal = type === 'withdraw';
+
+  // Mise à jour du titre en fonction du type d'opération
+  document.getElementById('title').textContent = isWithdrawal 
+    ? `Retrait de ${amount} FCFA` 
+    : `Paiement de ${amount} FCFA`;
 
   // Vérification des données
   if (isNaN(amount) || amount <= 0) {
-    alert("Montant invalide pour KKiaPay !");
+    showError("Montant invalide pour KKiaPay !");
     throw new Error("Paramètre amount non valide : " + amountParam);
   }
 
-  console.log("➡️ Lancement KKiaPay avec :", { amount, userId });
-
-  // Ouverture du widget KKiaPay
-  openKkiapayWidget({
+  // Configuration KKiaPay
+  const kkiapayConfig = {
     amount: amount,
     key: "0d7e7790fe7711efb8fad7f6612bd409", // clé publique de test
     sandbox: true, // à mettre à false en production
     position: "center",
-    callback: "https://ride-genius.local/kkiapay-callback.php" // ou une page de confirmation simple
-  });
+    theme: {
+      primary: "#2ecc71",
+      secondary: "#27ae60"
+    },
+    data: {
+      userId: userId,
+      type: type
+    },
+    callback: "https://ride-genius.local/kkiapay-callback.php"
+  };
 
-  // Réception de l'événement de succès
-  addSuccessListener(function(response) {
-    console.log("✅ Paiement validé :", response);
-    window.opener.postMessage({
-      status: 'success',
-      transactionId: response.transactionId,
-      amount: amount,
-      userId: userId
+  console.log("➡️ Lancement KKiaPay avec :", { amount, userId, type });
+
+  // Fonction pour afficher les erreurs
+  function showError(message) {
+    const widget = document.getElementById('kkiapay-widget');
+    widget.innerHTML = `
+      <div style="color: #e74c3c; padding: 15px; border: 1px solid #f5c6cb; background-color: #f8d7da; border-radius: 4px;">
+        <strong>Erreur :</strong> ${message}
+      </div>
+      <button onclick="window.close()" style="margin-top: 15px; padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Fermer
+      </button>
+    `;
+  }
+
+  // Initialisation de KKiaPay
+  try {
+    // Vérification de la disponibilité de l'API KKiaPay
+    if (typeof openKkiapayWidget === 'function' && typeof addSuccessListener === 'function' && typeof addFailedListener === 'function') {
+      // Ouverture du widget KKiaPay
+      openKkiapayWidget(kkiapayConfig);
+
+      // Réception de l'événement de succès
+      addSuccessListener(function(response) {
+        console.log("✅ Opération réussie :", response);
+        window.opener.postMessage({
+          status: 'success',
+          transactionId: response.transactionId || response.transaction_id,
+          amount: amount,
+          userId: userId,
+          type: type
+        }, "*");
+        // Ne pas fermer immédiatement pour laisser le temps au message d'être reçu
+        setTimeout(() => window.close(), 500);
+      });
+
+      // Réception de l'événement d'échec
+      addFailedListener(function(error) {
+        console.error("❌ Échec de l'opération :", error);
+        window.opener.postMessage({ 
+          status: 'error', 
+          error: error?.message || 'Erreur inconnue',
+          type: type
+        }, "*");
+        // Ne pas fermer immédiatement pour laisser le temps au message d'être reçu
+        setTimeout(() => window.close(), 500);
+      });
+    } else {
+      throw new Error("L'API KKiaPay n'est pas disponible");
+    }
+  } catch (error) {
+    console.error("❌ Erreur lors de l'initialisation de KKiaPay :", error);
+    showError("Impossible de charger le module de paiement. Veuillez réessayer plus tard.");
+    window.opener.postMessage({ 
+      status: 'error', 
+      error: error?.message || 'Erreur lors du chargement du module de paiement',
+      type: type
     }, "*");
-    window.close();
-  });
-
-  // Réception de l'événement d'échec
-  addFailedListener(function(error) {
-    console.error("❌ Paiement échoué :", error);
-    window.opener.postMessage({ status: 'error', error: error }, "*");
-    window.close();
-  });
+  }
 </script>
 </body>
 </html>

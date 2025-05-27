@@ -243,6 +243,54 @@
                 return;
             }
             
+            if (withdrawMethod === 'kkiapay') {
+                // Empêcher double ouverture
+                if (window.kkiapayWithdrawPending) return;
+                window.kkiapayWithdrawPending = true;
+                const userId = $('#userId').val() || '';
+                
+                // Forcer le chargement depuis localhost si nécessaire
+                const iframeDomain = window.location.hostname === 'ride-genius'
+                    ? 'http://localhost/ride-genius'
+                    : window.location.origin;
+
+                const iframeUrl = `${iframeDomain}/kkiapay-iframe.html?amount=${amount}&userId=${userId}&type=withdraw`;
+
+                const popup = window.open(
+                    iframeUrl,
+                    'Retrait via KKiaPay',
+                    'width=600,height=750'
+                );
+
+                // Écoute la réponse de KKiaPay via postMessage
+                window.addEventListener("message", function(event) {
+                    window.kkiapayWithdrawPending = false;
+                    if (event.data.status === 'success') {
+                        // Retrait validé → appelle l'API wallet pour débiter
+                        $.post('api/wallet_api.php', {
+                            action: 'withdrawFunds',
+                            amount: event.data.amount,
+                            withdrawMethod: 'kkiapay',
+                            description: 'Retrait via KKiaPay',
+                            transaction_id: event.data.transactionId
+                        }, function(resp) {
+                            if (resp.success) {
+                                showNotification('Retrait effectué avec succès via KKiaPay', 'success');
+                                $('#withdrawFundsModal').modal('hide');
+                                updateBalance();
+                                loadTransactions();
+                                $('#withdrawFundsForm')[0].reset();
+                            } else {
+                                showNotification('Erreur côté serveur KKiaPay: ' + (resp.message || ''), 'error');
+                            }
+                        }, 'json');
+                    } else if (event.data.status === 'error') {
+                        showNotification('Retrait KKiaPay échoué: ' + (event.data.error || ''), 'error');
+                    }
+                }, { once: true });
+                return; // Stop ici, on ne passe pas à l'AJAX classique
+            }
+
             $.ajax({
                 url: 'api/wallet_api.php',
                 method: 'POST',
@@ -250,7 +298,8 @@
                     action: 'withdrawFunds',
                     amount: amount,
                     withdrawMethod: withdrawMethod,
-                    description: description
+                    description: description,
+                    transaction_id: null
                 },
                 dataType: 'json', // Spécifier explicitement que nous attendons du JSON
                 success: function(response) {
