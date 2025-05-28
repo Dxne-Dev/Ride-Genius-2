@@ -157,10 +157,19 @@ while ($booking = $bookings->fetch(PDO::FETCH_ASSOC)) {
                                                 $booking->id = $ride['booking_id'];
                                                 $bookingDetails = $booking->readOne();
                                                 
-                                                $completedDate = new DateTime($bookingDetails['updated_at']);
+                                                $completedDate = null;
+if (isset($bookingDetails['updated_at']) && !empty($bookingDetails['updated_at'])) {
+    $completedDate = new DateTime($bookingDetails['updated_at']);
+}
+
                                                 $currentDate = new DateTime();
-                                                $daysDifference = $currentDate->diff($completedDate)->days;
-                                                $daysRemaining = 7 - $daysDifference;
+if ($completedDate) {
+    $daysDifference = $currentDate->diff($completedDate)->days;
+    $daysRemaining = 7 - $daysDifference;
+} else {
+    $daysDifference = null;
+    $daysRemaining = null;
+}
                                             ?>
                                                 <div>
                                                     <button type="button" class="btn btn-primary" 

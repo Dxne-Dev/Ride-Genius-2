@@ -85,8 +85,14 @@ class Wallet {
             
             error_log("substractFromBalance - userId: $userId, amount: $amount");
             
+            // Cas abonnement gratuit : aucun prélèvement à faire
+            if ($amount == 0) {
+                error_log("substractFromBalance - Aucun prélèvement à faire (montant = 0)");
+                return true;
+            }
+            
             // Vérifier que les valeurs sont valides
-            if ($userId <= 0 || $amount <= 0) {
+            if ($userId <= 0 || $amount < 0) {
                 error_log("substractFromBalance - Valeurs invalides: userId=$userId, amount=$amount");
                 return false;
             }

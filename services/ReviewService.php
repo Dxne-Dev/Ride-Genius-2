@@ -25,7 +25,7 @@ class ReviewService {
         }
 
         // Vérifier si la réservation existe et est marquée comme terminée
-        $query = "SELECT b.*, b.updated_at as completed_at 
+        $query = "SELECT b.*, b.created_at as completed_at 
                   FROM bookings b 
                   WHERE b.id = :booking_id 
                   AND b.passenger_id = :user_id 

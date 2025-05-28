@@ -6,6 +6,7 @@ require_once 'models/Wallet.php';
 require_once 'models/Subscription.php';
 
 class BookingController {
+    private $notificationService;
 
     private $db;
     private $booking;
