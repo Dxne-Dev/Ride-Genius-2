@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Ajouter un gestionnaire d'événements spécifique pour le menu utilisateur
-    const userDropdown = document.getElementById('userDropdown');
-    if (userDropdown) {
-        userDropdown.addEventListener('click', function(e) {
-            e.preventDefault();
-            const dropdown = bootstrap.Dropdown.getInstance(userDropdown) || new bootstrap.Dropdown(userDropdown);
-            dropdown.toggle();
-        });
-    }
+// const userDropdown = document.getElementById('userDropdown');
+// if (userDropdown) {
+//     userDropdown.addEventListener('click', function(e) {
+//         e.preventDefault();
+//         const dropdown = bootstrap.Dropdown.getInstance(userDropdown) || new bootstrap.Dropdown(userDropdown);
+//         dropdown.toggle();
+//     });
+// }};
 });
