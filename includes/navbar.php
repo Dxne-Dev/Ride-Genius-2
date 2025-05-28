@@ -53,20 +53,19 @@
 
                     <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'conducteur'): ?>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-steering-wheel me-1"></i>Conducteur
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="index.php?page=create-ride">Proposer un trajet</a></li>
-                                <li><a class="dropdown-item" href="index.php?page=my-rides">Mes trajets</a></li>
-                                <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="index.php?page=wallet">
-                                <i class="fas fa-wallet me-1"></i>Wallet
-                            </a>
-                        </li>
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+        <i class="fas fa-steering-wheel me-1"></i>Conducteur
+    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="index.php?page=my-rides">Mes trajets</a></li>
+        <li><a class="dropdown-item" href="index.php?page=my-reviews">Avis reçus</a></li>
+    </ul>
+</li>
+<li class="nav-item">
+    <a class="nav-link" href="index.php?page=wallet">
+        <i class="fas fa-wallet me-1"></i>Wallet
+    </a>
+</li>
                     <?php endif; ?>
 
                     <?php if(isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'passager'): ?>
