@@ -268,13 +268,12 @@ if ($completedDate) {
                             <?php 
                                 endif;
                             endforeach; 
-                            
-                            if (!$hasReviews):
                             ?>
+                            <?php if (!$hasReviews): ?>
                                 <div class="text-center py-5">
                                     <i class="fas fa-comment-slash text-muted mb-3" style="font-size: 3rem;"></i>
-                                    <h3 class="h5">Aucun avis donné</h3>
-                                    <p class="text-muted mb-0">Vous n'avez pas encore donné d'avis aux conducteurs.</p>
+                                    <h3 class="h5">Aucun avis reçu</h3>
+                                    <p class="text-muted mb-0">Vous n'avez pas encore reçu d'avis de la part des passagers.</p>
                                 </div>
                             <?php endif; ?>
                         </div>

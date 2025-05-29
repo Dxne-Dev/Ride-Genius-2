@@ -81,6 +81,10 @@ switch($page) {
     case 'admin-dashboard':
     case 'admin-users':
     case 'admin-rides':
+    case 'admin-reviews':
+    case 'toggle-hide-review':
+    case 'delete-review':
+    case 'block-author':
     case 'messages':
     case 'wallet':
     case 'logout':
@@ -142,6 +146,18 @@ switch($page) {
         } else if ($page == 'my-reviews') {
             $review = new ReviewController();
             $review->myReviews();
+        } else if ($page == 'admin-reviews') {
+            $review = new ReviewController();
+            $review->adminReviews();
+        } else if ($page == 'toggle-hide-review') {
+            $review = new ReviewController();
+            $review->toggleHide();
+        } else if ($page == 'delete-review') {
+            $review = new ReviewController();
+            $review->deleteReview();
+        } else if ($page == 'block-author') {
+            $review = new ReviewController();
+            $review->blockAuthor();
         }
         // Administration
         if ($page == 'admin-dashboard') {

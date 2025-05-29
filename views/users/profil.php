@@ -200,9 +200,20 @@
                 </div>
                 <div class="card-body">
                     <?php
-                    $count = 0;
+                    // Charger tous les avis reçus dans un tableau pour la pagination
+                    $reviews_arr = [];
                     while($row = $reviews->fetch(PDO::FETCH_ASSOC)) {
-                        $count++;
+                        $reviews_arr[] = $row;
+                    }
+                    $page_avis = isset($_GET['page_avis']) && is_numeric($_GET['page_avis']) ? (int)$_GET['page_avis'] : 1;
+                    $per_page_avis = 4;
+                    $total_avis = count($reviews_arr);
+                    $total_pages_avis = ceil($total_avis / $per_page_avis);
+                    $start_avis = ($page_avis - 1) * $per_page_avis;
+                    $reviews_page = array_slice($reviews_arr, $start_avis, $per_page_avis);
+
+                    if($total_avis > 0) {
+                        foreach($reviews_page as $idx => $row) {
                     ?>
                         <div class="mb-4">
                             <div class="d-flex justify-content-between mb-2">
@@ -228,16 +239,34 @@
                                 </div>
                             </div>
                             <p class="mb-0">
-                                <?php echo $row['comment'] ? htmlspecialchars($row['comment']) : '<span class="text-muted">Aucun commentaire</span>'; ?>
+                                <?php echo $row['comment'] ? html_entity_decode(htmlspecialchars($row['comment'], ENT_QUOTES | ENT_HTML5)) : '<span class="text-muted">Aucun commentaire</span>'; ?>
                             </p>
                         </div>
-                        <?php if($count < $reviews->rowCount()): ?>
+                        <?php if($idx < count($reviews_page) - 1): ?>
                             <hr>
                         <?php endif; ?>
+                    <?php }
+                    // Pagination
+                    ?>
+                    <?php if($total_pages_avis > 1): ?>
+                    <nav aria-label="Pagination avis" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item<?php if($page_avis <= 1) echo ' disabled'; ?>">
+                                <a class="page-link" href="?page_avis=<?php echo $page_avis-1; ?>" tabindex="-1">Précédent</a>
+                            </li>
+                            <?php for($i = 1; $i <= $total_pages_avis; $i++): ?>
+                            <li class="page-item<?php if($i == $page_avis) echo ' active'; ?>">
+                                <a class="page-link" href="?page_avis=<?php echo $i; ?>"><?php echo $i; ?></a>
+                            </li>
+                            <?php endfor; ?>
+                            <li class="page-item<?php if($page_avis >= $total_pages_avis) echo ' disabled'; ?>">
+                                <a class="page-link" href="?page_avis=<?php echo $page_avis+1; ?>">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
+                    <?php endif; ?>
                     <?php
-                    }
-                    
-                    if($count === 0) {
+                    } else {
                         echo '<p class="text-center">Aucun avis reçu pour le moment.</p>';
                     }
                     ?>

@@ -138,20 +138,60 @@ class Review {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Lire tous les avis
-    public function readAll() {
+    // Lire tous les avis (optionnellement inclure les masqués)
+    public function readAll($include_hidden = false) {
         $query = "SELECT r.*, 
                          CONCAT(u.first_name, ' ', u.last_name) as author_name,
                          CONCAT(ru.first_name, ' ', ru.last_name) as recipient_name
                   FROM " . $this->table . " r
                   LEFT JOIN users u ON r.author_id = u.id
-                  LEFT JOIN users ru ON r.recipient_id = ru.id
-                  ORDER BY r.created_at DESC";
-        
+                  LEFT JOIN users ru ON r.recipient_id = ru.id";
+        if (!$include_hidden) {
+            $query .= " WHERE r.is_hidden = 0";
+        }
+        $query .= " ORDER BY r.created_at DESC";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
-        
         return $stmt;
+    }
+
+    // Masquer ou afficher un avis
+    public function setHidden($review_id, $hidden = 1) {
+        $query = "UPDATE " . $this->table . " SET is_hidden = :hidden WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':hidden', $hidden, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $review_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Supprimer définitivement un avis
+    public function deleteReview($review_id) {
+        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $review_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Bloquer un passager pour les commentaires jusqu'à une date (ou NULL pour débloquer)
+    public function blockAuthor($author_id, $until = null) {
+        $query = "UPDATE " . $this->table . " SET blocked_until = :until WHERE author_id = :author_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':until', $until);
+        $stmt->bindParam(':author_id', $author_id, PDO::PARAM_INT);
+        return $stmt->execute();
+    }
+
+    // Vérifier si un auteur est actuellement bloqué
+    public function isAuthorBlocked($author_id) {
+        $query = "SELECT MAX(blocked_until) as blocked_until FROM " . $this->table . " WHERE author_id = :author_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':author_id', $author_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row && $row['blocked_until'] && strtotime($row['blocked_until']) > time()) {
+            return $row['blocked_until'];
+        }
+        return false;
     }
 
     // Compter le nombre total d'avis

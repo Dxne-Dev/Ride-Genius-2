@@ -2,6 +2,84 @@
 require_once 'services/ReviewService.php';
 
 class ReviewController {
+    // Affichage sécurisé de la page admin-reviews
+    public function adminReviews() {
+        $this->authGuard();
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->handleError("Accès refusé", 'home');
+        }
+        $database = new Database();
+        $db = $database->getConnection();
+        $reviewModel = new Review($db);
+        // Charger tous les avis, y compris masqués
+        $reviews = $reviewModel->readAll(true);
+        $reviews_arr = [];
+        while($row = $reviews->fetch(PDO::FETCH_ASSOC)) {
+            $reviews_arr[] = $row;
+        }
+        // Pagination
+        $page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
+        $per_page = 10;
+        $total_reviews = count($reviews_arr);
+        $total_pages = ceil($total_reviews / $per_page);
+        $start = ($page - 1) * $per_page;
+        $reviews_page = array_slice($reviews_arr, $start, $per_page);
+        include 'views/reviews/admin_reviews.php';
+    }
+
+    // ...
+    // Action : masquer/afficher un avis
+    public function toggleHide() {
+        $this->authGuard();
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->handleError("Accès refusé", 'admin-reviews');
+        }
+        $review_id = $_GET['id'] ?? null;
+        $hide = isset($_GET['hide']) ? (int)$_GET['hide'] : 1;
+        if ($review_id) {
+            $review = new Review($this->db);
+            $review->setHidden($review_id, $hide);
+            $_SESSION['success'] = $hide ? "Avis masqué." : "Avis affiché.";
+        }
+        header('Location: index.php?page=admin-reviews');
+        exit();
+    }
+    // Action : supprimer un avis
+    public function deleteReview() {
+        $this->authGuard();
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->handleError("Accès refusé", 'admin-reviews');
+        }
+        $review_id = $_GET['id'] ?? null;
+        if ($review_id) {
+            $review = new Review($this->db);
+            $review->deleteReview($review_id);
+            $_SESSION['success'] = "Avis supprimé.";
+        }
+        header('Location: index.php?page=admin-reviews');
+        exit();
+    }
+    // Action : bloquer/débloquer un passager pour les commentaires
+    public function blockAuthor() {
+        $this->authGuard();
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            $this->handleError("Accès refusé", 'admin-reviews');
+        }
+        $author_id = $_GET['author_id'] ?? null;
+        $until = $_GET['until'] ?? null; // format: Y-m-d H:i:s ou null pour débloquer
+        if ($author_id) {
+            $review = new Review($this->db);
+            $review->blockAuthor($author_id, $until);
+            if ($until) {
+                $_SESSION['success'] = "Passager bloqué jusqu'au $until.";
+            } else {
+                $_SESSION['success'] = "Passager débloqué.";
+            }
+        }
+        header('Location: index.php?page=admin-reviews');
+        exit();
+    }
+
     private $db;
     private $reviewService;
 
@@ -38,6 +116,18 @@ class ReviewController {
                 exit;
             } else {
                 $this->handleError("Seuls les passagers peuvent laisser des avis", "profile");
+            }
+        }
+        // Vérifier si l'utilisateur est bloqué pour les commentaires
+        $review = new Review($this->db);
+        $blocked_until = $review->isAuthorBlocked($_SESSION['user_id']);
+        if ($blocked_until) {
+            $msg = "Vous ne pouvez pas laisser d'avis. Votre accès aux commentaires est bloqué jusqu'au " . date('d/m/Y H:i', strtotime($blocked_until)) . ".";
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest') {
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            } else {
+                $this->handleError($msg, "profile");
             }
         }
         
