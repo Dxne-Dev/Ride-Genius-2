@@ -203,12 +203,17 @@ include __DIR__ . '/../../includes/navbar.php';
                     <div class="mb-3">
                         <label for="paymentMethod" class="form-label">Méthode de paiement</label>
                         <select class="form-select" id="paymentMethod" name="paymentMethod" required>
-    <option value="card">Carte bancaire</option>
-    <option value="paypal">PayPal</option>
-    <option value="bank_transfer">Virement bancaire</option>
-    <option value="kkiapay">KKiaPay</option> <!-- ✅ ajout -->
+                        <option value="card">Carte bancaire</option>
+<option value="paypal">PayPal</option>
+<option value="kkiapay">KKiaPay</option> <!-- ✅ ajout -->
 </select>
                     </div>
+                    <!-- Champ dynamique pour les détails de paiement -->
+<div class="mb-3" id="paymentDetailsContainer" style="display: none;">
+    <label for="paymentDetails" class="form-label" id="paymentDetailsLabel">Numéro</label>
+    <input type="text" class="form-control" id="paymentDetails" name="paymentDetails">
+    <div class="invalid-feedback" id="paymentDetailsFeedback"></div>
+</div>
                     <div class="mb-3">
                         <label for="description" class="form-label">Description (optionnel)</label>
                         <input type="text" class="form-control" id="description" name="description">
@@ -252,10 +257,15 @@ include __DIR__ . '/../../includes/navbar.php';
                     <div class="mb-3">
                         <label for="withdrawMethod" class="form-label">Méthode de retrait</label>
                         <select class="form-select" id="withdrawMethod" name="withdrawMethod" required>
-                            <option value="bank_transfer">Virement bancaire</option>
+                            <option value="card">Carte bancaire</option>
                             <option value="paypal">PayPal</option>
                             <option value="kkiapay">KKiaPay</option>
                         </select>
+                        <div class="mb-3" id="withdrawDetailsContainer" style="display: none;">
+                            <label for="withdrawDetails" class="form-label" id="withdrawDetailsLabel">Numéro</label>
+                            <input type="text" class="form-control" id="withdrawDetails" name="withdrawDetails">
+                            <div class="invalid-feedback" id="withdrawDetailsFeedback"></div>
+                        </div>
                         <div id="kkiapayInfo" class="mt-2 text-info d-none">
                             <i class="fas fa-info-circle"></i> Le retrait via KKiaPay est traité instantanément
                         </div>
@@ -292,6 +302,7 @@ include __DIR__ . '/../../includes/navbar.php';
 <script src="https://cdn.kkiapay.me/k.js"></script>
 <!-- Inclusion du JS wallet -->
 <script src="/assets/js/wallet.js"></script>
+<script src="/assets/js/payment-form.js"></script>
 <script>
     // Variables globales
     const MAX_WITHDRAWAL_AMOUNT = <?php echo $balance; ?>;
